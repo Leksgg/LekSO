@@ -1,0 +1,41 @@
+# Configuración mínima de LekSO sobre sway.
+# Ventanas como pestañas, al estilo de un editor de código.
+
+set $mod Mod4
+set $term foot
+set $menu fuzzel
+
+workspace_layout tabbed
+default_border pixel 1
+titlebar_border_thickness 0
+titlebar_padding 8 4
+font pango:monospace 10
+
+# Fondo y barra superior
+output * bg #10151b solid_color
+exec waybar
+
+# Atajos básicos
+bindsym $mod+Return exec $term
+bindsym $mod+d exec $menu
+bindsym $mod+e exec pcmanfm-qt
+bindsym $mod+q kill
+bindsym $mod+Shift+c reload
+bindsym $mod+Shift+e exec swaymsg exit
+
+# Cambiar de pestaña
+bindsym $mod+Tab focus next
+bindsym $mod+Shift+Tab focus prev
+
+# Pestañas en vez de mosaico
+bindsym $mod+w layout tabbed
+bindsym $mod+s layout stacking
+bindsym $mod+t layout toggle split
+
+# Espacios de trabajo
+bindsym $mod+1 workspace number 1
+bindsym $mod+2 workspace number 2
+bindsym $mod+3 workspace number 3
+bindsym $mod+Shift+1 move container to workspace number 1
+bindsym $mod+Shift+2 move container to workspace number 2
+bindsym $mod+Shift+3 move container to workspace number 3
