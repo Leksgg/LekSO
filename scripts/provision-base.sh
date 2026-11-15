@@ -134,4 +134,4 @@ install -m 0755 "$RAIZ/scripts/lekso-apps.py" /usr/local/bin/lekso-apps
 sudo -u "$USUARIO" lekso-asociar
 
 echo
-echo "Listo. Cierra la sesión y vuelve a entrar, y arranca el escritorio con: sway"
+echo "Listo. Reinicia: al iniciar sesión en la primera consola arranca el escritorio de LekSO."
