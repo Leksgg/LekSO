@@ -12,6 +12,8 @@ Lo más reciente, arriba.
 + Ajustes: un solo sitio (`Mod+I`, el engranaje del raíl) para sonido, red, pantallas, Bluetooth, apariencia, impresoras, aplicaciones y modo de energía.
 + Reposo: bloqueo a los 5 minutos, pantalla apagada a los 10 y suspensión a los 25 solo con batería; la pantalla completa (vídeo, juegos, directos) lo impide. `Mod+L` bloquea al momento.
 + Visual Studio Code como editor de código (`lekso-apps instalar code`, repositorio firmado de Microsoft): arranca con Wayland nativo y sin telemetría si el usuario no tiene ya sus ajustes.
+- Se quita del raíl el botón «Cuenta», que no hacía nada.
+~ Los botones del raíl y la barra funcionan aunque la barra se reinicie a mano: los programas que llaman a sway buscan su socket si no lo heredan.
 ~ Las ventanas de portapapeles y ajustes flotan en el centro; el gestor de redes (`lekso-redes`) usa los colores de LekSO.
 + Batería en la barra (solo en portátiles), Bluetooth con interfaz, servicio de impresión, miniaturas de vídeo, fuentes con emoji y compatibles con Arial.
 

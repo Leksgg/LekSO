@@ -59,7 +59,7 @@ window#waybar.raiz {
   border-right: 1px solid #2a3644;
   border-top: none;
 }
-#custom-cuenta, #custom-portapapeles, #custom-apps, #custom-asistente, #custom-archivos, #custom-modelos, #custom-config, #custom-vista, #custom-flotantes, #custom-energia, #custom-streamdeck {
+#custom-portapapeles, #custom-apps, #custom-asistente, #custom-archivos, #custom-modelos, #custom-config, #custom-vista, #custom-flotantes, #custom-energia, #custom-streamdeck {
   font-family: "FontAwesome", "DejaVu Sans";
   font-size: 20px;
   padding: 14px 0;
@@ -67,7 +67,7 @@ window#waybar.raiz {
   color: #8a98a8;
   background: transparent;
 }
-#custom-portapapeles:hover, #custom-apps:hover, #custom-asistente:hover, #custom-archivos:hover, #custom-modelos:hover, #custom-config:hover, #custom-cuenta:hover, #custom-vista:hover, #custom-flotantes:hover, #custom-streamdeck:hover {
+#custom-portapapeles:hover, #custom-apps:hover, #custom-asistente:hover, #custom-archivos:hover, #custom-modelos:hover, #custom-config:hover, #custom-vista:hover, #custom-flotantes:hover, #custom-streamdeck:hover {
   color: #4cc3e0;
   background: #16384a;
 }

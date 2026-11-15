@@ -4,6 +4,11 @@
 # Uso: lekso-zonas              monta las zonas al iniciar la sesión
 #      lekso-zonas --restaurar  vuelve a la vista por defecto sin cerrar las apps del usuario
 
+# Si se lanzó sin el socket de sway (p. ej. desde una barra reiniciada a mano), lo busca.
+if [ -z "${SWAYSOCK:-}" ]; then
+  SWAYSOCK="$(ls "${XDG_RUNTIME_DIR:-/run/user/$(id -u)}"/sway-ipc.*.sock 2>/dev/null | tail -1)"; export SWAYSOCK
+fi
+
 # Espera a que exista una ventana que cumpla el criterio y le pone una marca.
 marcar() {
   i=0

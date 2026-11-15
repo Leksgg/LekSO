@@ -6,7 +6,6 @@
     "width": 56,
     "spacing": 6,
     "modules-left": [
-      "custom/cuenta",
       "custom/apps",
       "custom/archivos",
       "custom/portapapeles",
@@ -15,10 +14,6 @@
       "custom/streamdeck",
       "custom/config"
     ],
-    "custom/cuenta": {
-      "format": "",
-      "tooltip-format": "Cuenta (próximamente)"
-    },
     "custom/archivos": {
       "format": "",
       "tooltip-format": "Archivos",

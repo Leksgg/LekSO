@@ -3,8 +3,19 @@
 
 Una pulsación las oculta todas; otra las devuelve. Es el «minimizar» de LekSO.
 """
+import glob
 import json
+import os
 import subprocess
+
+
+def _entorno():
+    """Si el programa se lanzó sin el socket de sway (por ejemplo desde una barra reiniciada a mano), lo busca."""
+    if not os.environ.get("SWAYSOCK"):
+        base = os.environ.get("XDG_RUNTIME_DIR") or f"/run/user/{os.getuid()}"
+        socks = sorted(glob.glob(os.path.join(base, "sway-ipc.*.sock")))
+        if socks:
+            os.environ["SWAYSOCK"] = socks[-1]
 
 
 def sway(*args):
@@ -18,6 +29,7 @@ def recorrer(n, ruta=()):
 
 
 def main():
+    _entorno()
     arbol = json.loads(sway("-t", "get_tree"))
     visibles, ocultas = [], []
     for n, ruta in recorrer(arbol):
