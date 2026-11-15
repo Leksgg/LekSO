@@ -9,7 +9,9 @@ set -x
 export DEBIAN_FRONTEND=noninteractive
 
 # 1. Los paquetes de Debian que necesita LekSO están en el USB: se usan como fuente de apt local.
+sed -i 's/^deb cdrom:/# deb cdrom:/' /etc/apt/sources.list      # el DVD del instalador ya no es fuente: solo el repositorio local
 echo "deb [trusted=yes] file:$PAQ/offline ./" > /etc/apt/sources.list.d/lekso-offline.list
+echo 'APT::Install-Recommends "false";' > /etc/apt/apt.conf.d/99lekso-sin-recomendados
 apt-get update -qq 2>/dev/null || true      # si los espejos de red fallan por no haber conexión, no importa
 
 # 2. Para quién se instala: el primer usuario que creó el instalador.
@@ -29,7 +31,7 @@ VERSION="$(cat "$PAQ/VERSION_TAG")"
 SUDO_USER="$USUARIO" bash "$PAQ/instalar.sh" --origen "$PAQ/lekso.bundle" --version "$VERSION" --si
 
 # 5. Fuentes de apt normales para el sistema ya instalado (las actualizaciones de Debian irán por red) y limpieza.
-rm -f /etc/apt/sources.list.d/lekso-offline.list
+rm -f /etc/apt/sources.list.d/lekso-offline.list /etc/apt/apt.conf.d/99lekso-sin-recomendados
 cat > /etc/apt/sources.list <<'EOF'
 deb http://deb.debian.org/debian trixie main contrib non-free-firmware
 deb http://deb.debian.org/debian trixie-updates main contrib non-free-firmware
