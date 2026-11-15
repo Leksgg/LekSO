@@ -16,7 +16,8 @@ def f(n):
         if r: return r
 r=f(json.load(sys.stdin))
 print("%d,%d %dx%d"%(r["x"],r["y"],r["width"],r["height"]) if r else "")')"
-            [ -n "$AREA" ] || exit 1; grim -g "$AREA" "$ARCH" ;;
+            [ -n "$AREA" ] || { notify-send "Captura" "No hay ninguna ventana activa. Haz clic en la ventana y vuelve a probar."; exit 1; }
+            grim -g "$AREA" "$ARCH" ;;
   *) echo "Uso: lekso-captura region|pantalla|ventana" >&2; exit 2 ;;
 esac
 wl-copy < "$ARCH"

@@ -112,6 +112,8 @@ install -o "$USUARIO" -g "$USUARIO" -m 0644 "$RAIZ/config/fuzzel/fuzzel.ini" "$H
 install -o "$USUARIO" -g "$USUARIO" -m 0644 "$RAIZ"/config/applications-ocultas/*.desktop "$HOME_USR/.local/share/applications/"
 
 # Notificaciones y pantalla de bloqueo con la paleta de LekSO.
+install -d /usr/share/lekso
+python3 "$RAIZ/scripts/generar-pantalla-bloqueo.py" /usr/share/lekso/bloqueo.png || true
 install -d -o "$USUARIO" -g "$USUARIO" "$HOME_USR/.config/mako" "$HOME_USR/.config/swaylock"
 install -o "$USUARIO" -g "$USUARIO" -m 0644 "$RAIZ/config/mako/config" "$HOME_USR/.config/mako/config"
 install -o "$USUARIO" -g "$USUARIO" -m 0644 "$RAIZ/config/swaylock/config" "$HOME_USR/.config/swaylock/config"

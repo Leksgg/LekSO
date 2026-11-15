@@ -187,6 +187,64 @@ class Hostil(Base):
         self.assertFalse((self.proy / "g.txt").exists())
 
 
+class RutasDeLaCaja(Base):
+    """El modelo vive en una caja con otro HOME (/home/caja). Las rutas se traducen a las del equipo real."""
+
+    def setUp(self):
+        super().setUp()
+        self._antes = os.environ.get("LEKSO_HOME_REAL")
+        os.environ["LEKSO_HOME_REAL"] = str(self.casa)
+
+    def tearDown(self):
+        if self._antes is None:
+            os.environ.pop("LEKSO_HOME_REAL", None)
+        else:
+            os.environ["LEKSO_HOME_REAL"] = self._antes
+        super().tearDown()
+
+    def test_traduccion(self):
+        casa = str(self.casa)
+        self.assertEqual(mcp._ruta_real("~/proy"), casa + "/proy")
+        self.assertEqual(mcp._ruta_real("~"), casa)
+        self.assertEqual(mcp._ruta_real("/home/caja/proy/a.txt"), casa + "/proy/a.txt")
+        self.assertEqual(mcp._ruta_real("/home/caja"), casa)
+        for intacta in ("/etc/passwd", "/home/cajaX/a", "~otro/a", "relativa/a", "/home/caja2"):
+            self.assertEqual(mcp._ruta_real(intacta), intacta)
+        self.assertEqual(mcp._ruta_real(5), 5)
+
+    def test_sin_casa_real_no_se_traduce(self):
+        os.environ.pop("LEKSO_HOME_REAL")
+        self.assertEqual(mcp._ruta_real("~/proy"), "~/proy")
+        os.environ["LEKSO_HOME_REAL"] = "relativa"        # no absoluta: se ignora
+        self.assertEqual(mcp._ruta_real("~/proy"), "~/proy")
+
+    def test_pedir_y_escribir_con_tilde_y_con_la_casa_de_la_caja(self):
+        r, err = llamar("pedir_acceso", titulo="t", carpetas={"~/proy": "rw"}, esperar_s=0)
+        self.assertFalse(err, r)
+        pid = r["pid"]
+        self.assertEqual(list(self.p.pendientes[pid]["carpetas"]), [str(self.proy)])
+        tarea = self.p.manejar_control({"op": "aprobar", "pid": pid})["tarea"]
+        r, _ = llamar("escribir", tarea=tarea, ruta="/home/caja/proy/nueva/sub/a.txt", texto="hola")   # crea las carpetas
+        self.assertTrue(r["ok"], r)
+        self.assertEqual((self.proy / "nueva" / "sub" / "a.txt").read_text(), "hola")
+        r, _ = llamar("listar", tarea=tarea, ruta="~/proy/nueva")
+        self.assertEqual([e["nombre"] for e in r["entradas"]], ["sub"])
+        r, _ = llamar("leer", tarea=tarea, ruta="~/proy/nueva/sub/a.txt")
+        self.assertEqual(r["texto"], "hola")
+
+    def test_la_traduccion_no_amplia_el_alcance(self):
+        _, tarea = self.aprobar(perms="r")
+        for ruta in ("~/secreto.txt", "/home/caja/secreto.txt", "~/../etc/passwd"):
+            r, err = llamar("leer", tarea=tarea, ruta=ruta)
+            self.assertTrue(err or not r["ok"], ruta)
+
+    def test_instrucciones_dicen_donde_esta_la_casa(self):
+        texto = rpc("initialize", {"protocolVersion": "2025-06-18"})["result"]["instructions"]
+        self.assertIn(str(self.casa), texto)
+        self.assertIn("/home/caja", texto)
+        self.assertIn("escribir crea", texto)
+
+
 class Stdio(unittest.TestCase):
     def lanzar(self):
         env = dict(os.environ, XDG_RUNTIME_DIR=tempfile.mkdtemp(prefix="lekso-mcp-io-"), PYTHONPATH=AQUI)

@@ -30,8 +30,8 @@ exec lekso-actualizar comprobar --avisar
 exec mako
 exec wl-paste --type text --watch cliphist store
 exec wl-paste --type image --watch cliphist store
-# Reposo: bloquear a los 5 min, apagar pantalla a los 10 y suspender a los 25 (solo con batería)
-exec swayidle -w timeout 300 'swaylock -f' timeout 600 'swaymsg "output * power off"' resume 'swaymsg "output * power on"' timeout 1500 'lekso-reposo' before-sleep 'swaylock -f'
+# Reposo: bloquear a los 10 min, apagar pantalla a los 15 y suspender a los 30 (solo con batería)
+exec swayidle -w timeout 600 'swaylock -f' timeout 900 'swaymsg "output * power off"' resume 'swaymsg "output * power on"' timeout 1800 'lekso-reposo' before-sleep 'swaylock -f'
 exec udiskie --no-tray --no-notify --automount
 
 # El menú de aplicaciones flota en el centro de la pantalla

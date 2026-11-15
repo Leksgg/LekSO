@@ -5,6 +5,10 @@ Lo más reciente, arriba.
 
 ## Alpha 0.1.2 · 2026-11-15
 
+~ Las teclas de micrófono y brillo avisan cuando el equipo no tiene micrófono o brillo regulable, y la captura de ventana avisa si no hay ninguna activa, en vez de no hacer nada.
+* El asistente de IA no sabía cuál era la carpeta personal real: veía la de su caja (`/home/caja`) y pedía rutas que el permisor no reconocía. Ahora el adaptador traduce `~/…` y `/home/caja/…` a la carpeta real, y las instrucciones al modelo se lo explican (también que `escribir` crea las carpetas que falten).
+~ El reposo bloquea a los 10 minutos, apaga la pantalla a los 15 y suspende a los 30 (solo con batería), en vez de 5, 10 y 25.
+~ Pantalla de bloqueo con un mensaje claro («Pantalla bloqueada · escribe tu contraseña y pulsa Intro») y el anillo de contraseña siempre visible: antes era una pantalla oscura vacía y parecía un equipo colgado.
 + Antes de instalar se comprueba también que el commit de la versión pertenece a la rama principal del repositorio; se guarda y se muestra el commit y la firma de lo instalado.
 + `scripts/desbloquear-firma.sh` y `scripts/publicar-version.sh --auto`: publicar la siguiente versión con un solo comando, con la clave de firma protegida por contraseña y desbloqueada unas horas; si algo falla, se deshace la preparación.
 + Pruebas de la verificación (`scripts/test_actualizar.py`): firma buena, de otra clave, sin firmar, etiqueta ligera, inexistente, fuera de la rama principal y nombres de versión hostiles.

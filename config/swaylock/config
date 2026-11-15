@@ -1,4 +1,7 @@
 color=10151b
+image=/usr/share/lekso/bloqueo.png
+scaling=center
+indicator-idle-visible
 indicator-radius=90
 indicator-thickness=6
 inside-color=10151b
