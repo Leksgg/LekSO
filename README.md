@@ -25,3 +25,14 @@ No se reescribe nada que ya exista y funcione.
 1. Montar una máquina virtual con Debian mínimo y medir el consumo en reposo.
 2. Añadir las capas una a una, con un punto de control antes de cada una.
 3. Probar la compatibilidad de juegos y el rendimiento de OBS en hardware real.
+
+## Componentes construidos
+
+| Carpeta | Qué es |
+| --- | --- |
+| lekso-ia/ | Permisor de IA (alcance por tarea, registro, deshacer), gestor de modelos de Ollama y panel de texto (Mod+a). Pruebas: `python3 -m unittest` y `prueba_e2e.sh`. |
+| scripts/caja.sh | Caja con Bubblewrap; opciones `--gui`, `--audio` y `--gpu`. El socket del permisor nunca entra. |
+| scripts/bench-obs.sh y .ps1 | Medición comparable de OBS en LekSO y en Windows. Sin probar con OBS real. |
+| config/ | sway, waybar, foot, qt6ct y pcmanfm-qt con la paleta de LekSO. |
+
+Licencia: MIT.

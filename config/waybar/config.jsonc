@@ -12,7 +12,7 @@
     "format": "{name}"
   },
   "custom/ia": {
-    "exec": "$HOME/.config/lekso/estado-ia.sh",
+    "exec": "python3 /usr/local/lib/lekso-ia/modelo.py estado",
     "return-type": "json",
     "interval": 5
   },

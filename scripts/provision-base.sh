@@ -24,8 +24,8 @@ RAIZ="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 # Paquetes por capa. Todos existen en Debian 13 (trixie); winetricks necesita la sección contrib.
 ESCRITORIO=(sway swaybg waybar foot fuzzel grim pcmanfm-qt qt6-wayland qt6ct xwayland fonts-font-awesome seatd xdg-desktop-portal-wlr)
 AUDIO=(pipewire pipewire-pulse wireplumber)
-AISLAMIENTO=(bubblewrap firejail)
-HERRAMIENTAS=(git curl btop lm-sensors)
+AISLAMIENTO=(bubblewrap firejail python3-seccomp)
+HERRAMIENTAS=(git curl btop lm-sensors python3 bc)
 GRAFICA=(mesa-vulkan-drivers)
 HYPERV=(hyperv-daemons)       # solo útil dentro de una máquina virtual de Hyper-V
 COMPATIBILIDAD=(wine winetricks)
@@ -66,11 +66,24 @@ install -o "$USUARIO" -g "$USUARIO" -m 0644 "$RAIZ/config/sway/config" "$HOME_US
 install -d -o "$USUARIO" -g "$USUARIO" "$HOME_USR/.config/waybar" "$HOME_USR/.config/qt6ct/colors" "$HOME_USR/.config/lekso"
 install -o "$USUARIO" -g "$USUARIO" -m 0644 "$RAIZ/config/waybar/config.jsonc" "$HOME_USR/.config/waybar/config.jsonc"
 install -o "$USUARIO" -g "$USUARIO" -m 0644 "$RAIZ/config/waybar/style.css" "$HOME_USR/.config/waybar/style.css"
-install -o "$USUARIO" -g "$USUARIO" -m 0755 "$RAIZ/config/lekso/estado-ia.sh" "$HOME_USR/.config/lekso/estado-ia.sh"
 install -o "$USUARIO" -g "$USUARIO" -m 0644 "$RAIZ/config/qt6ct/colors/lekso.conf" "$HOME_USR/.config/qt6ct/colors/lekso.conf"
 sed "s|@HOME@|$HOME_USR|g" "$RAIZ/config/qt6ct/qt6ct.conf" > "$HOME_USR/.config/qt6ct/qt6ct.conf"
 chown "$USUARIO:$USUARIO" "$HOME_USR/.config/qt6ct/qt6ct.conf"
 grep -q '^QT_QPA_PLATFORMTHEME=' /etc/environment 2>/dev/null || echo 'QT_QPA_PLATFORMTHEME=qt6ct' >> /etc/environment
+
+# Permisor de IA, panel, gestor de modelos y caja (en /usr/local, solo lectura para el usuario).
+install -d -m 0755 /usr/local/lib/lekso-ia
+install -m 0644 "$RAIZ"/lekso-ia/nucleo.py "$RAIZ"/lekso-ia/permisor.py "$RAIZ"/lekso-ia/modelo.py \
+  "$RAIZ"/lekso-ia/panel.py "$RAIZ"/lekso-ia/lekso_ia.py /usr/local/lib/lekso-ia/
+printf '#!/bin/sh\nexec python3 /usr/local/lib/lekso-ia/lekso_ia.py "$@"\n' > /usr/local/bin/lekso-ia
+install -m 0755 "$RAIZ/scripts/caja.sh" /usr/local/bin/caja
+install -m 0644 "$RAIZ/scripts/seccomp-estricta.py" /usr/local/lib/lekso-ia/seccomp-estricta.py
+chmod 0755 /usr/local/bin/lekso-ia
+install -d -o "$USUARIO" -g "$USUARIO" "$HOME_USR/.config/foot"
+install -o "$USUARIO" -g "$USUARIO" -m 0644 "$RAIZ/config/foot/foot.ini" "$HOME_USR/.config/foot/foot.ini"
+# Explorador: árbol de carpetas y barra de ruta con botones.
+install -d -o "$USUARIO" -g "$USUARIO" "$HOME_USR/.config/pcmanfm-qt/default"
+install -o "$USUARIO" -g "$USUARIO" -m 0644 "$RAIZ/config/pcmanfm-qt/settings.conf" "$HOME_USR/.config/pcmanfm-qt/default/settings.conf"
 
 echo
 echo "Listo. Cierra la sesión y vuelve a entrar, y arranca el escritorio con: sway"
