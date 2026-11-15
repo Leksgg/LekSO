@@ -109,7 +109,7 @@ install -o "$USUARIO" -g "$USUARIO" -m 0644 "$RAIZ/config/fuzzel/fuzzel.ini" "$H
 install -o "$USUARIO" -g "$USUARIO" -m 0644 "$RAIZ"/config/applications-ocultas/*.desktop "$HOME_USR/.local/share/applications/"
 
 # Stream Deck: se inicia al conectarlo (el acceso a USB lo da la regla del paquete).
-install -m 0644 "$RAIZ/config/systemd/lekso-streamdeck.service" /etc/systemd/user/
+install -m 0644 "$RAIZ/config/systemd/lekso-streamdeck.service" "$RAIZ/config/systemd/lekso-permisor.service" /etc/systemd/user/
 install -m 0644 "$RAIZ/config/udev/70-lekso-streamdeck.rules" /etc/udev/rules.d/
 udevadm control --reload 2>/dev/null || true
 
@@ -134,4 +134,21 @@ install -m 0755 "$RAIZ/scripts/lekso-apps.py" /usr/local/bin/lekso-apps
 sudo -u "$USUARIO" lekso-asociar
 
 echo
+# Todo lo que se creó en la carpeta personal es del usuario (los directorios intermedios los crea root).
+chown -R "$USUARIO:$USUARIO" "$HOME_USR/.config" "$HOME_USR/.local" 2>/dev/null || true
+
+# Teclado de la sesión según el del sistema (por defecto, español).
+DISTRIB="$(. /etc/default/keyboard 2>/dev/null && echo "${XKBLAYOUT%%,*}")"
+LOCAL="$HOME_USR/.config/sway/local.conf"
+{ grep -sv 'xkb_layout' "$LOCAL" || true; echo "input type:keyboard xkb_layout ${DISTRIB:-es}"; } > "$LOCAL.nuevo"
+mv "$LOCAL.nuevo" "$LOCAL"
+chown "$USUARIO:$USUARIO" "$LOCAL"
+
+# Cortafuegos, actualizaciones de seguridad y ajustes del núcleo (en Hyper-V deja el SSH abierto).
+if [ "$(systemd-detect-virt 2>/dev/null || true)" = "microsoft" ]; then
+  bash "$RAIZ/scripts/endurecer.sh" --ssh
+else
+  bash "$RAIZ/scripts/endurecer.sh"
+fi
+
 echo "Listo. Reinicia: al iniciar sesión en la primera consola arranca el escritorio de LekSO."

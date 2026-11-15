@@ -1,0 +1,23 @@
+[Unit]
+Description=Permisor de IA de LekSO
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/python3 /usr/local/lib/lekso-ia/permisor.py
+Restart=on-failure
+RestartSec=2
+
+# Confinamiento que un servicio de usuario puede aplicar sin privilegios (filtro de llamadas al sistema).
+# Las opciones de aislamiento de montajes (ProtectSystem, PrivateTmp, PrivateNetwork...) fallan en un
+# servicio de usuario; el aislamiento del sistema lo da la caja.
+NoNewPrivileges=yes
+RestrictAddressFamilies=AF_UNIX
+RestrictNamespaces=yes
+RestrictRealtime=yes
+RestrictSUIDSGID=yes
+LockPersonality=yes
+MemoryDenyWriteExecute=yes
+SystemCallArchitectures=native
+SystemCallFilter=@system-service
+SystemCallFilter=~@privileged @resources @mount @debug @module @reboot @swap @raw-io @cpu-emulation @obsolete
+UMask=0077

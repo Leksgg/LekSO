@@ -1,0 +1,76 @@
+#!/usr/bin/env bash
+# Endurece un equipo LekSO: cortafuegos, actualizaciones de seguridad y ajustes del núcleo.
+# Se puede ejecutar varias veces. Debe correr como root.
+#
+# Uso: sudo ./scripts/endurecer.sh [--ssh]
+#   --ssh   deja abierto el puerto 22 (solo para máquinas de prueba que se manejan por SSH)
+set -euo pipefail
+
+if [ "$(id -u)" -ne 0 ]; then
+  echo "Ejecuta como root: sudo $0 [--ssh]" >&2
+  exit 1
+fi
+SSH=0
+[ "${1:-}" = "--ssh" ] && SSH=1
+
+export DEBIAN_FRONTEND=noninteractive
+apt-get install -y --no-install-recommends nftables unattended-upgrades
+
+# 1. Cortafuegos: todo lo entrante se bloquea salvo lo que responde a lo que tú abres.
+REGLA_SSH=""
+[ "$SSH" -eq 1 ] && REGLA_SSH="tcp dport 22 accept"
+cat > /etc/nftables.conf <<NFT
+#!/usr/sbin/nft -f
+# LekSO: entrante bloqueado por defecto. Saliente libre.
+flush ruleset
+
+table inet lekso {
+  chain entrada {
+    type filter hook input priority 0; policy drop;
+    ct state established,related accept
+    ct state invalid drop
+    iif lo accept
+    ip protocol icmp icmp type { echo-request, destination-unreachable, time-exceeded } limit rate 10/second accept
+    ip6 nexthdr icmpv6 accept
+    udp sport 67 udp dport 68 accept
+    udp sport 547 udp dport 546 accept
+    $REGLA_SSH
+  }
+  # No somos un router. Docker añade sus propias reglas de reenvío.
+  chain reenvio { type filter hook forward priority 0; policy accept; }
+  chain salida { type filter hook output priority 0; policy accept; }
+}
+NFT
+nft -c -f /etc/nftables.conf
+systemctl enable nftables >/dev/null
+systemctl restart nftables
+
+# 2. Actualizaciones de seguridad automáticas (solo el repositorio de seguridad de Debian; sin reinicio automático).
+cat > /etc/apt/apt.conf.d/20auto-upgrades <<'APT'
+APT::Periodic::Update-Package-Lists "1";
+APT::Periodic::Unattended-Upgrade "1";
+APT::Periodic::AutocleanInterval "7";
+APT
+systemctl enable --now apt-daily.timer apt-daily-upgrade.timer >/dev/null 2>&1 || true
+
+# 3. Núcleo: un programa no puede espiar a otros del mismo usuario ni leer direcciones del núcleo.
+#    No se bloquean los espacios de usuario: los necesitan la caja y Steam.
+cat > /etc/sysctl.d/90-lekso.conf <<'SYS'
+kernel.yama.ptrace_scope = 1
+kernel.kptr_restrict = 2
+kernel.dmesg_restrict = 1
+kernel.unprivileged_bpf_disabled = 1
+net.core.bpf_jit_harden = 2
+fs.protected_fifos = 2
+fs.protected_regular = 2
+net.ipv4.conf.all.rp_filter = 1
+net.ipv4.conf.default.rp_filter = 1
+net.ipv4.conf.all.accept_redirects = 0
+net.ipv4.conf.default.accept_redirects = 0
+net.ipv4.conf.all.send_redirects = 0
+net.ipv6.conf.all.accept_redirects = 0
+net.ipv4.tcp_syncookies = 1
+SYS
+sysctl --system >/dev/null
+
+echo "Endurecimiento aplicado: cortafuegos, actualizaciones de seguridad y ajustes del núcleo."

@@ -24,7 +24,7 @@ output * bg #10151b solid_color
 gaps inner 0
 
 exec waybar
-exec python3 /usr/local/lib/lekso-ia/permisor.py
+exec systemctl --user start lekso-permisor.service
 exec lekso-zonas
 exec udiskie --no-tray --no-notify --automount
 

@@ -1,4 +1,4 @@
 # Se ejecuta al iniciar la sesión de labwc.
 pcmanfm-qt --desktop >/dev/null 2>&1 &
 waybar >/dev/null 2>&1 &
-python3 /usr/local/lib/lekso-ia/permisor.py >/dev/null 2>&1 &
+systemctl --user start lekso-permisor.service
