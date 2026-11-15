@@ -1,0 +1,6 @@
+#!/bin/sh
+# Abre un programa de Windows dentro de la caja: solo ve su carpeta (lectura) y su propio prefijo de Wine.
+f="$(realpath "$1")"
+d="$(dirname "$f")"
+mkdir -p "$HOME/.wine-lekso"
+exec caja --gui --audio --gpu --wine "$HOME/.wine-lekso" --ro "$d" -- wine "/home/caja/$(basename "$d")/$(basename "$f")"

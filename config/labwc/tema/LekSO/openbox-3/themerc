@@ -1,0 +1,28 @@
+# Tema LekSO para labwc: misma paleta que la barra. Un solo acento (cian) en la ventana activa.
+border.width: 1
+padding.width: 6
+padding.height: 4
+window.titlebar.padding.height: 6
+
+window.active.border.color: #4cc3e0
+window.inactive.border.color: #2a3644
+window.active.title.bg.color: #16384a
+window.inactive.title.bg.color: #1c2530
+window.active.label.text.color: #dfe6ee
+window.inactive.label.text.color: #8a98a8
+window.label.text.justify: left
+window.active.button.unpressed.image.color: #dfe6ee
+window.inactive.button.unpressed.image.color: #8a98a8
+window.active.button.hover.image.color: #4cc3e0
+window.inactive.button.hover.image.color: #4cc3e0
+
+menu.items.bg.color: #1c2530
+menu.items.text.color: #dfe6ee
+menu.items.active.bg.color: #16384a
+menu.items.active.text.color: #4cc3e0
+menu.separator.color: #2a3644
+menu.border.color: #2a3644
+
+osd.bg.color: #1c2530
+osd.border.color: #4cc3e0
+osd.label.text.color: #dfe6ee

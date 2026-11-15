@@ -10,19 +10,20 @@
 window#waybar {
   background: #10151b;
   color: #dfe6ee;
-  border-bottom: 1px solid #2a3644;
+  border-top: 1px solid #2a3644;
 }
 
-#workspaces button {
+#taskbar button {
   padding: 0 12px;
+  margin: 0 2px;
   color: #8a98a8;
-  background: transparent;
+  background: #171e27;
 }
-#workspaces button:hover {
+#taskbar button:hover {
   background: #1c2530;
   color: #dfe6ee;
 }
-#workspaces button.focused {
+#taskbar button.active {
   color: #4cc3e0;
   background: #16384a;
   box-shadow: inset 0 -2px #4cc3e0;
@@ -51,3 +52,22 @@ tooltip {
   color: #dfe6ee;
 }
 tooltip label { color: #dfe6ee; }
+
+/* Raíl de iconos (izquierda) */
+window#waybar.raiz {
+  background: #10151b;
+  border-right: 1px solid #2a3644;
+  border-top: none;
+}
+#custom-cuenta, #custom-archivos, #custom-modelos, #custom-config, #custom-vista {
+  font-family: "FontAwesome", "DejaVu Sans";
+  font-size: 20px;
+  padding: 14px 0;
+  margin: 2px 6px;
+  color: #8a98a8;
+  background: transparent;
+}
+#custom-archivos:hover, #custom-modelos:hover, #custom-config:hover, #custom-cuenta:hover, #custom-vista:hover {
+  color: #4cc3e0;
+  background: #16384a;
+}

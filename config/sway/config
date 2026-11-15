@@ -1,15 +1,17 @@
-# Configuración mínima de LekSO sobre sway.
-# Ventanas como pestañas, al estilo de un editor de código.
+# LekSO sobre sway: escritorio por zonas.
+# Raíl de iconos a la izquierda | explorador | centro (la app activa, a pantalla completa de su zona,
+# con terminal debajo) | panel de la IA a la derecha. Barra de tareas abajo.
+# Las zonas las monta lekso-zonas al iniciar.
 
 set $mod Mod4
 set $term foot
 set $menu fuzzel
 
-workspace_layout tabbed
 default_border pixel 1
 titlebar_border_thickness 0
 titlebar_padding 8 4
 font pango:DejaVu Sans 11
+workspace_layout default
 
 # Colores (misma paleta que la barra): una sola pestaña activa en cian, el resto apagado.
 #                         borde    fondo    texto    indicador  borde hijo
@@ -18,36 +20,34 @@ client.focused_inactive   #2a3644  #1c2530  #8a98a8  #2a3644    #2a3644
 client.unfocused          #2a3644  #171e27  #8a98a8  #2a3644    #2a3644
 client.urgent             #f0b24a  #3a2d12  #f0b24a  #f0b24a    #f0b24a
 
-# Fondo y barra superior
 output * bg #10151b solid_color
-exec waybar
+gaps inner 0
 
-# Atajos básicos
-bindsym $mod+Return exec $term
+exec waybar
+exec python3 /usr/local/lib/lekso-ia/permisor.py
+exec lekso-zonas
+exec udiskie --no-tray --no-notify --automount
+
+# Atajos básicos (Mod = tecla Windows)
+bindsym $mod+Return exec foot -T Terminal
 bindsym $mod+d exec $menu
 bindsym $mod+e exec pcmanfm-qt
 bindsym $mod+q kill
 bindsym $mod+Shift+c reload
 bindsym $mod+Shift+e exec swaymsg exit
+bindsym $mod+a exec foot -T "Panel de la IA" -e python3 /usr/local/lib/lekso-ia/panel.py
 
-# Cambiar de pestaña
+# Cambiar de app en el centro
 bindsym $mod+Tab focus next
 bindsym $mod+Shift+Tab focus prev
+bindsym Mod1+Tab focus next
+bindsym $mod+f fullscreen toggle
 
-# Pestañas en vez de mosaico
-bindsym $mod+w layout tabbed
-bindsym $mod+s layout stacking
-bindsym $mod+t layout toggle split
+# Mover el foco entre zonas con las flechas
+bindsym $mod+Left focus left
+bindsym $mod+Right focus right
+bindsym $mod+Up focus up
+bindsym $mod+Down focus down
 
-# Espacios de trabajo
-bindsym $mod+1 workspace number 1
-bindsym $mod+2 workspace number 2
-bindsym $mod+3 workspace number 3
-bindsym $mod+Shift+1 move container to workspace number 1
-bindsym $mod+Shift+2 move container to workspace number 2
-bindsym $mod+Shift+3 move container to workspace number 3
-
-# Permisor de IA y su panel
-exec python3 /usr/local/lib/lekso-ia/permisor.py
-bindsym $mod+a exec foot -e python3 /usr/local/lib/lekso-ia/panel.py
-
+# Ajustes locales de este equipo (por ejemplo, la resolución en una máquina virtual).
+include ~/.config/sway/local.conf

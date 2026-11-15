@@ -1,0 +1,11 @@
+#!/bin/sh
+# Muestra qué es un archivo cuando LekSO no tiene un programa para abrirlo.
+f="$1"
+clear
+printf '%s\n\n' "$f"
+file -b -- "$f"
+ls -lh -- "$f"
+printf '\n'
+od -A x -t x1z -N 512 -- "$f"
+printf '\nPulsa Intro para cerrar. Para abrirlo con otro programa: clic derecho > Abrir con.\n'
+read -r _

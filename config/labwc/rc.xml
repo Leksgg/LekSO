@@ -1,0 +1,28 @@
+<?xml version="1.0"?>
+<!-- LekSO sobre labwc: ventanas con título y botones (minimizar, maximizar, cerrar), como en Windows. -->
+<labwc_config>
+  <theme>
+    <name>LekSO</name>
+    <cornerRadius>0</cornerRadius>
+    <font place="" name="DejaVu Sans" size="11" />
+  </theme>
+
+  <focus>
+    <followMouse>no</followMouse>
+    <raiseOnFocus>yes</raiseOnFocus>
+  </focus>
+
+  <desktops number="1" />
+
+  <windowSwitcher show="yes" preview="no" outlines="no" />
+
+  <keyboard>
+    <default />
+    <!-- Mod = tecla Windows -->
+    <keybind key="W-Return"><action name="Execute" command="foot -T Terminal" /></keybind>
+    <keybind key="W-d"><action name="Execute" command="fuzzel" /></keybind>
+    <keybind key="W-e"><action name="Execute" command="pcmanfm-qt" /></keybind>
+    <keybind key="W-a"><action name="Execute" command="foot -T 'Panel de la IA' -e python3 /usr/local/lib/lekso-ia/panel.py" /></keybind>
+    <keybind key="W-q"><action name="Close" /></keybind>
+  </keyboard>
+</labwc_config>

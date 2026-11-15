@@ -22,7 +22,7 @@ HOME_USR="$(getent passwd "$USUARIO" | cut -d: -f6)"
 RAIZ="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
 # Paquetes por capa. Todos existen en Debian 13 (trixie); winetricks necesita la sección contrib.
-ESCRITORIO=(sway swaybg waybar foot fuzzel grim pcmanfm-qt qt6-wayland qt6ct xwayland fonts-font-awesome seatd xdg-desktop-portal-wlr)
+ESCRITORIO=(labwc sway swaybg waybar foot fuzzel grim pcmanfm-qt qt6-wayland qt6-svg-plugins qt6ct xwayland fonts-font-awesome seatd xdg-desktop-portal-wlr micro imv zathura zathura-pdf-poppler mpv xarchiver udisks2 udiskie gvfs gvfs-backends polkitd ntfs-3g exfatprogs usbutils v4l-utils bluez pavucontrol-qt network-manager)
 AUDIO=(pipewire pipewire-pulse wireplumber)
 AISLAMIENTO=(bubblewrap firejail python3-seccomp)
 HERRAMIENTAS=(git curl btop lm-sensors python3 bc)
@@ -61,6 +61,11 @@ usermod -aG seatd "$USUARIO" 2>/dev/null || true
 # Configuración del escritorio.
 install -d -o "$USUARIO" -g "$USUARIO" "$HOME_USR/.config/sway"
 install -o "$USUARIO" -g "$USUARIO" -m 0644 "$RAIZ/config/sway/config" "$HOME_USR/.config/sway/config"
+# En una máquina virtual de Hyper-V, resolución grande (en un equipo real se usa la nativa).
+if [ "$(systemd-detect-virt 2>/dev/null || true)" = "microsoft" ]; then
+  echo "output * resolution 1920x1080" > "$HOME_USR/.config/sway/local.conf"
+  chown "$USUARIO:$USUARIO" "$HOME_USR/.config/sway/local.conf"
+fi
 
 # Barra superior, tema de las aplicaciones Qt y estado de la IA.
 install -d -o "$USUARIO" -g "$USUARIO" "$HOME_USR/.config/waybar" "$HOME_USR/.config/qt6ct/colors" "$HOME_USR/.config/lekso"
@@ -68,7 +73,12 @@ install -o "$USUARIO" -g "$USUARIO" -m 0644 "$RAIZ/config/waybar/config.jsonc" "
 install -o "$USUARIO" -g "$USUARIO" -m 0644 "$RAIZ/config/waybar/style.css" "$HOME_USR/.config/waybar/style.css"
 install -o "$USUARIO" -g "$USUARIO" -m 0644 "$RAIZ/config/qt6ct/colors/lekso.conf" "$HOME_USR/.config/qt6ct/colors/lekso.conf"
 sed "s|@HOME@|$HOME_USR|g" "$RAIZ/config/qt6ct/qt6ct.conf" > "$HOME_USR/.config/qt6ct/qt6ct.conf"
-chown "$USUARIO:$USUARIO" "$HOME_USR/.config/qt6ct/qt6ct.conf"
+chown -R "$USUARIO:$USUARIO" "$HOME_USR/.config"
+
+# Iconos de tipos de archivo (tema propio, hereda de Adwaita).
+install -d /usr/share/icons
+cp -r "$RAIZ/config/iconos/LekSO" /usr/share/icons/
+gtk-update-icon-cache -f /usr/share/icons/LekSO 2>/dev/null || true
 grep -q '^QT_QPA_PLATFORMTHEME=' /etc/environment 2>/dev/null || echo 'QT_QPA_PLATFORMTHEME=qt6ct' >> /etc/environment
 
 # Permisor de IA, panel, gestor de modelos y caja (en /usr/local, solo lectura para el usuario).
@@ -84,6 +94,30 @@ install -o "$USUARIO" -g "$USUARIO" -m 0644 "$RAIZ/config/foot/foot.ini" "$HOME_
 # Explorador: árbol de carpetas y barra de ruta con botones.
 install -d -o "$USUARIO" -g "$USUARIO" "$HOME_USR/.config/pcmanfm-qt/default"
 install -o "$USUARIO" -g "$USUARIO" -m 0644 "$RAIZ/config/pcmanfm-qt/settings.conf" "$HOME_USR/.config/pcmanfm-qt/default/settings.conf"
+# Red: NetworkManager gestiona las interfaces (estado y redes disponibles en la barra).
+if [ -f /etc/network/interfaces ] && grep -qE '^(allow-hotplug|auto|iface) (e|w)' /etc/network/interfaces; then
+  cp -n /etc/network/interfaces /etc/network/interfaces.lekso-antes
+  sed -i -E 's/^(allow-hotplug|auto) (e|w)/# /; s/^iface (e|w)/#iface /' /etc/network/interfaces
+  systemctl restart NetworkManager || true
+fi
+
+# Zonas del escritorio (sway) y alternativa labwc: ventanas con título y botones, barra de tareas en la barra superior.
+install -d -o "$USUARIO" -g "$USUARIO" "$HOME_USR/.config/labwc" "$HOME_USR/.local/share/themes"
+install -o "$USUARIO" -g "$USUARIO" -m 0644 "$RAIZ/config/labwc/rc.xml" "$RAIZ/config/labwc/menu.xml" "$HOME_USR/.config/labwc/"
+install -o "$USUARIO" -g "$USUARIO" -m 0755 "$RAIZ/config/labwc/autostart" "$HOME_USR/.config/labwc/autostart"
+cp -r "$RAIZ/config/labwc/tema/LekSO" "$HOME_USR/.local/share/themes/"
+chown -R "$USUARIO:$USUARIO" "$HOME_USR/.local/share/themes"
+install -m 0755 "$RAIZ/config/sway/zonas.sh" /usr/local/bin/lekso-zonas
+install -o "$USUARIO" -g "$USUARIO" -m 0644 "$RAIZ/config/bash_profile" "$HOME_USR/.bash_profile"
+# Escritorio con iconos: carpeta Escritorio y accesos.
+install -o "$USUARIO" -g "$USUARIO" -m 0644 "$RAIZ/config/user-dirs.dirs" "$HOME_USR/.config/user-dirs.dirs"
+install -d -o "$USUARIO" -g "$USUARIO" "$HOME_USR/Escritorio"
+install -o "$USUARIO" -g "$USUARIO" -m 0755 "$RAIZ"/config/escritorio/*.desktop "$HOME_USR/Escritorio/"
+
+# Programas predeterminados por tipo de archivo (no pisa lo que el usuario ya haya elegido).
+install -m 0755 "$RAIZ/config/bin/lekso-info" "$RAIZ/config/bin/lekso-wine" /usr/local/bin/
+install -m 0644 "$RAIZ"/config/applications/*.desktop /usr/share/applications/
+sudo -u "$USUARIO" python3 "$RAIZ/scripts/asociar-archivos.py"
 
 echo
 echo "Listo. Cierra la sesión y vuelve a entrar, y arranca el escritorio con: sway"

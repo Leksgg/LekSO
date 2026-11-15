@@ -1,44 +1,113 @@
-{
-  "layer": "top",
-  "position": "top",
-  "height": 30,
-  "spacing": 0,
-  "modules-left": ["sway/workspaces", "custom/ia"],
-  "modules-center": [],
-  "modules-right": ["cpu", "memory", "pulseaudio", "network", "clock"],
-
-  "sway/workspaces": {
-    "disable-scroll": true,
-    "format": "{name}"
+[
+  {
+    "name": "raiz",
+    "layer": "top",
+    "position": "left",
+    "width": 56,
+    "spacing": 6,
+    "modules-left": [
+      "custom/cuenta",
+      "custom/archivos",
+      "custom/modelos",
+      "custom/config"
+    ],
+    "custom/cuenta": {
+      "format": "",
+      "tooltip-format": "Cuenta (próximamente)"
+    },
+    "custom/archivos": {
+      "format": "",
+      "tooltip-format": "Archivos",
+      "on-click": "pcmanfm-qt"
+    },
+    "custom/modelos": {
+      "format": "",
+      "tooltip-format": "Modelos de IA",
+      "on-click": "foot -T \"Modelos de IA\" -e python3 /usr/local/lib/lekso-ia/modelo.py lista"
+    },
+    "custom/config": {
+      "format": "",
+      "tooltip-format": "Configuración (apariencia)",
+      "on-click": "qt6ct"
+    },
+    "modules-right": [
+      "custom/vista"
+    ],
+    "custom/vista": {
+      "format": "",
+      "tooltip-format": "Restaurar la vista por defecto",
+      "on-click": "sh -c 'lekso-zonas --restaurar >/tmp/lekso-zonas.log 2>&1'"
+    }
   },
-  "custom/ia": {
-    "exec": "python3 /usr/local/lib/lekso-ia/modelo.py estado",
-    "return-type": "json",
-    "interval": 5
-  },
-  "cpu": {
-    "format": "CPU {usage}%",
-    "interval": 3,
-    "states": { "warning": 80, "critical": 95 }
-  },
-  "memory": {
-    "format": "RAM {used:0.1f} GB",
-    "tooltip-format": "{used:0.1f} de {total:0.1f} GB en uso",
-    "interval": 3,
-    "states": { "warning": 80, "critical": 92 }
-  },
-  "pulseaudio": {
-    "format": "VOL {volume}%",
-    "format-muted": "VOL sin sonido"
-  },
-  "network": {
-    "format-ethernet": "Red",
-    "format-wifi": "Wi-Fi {signalStrength}%",
-    "format-disconnected": "Sin red",
-    "tooltip-format": "{ifname}: {ipaddr}"
-  },
-  "clock": {
-    "format": "{:%H:%M}",
-    "tooltip-format": "{:%A %d de %B de %Y}"
+  {
+    "name": "tareas",
+    "layer": "top",
+    "position": "bottom",
+    "height": 34,
+    "spacing": 0,
+    "modules-left": [
+      "wlr/taskbar"
+    ],
+    "modules-center": [],
+    "modules-right": [
+      "custom/ia",
+      "cpu",
+      "memory",
+      "pulseaudio",
+      "network",
+      "clock"
+    ],
+    "wlr/taskbar": {
+      "format": "{icon} {title}",
+      "icon-size": 18,
+      "all-outputs": true,
+      "on-click": "activate",
+      "on-click-middle": "close",
+      "tooltip-format": "{title} (clic central: cerrar)",
+      "max-length": 22
+    },
+    "custom/ia": {
+      "exec": "python3 /usr/local/lib/lekso-ia/modelo.py estado",
+      "return-type": "json",
+      "interval": 5
+    },
+    "cpu": {
+      "format": "CPU {usage}%",
+      "interval": 3,
+      "states": {
+        "warning": 80,
+        "critical": 95
+      }
+    },
+    "memory": {
+      "format": "RAM {used:0.1f} GB",
+      "tooltip-format": "{used:0.1f} de {total:0.1f} GB en uso",
+      "interval": 3,
+      "states": {
+        "warning": 80,
+        "critical": 92
+      }
+    },
+    "pulseaudio": {
+      "format": "VOL {volume}%",
+      "format-muted": "VOL sin sonido",
+      "tooltip-format": "{desc}\nVolumen {volume}%",
+      "scroll-step": 5,
+      "on-click": "pavucontrol-qt",
+      "on-click-right": "wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle"
+    },
+    "network": {
+      "format-ethernet": "Cable",
+      "format-wifi": "Wi-Fi {signalStrength}%",
+      "format-disconnected": "Sin red",
+      "tooltip-format-ethernet": "Cable · {ifname}\nIP {ipaddr}\nPuerta de enlace {gwaddr}",
+      "tooltip-format-wifi": "{essid} · señal {signalStrength}%\nIP {ipaddr}",
+      "tooltip-format-disconnected": "Sin conexión",
+      "on-click": "foot -T \"Redes\" -e nmtui"
+    },
+    "clock": {
+      "format": "{:%H:%M}",
+      "tooltip-format": "{:%A %d de %B de %Y}"
+    }
   }
-}
+]
