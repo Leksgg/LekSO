@@ -1,33 +1,69 @@
 #!/usr/bin/env bash
 # Publica una versión de LekSO: etiqueta firmada y subida. Solo para quien mantiene el repositorio.
 #
-# Uso: scripts/publicar-version.sh 0.1.1-alpha
+# Uso: scripts/publicar-version.sh 0.1.2-alpha     una versión concreta (VERSION y CHANGELOG ya preparados)
+#      scripts/publicar-version.sh --auto          la siguiente versión (+1 en el último número), con lo que haya
+#                                                  bajo «## Sin publicar» en CHANGELOG.md
 #
-# Comprueba antes de publicar:
-#   - que VERSION dice lo mismo,
-#   - que CHANGELOG.md tiene una sección con esa versión,
-#   - que no hay cambios sin subir,
-#   - que la etiqueta no existe ya.
-# La etiqueta se firma con la clave indicada en LEKSO_CLAVE_FIRMA (por defecto ~/.ssh/lekso_release).
-# Los equipos solo instalan versiones firmadas con la clave de config/allowed_signers.
+# Antes de publicar comprueba: que VERSION y CHANGELOG.md dicen lo mismo, que no hay cambios sin subir
+# y que la etiqueta no existe. La etiqueta se firma con la clave de LEKSO_CLAVE_FIRMA (por defecto
+# ~/.ssh/lekso_release). Si la clave tiene contraseña, desbloquéala antes con scripts/desbloquear-firma.sh
+# y se firmará sin preguntar. Los equipos solo instalan versiones firmadas con la clave de config/allowed_signers
+# cuyo commit pertenezca a la rama principal.
 set -euo pipefail
 
-V="${1:-}"
-if ! [[ "$V" =~ ^[0-9]+\.[0-9]+\.[0-9]+-(alpha|beta|rc)$ ]]; then
-  echo "Uso: $0 X.Y.Z-alpha   (también -beta o -rc)" >&2
-  exit 2
-fi
 CLAVE="${LEKSO_CLAVE_FIRMA:-$HOME/.ssh/lekso_release}"
+SOCK="${LEKSO_AGENTE:-$HOME/.ssh/lekso-agent.sock}"
 [ -f "$CLAVE" ] || { echo "No encuentro la clave de firma: $CLAVE" >&2; exit 1; }
 cd "$(dirname "$0")/.."
 
+patron='^([0-9]+)\.([0-9]+)\.([0-9]+)-(alpha|beta|rc)$'
+nombre_bonito() { echo "$1" | sed -E 's/^([0-9.]+)-alpha$/Alpha \1/; s/^([0-9.]+)-beta$/Beta \1/; s/^([0-9.]+)-rc$/RC \1/'; }
+
+# Clave: con agente desbloqueado se firma sin preguntar; si no, se usa el archivo (pide la contraseña si la tiene).
+FIRMA="$CLAVE"
+if [ -S "$SOCK" ] && SSH_AUTH_SOCK="$SOCK" ssh-add -l >/dev/null 2>&1; then
+  export SSH_AUTH_SOCK="$SOCK"
+  FIRMA="$CLAVE.pub"
+fi
+if ssh-keygen -y -P "" -f "$CLAVE" >/dev/null 2>&1; then
+  echo "AVISO: la clave de firma no tiene contraseña. Ponle una con: ssh-keygen -p -f \"$CLAVE\"" >&2
+fi
+
+[ -z "$(git status --porcelain)" ] || { echo "Hay cambios sin subir: haz commit antes." >&2; exit 1; }
+
+PREPARADA=0
+# Si algo falla después de preparar la versión (por ejemplo, la clave sigue bloqueada), se deshace el commit
+# de preparación para poder repetir el comando sin dejar nada a medias.
+trap 'if [ "$PREPARADA" = 1 ]; then git reset -q --hard HEAD~1; echo "No se publicó nada: la preparación se ha deshecho." >&2; fi' EXIT
+
+V="${1:-}"
+if [ "$V" = "--auto" ]; then
+  ACT="$(tr -d '[:space:]' < VERSION)"
+  [[ "$ACT" =~ $patron ]] || { echo "VERSION no es una versión válida: $ACT" >&2; exit 1; }
+  V="${BASH_REMATCH[1]}.${BASH_REMATCH[2]}.$((BASH_REMATCH[3] + 1))-${BASH_REMATCH[4]}"
+  grep -q '^## Sin publicar' CHANGELOG.md || { echo "CHANGELOG.md no tiene «## Sin publicar» con los cambios de esta versión." >&2; exit 1; }
+  # debe haber algo escrito debajo de «Sin publicar»
+  awk '/^## Sin publicar/{d=1;next} /^## /{d=0} d && NF{n++} END{exit n?0:1}' CHANGELOG.md \
+    || { echo "«## Sin publicar» está vacío." >&2; exit 1; }
+  BONITA="$(nombre_bonito "$V")"
+  sed -i "s/^## Sin publicar\$/## $BONITA · $(date +%F)/" CHANGELOG.md
+  printf '%s\n' "$V" > VERSION
+  git add VERSION CHANGELOG.md
+  git commit -q -m "Versión $BONITA"
+  PREPARADA=1
+  echo "Preparada la versión $BONITA."
+fi
+
+[[ "$V" =~ $patron ]] || { echo "Uso: $0 X.Y.Z-alpha | --auto   (también -beta o -rc)" >&2; exit 2; }
+BONITA="$(nombre_bonito "$V")"
 [ "$(tr -d '[:space:]' < VERSION)" = "$V" ] || { echo "VERSION no dice $V" >&2; exit 1; }
-BONITA="$(echo "$V" | sed -E 's/^([0-9.]+)-alpha$/Alpha \1/; s/^([0-9.]+)-beta$/Beta \1/; s/^([0-9.]+)-rc$/RC \1/')"
 grep -qE "^## .*(${V}|${BONITA})" CHANGELOG.md || { echo "CHANGELOG.md no tiene una sección «## $BONITA»" >&2; exit 1; }
 [ -z "$(git status --porcelain)" ] || { echo "Hay cambios sin subir: haz commit antes." >&2; exit 1; }
 git rev-parse "v$V" >/dev/null 2>&1 && { echo "La etiqueta v$V ya existe." >&2; exit 1; }
 
-git -c gpg.format=ssh -c user.signingkey="$CLAVE" tag -s "v$V" -m "LekSO $BONITA"
+git -c gpg.format=ssh -c user.signingkey="$FIRMA" tag -s "v$V" -m "LekSO $BONITA"
 git -c gpg.ssh.allowedSignersFile=config/allowed_signers tag -v "v$V"
-git push origin main "v$V"
+git push origin HEAD:main "v$V"
+PREPARADA=0
 echo "Publicada: LekSO $BONITA (v$V)"

@@ -62,6 +62,10 @@ class Ventana(QtWidgets.QWidget):
         self.actual = QtWidgets.QLabel()
         self.actual.setStyleSheet("font-size: 18px; font-weight: bold;")
         raiz.addWidget(self.actual)
+        self.huella = QtWidgets.QLabel()
+        self.huella.setObjectName("nota")
+        self.huella.setTextInteractionFlags(QtCore.Qt.TextSelectableByMouse)
+        raiz.addWidget(self.huella)
         self.estado = QtWidgets.QLabel()
         self.estado.setWordWrap(True)
         raiz.addWidget(self.estado)
@@ -92,6 +96,11 @@ class Ventana(QtWidgets.QWidget):
 
     def refrescar(self):
         self.actual.setText(sal("lekso-actualizar", "version"))
+        try:
+            d = json.load(open("/var/lib/lekso/instalada.json", encoding="utf-8"))
+            self.huella.setText(f"Commit {d.get('commit', '')[:7]} · firma {d.get('firma', '')}" if d.get("commit") else "")
+        except (OSError, ValueError):
+            self.huella.setText("")
         c = cache()
         disp = c.get("disponible")
         self.b_instalar.setEnabled(bool(disp))

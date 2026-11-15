@@ -5,7 +5,11 @@ Lo más reciente, arriba.
 
 ## Sin publicar
 
++ Antes de instalar se comprueba también que el commit de la versión pertenece a la rama principal del repositorio; se guarda y se muestra el commit y la firma de lo instalado.
++ `scripts/desbloquear-firma.sh` y `scripts/publicar-version.sh --auto`: publicar la siguiente versión con un solo comando, con la clave de firma protegida por contraseña y desbloqueada unas horas; si algo falla, se deshace la preparación.
++ Pruebas de la verificación (`scripts/test_actualizar.py`): firma buena, de otra clave, sin firmar, etiqueta ligera, inexistente, fuera de la rama principal y nombres de versión hostiles.
 ~ La comprobación de firma exige que coincida con un firmante autorizado, no solo que exista una firma.
+* Una etiqueta con salto de línea final se aceptaba como versión válida; corregido.
 ~ La ventana de Actualizaciones nombra las versiones por su nombre (Alpha 0.1.1) y muestra solo lo nuevo.
 
 ## Alpha 0.1.1 · 2026-11-15

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """lekso-actualizar: versión de LekSO y actualizaciones desde GitHub, con firma y con tu permiso.
 
-  lekso-actualizar version              muestra la versión instalada
+  lekso-actualizar version [--detalle]  muestra la versión instalada (con --detalle, su commit y firma)
   lekso-actualizar comprobar [--avisar] mira si hay una versión nueva (y avisa con una notificación)
   lekso-actualizar barra                estado para la barra (lee lo ya comprobado, sin red)
   lekso-actualizar cambios [VERSIÓN]    qué trae la versión nueva
@@ -26,10 +26,12 @@ FICHERO_VERSION = "/etc/lekso-release"
 FIRMANTES = "/etc/lekso/allowed_signers"
 CLON = "/var/lib/lekso/repo"
 ANTERIOR = "/var/lib/lekso/version-anterior"
+INSTALADA = "/var/lib/lekso/instalada.json"      # versión, commit y firmante de lo instalado
+RAMA_PRINCIPAL = "origin/main"
 CACHE = os.path.expanduser("~/.cache/lekso/actualizacion.json")
 AVISADO = os.path.expanduser("~/.cache/lekso/avisado")
 
-ETIQUETA = re.compile(r"^v(\d+)\.(\d+)\.(\d+)-(alpha|beta|rc)$")
+ETIQUETA = re.compile(r"^v(\d+)\.(\d+)\.(\d+)-(alpha|beta|rc)\Z")   # \Z: sin salto de línea final
 RANGO = {"alpha": 0, "beta": 1, "rc": 2}
 NOMBRE = {"alpha": "Alpha", "beta": "Beta", "rc": "RC"}
 
@@ -175,17 +177,31 @@ def preparar_clon():
 
 
 def verificar(tag):
-    """La etiqueta debe estar firmada con la clave de LekSO ya instalada. Si no, no se sigue."""
+    """Comprueba que la versión es legítima y devuelve (commit, huella de la firma). Si algo falla, no se sigue.
+
+    1. La etiqueta está firmada con una clave de /etc/lekso/allowed_signers (la que ya hay instalada).
+    2. El commit al que apunta pertenece a la rama principal del repositorio oficial.
+    """
     if not os.path.exists(FIRMANTES):
         sys.exit(f"Falta {FIRMANTES}: no hay clave con la que comprobar la firma.")
     r = git("-c", f"gpg.ssh.allowedSignersFile={FIRMANTES}", "verify-tag", tag, cwd=CLON)
     salida = (r.stderr + r.stdout)
     if r.returncode != 0 or "Good \"git\" signature for " not in salida:   # «for»: la firma coincide con un firmante autorizado
         sys.exit(f"La versión {tag} NO tiene una firma válida. No se instala nada.\n{salida.strip()[:300]}")
-    print(f"Firma válida de la versión {tag}.")
+    c = git("rev-list", "-n", "1", tag, cwd=CLON)
+    commit = c.stdout.strip()
+    if c.returncode != 0 or not re.fullmatch(r"[0-9a-f]{40}", commit):
+        sys.exit(f"No se pudo identificar el commit de {tag}.")
+    anc = git("merge-base", "--is-ancestor", commit, RAMA_PRINCIPAL, cwd=CLON)
+    if anc.returncode != 0:
+        sys.exit(f"La versión {tag} no pertenece a la rama principal del repositorio. No se instala nada.")
+    m = re.search(r"key (\S+:\S+)", salida)
+    huella = m[1] if m else ""
+    print(f"Firma válida de la versión {tag} (commit {commit[:7]}, rama principal).")
+    return commit, huella
 
 
-def instalar_version(tag, usuario):
+def instalar_version(tag, usuario, commit="", huella=""):
     r = git("checkout", "--force", "--detach", tag, cwd=CLON)
     if r.returncode != 0:
         sys.exit("No se pudo preparar la versión: " + r.stderr.strip()[:200])
@@ -199,6 +215,9 @@ def instalar_version(tag, usuario):
     with open(tmp, "w", encoding="utf-8") as f:
         f.write(tag.lstrip("v") + "\n")
     os.replace(tmp, FICHERO_VERSION)
+    with open(INSTALADA + ".nuevo", "w", encoding="utf-8") as f:
+        json.dump({"version": tag.lstrip("v"), "commit": commit, "firma": huella}, f)
+    os.replace(INSTALADA + ".nuevo", INSTALADA)
 
 
 def usuario_real():
@@ -220,11 +239,11 @@ def aplicar(tag=None):
         sys.exit(f"{bonita(destino)} no es más nueva que la instalada ({bonita(actual)}).")
     etiqueta = "v" + destino
     preparar_clon()
-    verificar(etiqueta)
+    commit, huella = verificar(etiqueta)
     os.makedirs(os.path.dirname(ANTERIOR), exist_ok=True)
     with open(ANTERIOR, "w", encoding="utf-8") as f:
         f.write((actual or "") + "\n")
-    instalar_version(etiqueta, usuario)
+    instalar_version(etiqueta, usuario, commit, huella)
     print(f"\nListo: LekSO {bonita(destino)}. Cierra la sesión y vuelve a entrar para estrenar todo.")
     return 0
 
@@ -239,9 +258,9 @@ def volver():
     if not clave(previa):
         sys.exit("La versión anterior guardada no es válida.")
     preparar_clon()
-    verificar("v" + previa)
+    commit, huella = verificar("v" + previa)
     actual = version_actual()
-    instalar_version("v" + previa, usuario)
+    instalar_version("v" + previa, usuario, commit, huella)
     with open(ANTERIOR, "w", encoding="utf-8") as f:
         f.write((actual or "") + "\n")
     print(f"\nVuelves a LekSO {bonita(previa)}. Cierra la sesión y vuelve a entrar.")
@@ -256,7 +275,15 @@ def main(a):
     try:
         if c == "version":
             v = a[1] if len(a) > 1 and clave(a[1]) else version_actual()   # con un argumento, solo le da nombre
-            print(f"LekSO {bonita(v)}" if v else "LekSO (versión desconocida)")
+            texto = f"LekSO {bonita(v)}" if v else "LekSO (versión desconocida)"
+            if "--detalle" in a:
+                try:
+                    d = json.load(open(INSTALADA, encoding="utf-8"))
+                    if d.get("commit"):
+                        texto += f" · commit {d['commit'][:7]} · firmada {d.get('firma', '')}".rstrip()
+                except (OSError, ValueError):
+                    pass
+            print(texto)
             return 0
         if c == "comprobar":
             return comprobar("--avisar" in a)
