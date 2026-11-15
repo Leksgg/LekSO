@@ -21,14 +21,24 @@ fi
 HOME_USR="$(getent passwd "$USUARIO" | cut -d: -f6)"
 RAIZ="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
-# Paquetes por capa. Todos existen en Debian 13 (trixie), comprobado en packages.debian.org.
-ESCRITORIO=(sway swaybg waybar foot fuzzel grim pcmanfm-qt seatd xdg-desktop-portal-wlr)
+# Paquetes por capa. Todos existen en Debian 13 (trixie); winetricks necesita la sección contrib.
+ESCRITORIO=(sway swaybg waybar foot fuzzel grim pcmanfm-qt qt6-wayland xwayland fonts-font-awesome seatd xdg-desktop-portal-wlr)
 AUDIO=(pipewire pipewire-pulse wireplumber)
 AISLAMIENTO=(bubblewrap firejail)
 HERRAMIENTAS=(git curl btop lm-sensors)
 GRAFICA=(mesa-vulkan-drivers)
 HYPERV=(hyperv-daemons)       # solo útil dentro de una máquina virtual de Hyper-V
 COMPATIBILIDAD=(wine winetricks)
+
+# winetricks (y más adelante Steam) están en la sección contrib, que el instalador no activa.
+# Cubre tanto /etc/apt/sources.list como el formato nuevo en /etc/apt/sources.list.d/*.sources.
+if [ -f /etc/apt/sources.list ]; then
+  sed -i -E '/^deb(-src)? /{/ contrib( |$)/!s/ main( |$)/ main contrib\1/}' /etc/apt/sources.list
+fi
+for f in /etc/apt/sources.list.d/*.sources; do
+  [ -e "$f" ] || continue
+  sed -i -E '/^Components:/{/contrib/!s/ main( |$)/ main contrib\1/}' "$f"
+done
 
 export DEBIAN_FRONTEND=noninteractive
 apt-get update
