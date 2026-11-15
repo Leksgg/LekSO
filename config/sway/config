@@ -30,6 +30,7 @@ exec udiskie --no-tray --no-notify --automount
 
 # El menú de aplicaciones flota en el centro de la pantalla
 for_window [app_id="lekso-menu"] floating enable, resize set 480 620, move position center
+for_window [app_id="lekso-energia"] floating enable, resize set 360 460, move position center
 
 # Atajos básicos (Mod = tecla Windows)
 bindsym $mod+Return exec foot -T Terminal

@@ -33,7 +33,8 @@
       "on-click": "qt6ct"
     },
     "modules-right": [
-      "custom/vista"
+      "custom/vista",
+      "custom/energia"
     ],
     "custom/vista": {
       "format": "",
@@ -49,6 +50,11 @@
       "format": "",
       "tooltip-format": "Aplicaciones",
       "on-click": "lekso-menu"
+    },
+    "custom/energia": {
+      "format": "",
+      "tooltip-format": "Apagar, suspender, hibernar…",
+      "on-click": "lekso-energia"
     }
   },
   {

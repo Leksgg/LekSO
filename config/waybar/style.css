@@ -59,7 +59,7 @@ window#waybar.raiz {
   border-right: 1px solid #2a3644;
   border-top: none;
 }
-#custom-cuenta, #custom-apps, #custom-archivos, #custom-modelos, #custom-config, #custom-vista, #custom-streamdeck {
+#custom-cuenta, #custom-apps, #custom-archivos, #custom-modelos, #custom-config, #custom-vista, #custom-energia, #custom-streamdeck {
   font-family: "FontAwesome", "DejaVu Sans";
   font-size: 20px;
   padding: 14px 0;
@@ -71,3 +71,5 @@ window#waybar.raiz {
   color: #4cc3e0;
   background: #16384a;
 }
+
+#custom-energia:hover { color: #f08a82; background: #3a1d1d; }

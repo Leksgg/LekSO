@@ -3,9 +3,20 @@
 Formato: `+` nuevo · `-` eliminado o retirado · `~` modificado · `*` otros.
 Lo más reciente, arriba.
 
+## 2026-11-15 · Seguridad del equipo, energía y teclado
+
++ Cortafuegos (`scripts/endurecer.sh`): todo lo entrante bloqueado salvo respuestas a lo que el equipo pide; saliente libre.
++ Actualizaciones de seguridad automáticas (solo el repositorio de seguridad de Debian, sin reinicios automáticos).
++ Ajustes del núcleo: sin espionaje entre procesos, sin lectura de direcciones del sistema y sin eBPF para usuarios sin privilegios. Se siguen permitiendo los espacios de usuario que necesita la caja.
++ Botón de energía en el raíl: bloquear, suspender, hibernar, cerrar sesión, reiniciar y apagar. Solo activa lo que el equipo admite y pide confirmación en lo que cierra programas.
++ El teclado de la sesión sigue al del sistema (español por defecto).
+~ El permisor de IA corre como servicio de usuario con filtro de llamadas al sistema y sin permisos de administrador.
+~ Los programas de la propia interfaz comparten estilo (`lekso_ui`).
+* Corregido en la instalación: la carpeta `~/.local` quedaba a nombre de root.
+
 ## 2026-11-15 · Instalar aplicaciones
 
-+ Comando `lekso-apps`: catálogo de equivalentes en Linux de las aplicaciones habituales de Windows (desarrollo, Docker, IA, navegadores, comunicación, multimedia, utilidades y juegos). Lista lo instalado, instala por nombre o por grupo, simula con `--simular` y explica lo que no tiene equivalente (`pendientes`).
++ Comando `lekso-apps`: catálogo de equivalentes en Linux de las aplicaciones habituales de Windows (desarrollo, Docker, Playwright, IA, navegadores, comunicación, multimedia, utilidades y juegos). Lista lo instalado, instala por nombre o por grupo, simula con `--simular` y explica lo que no tiene equivalente (`pendientes`).
 + Fuentes: paquetes de Debian, repositorios firmados (Brave, VS Code), descargas directas del proveedor (Discord, Obsidian, Heroic, r2modman) y npm.
 ~ Al instalar un navegador, pasa a ser el predeterminado para páginas web y enlaces.
 

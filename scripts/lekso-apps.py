@@ -34,6 +34,8 @@ CATALOGO = [
     ("Desarrollo", "docker", "Docker Desktop", "docker", "docker.io docker-compose docker-buildx", "docker.io",
      "Docker Engine con compose y buildx. Te añade al grupo docker (equivale a permisos de administrador); cierra sesión después."),
     ("Desarrollo", "code", "Visual Studio Code", "repo-vscode", "code", "code", "Repositorio firmado de Microsoft."),
+    ("Desarrollo", "playwright", "Playwright", "playwright", "playwright", "playwright",
+     "Automatización y pruebas de navegador. Instala Node, las librerías del sistema y Chromium."),
     ("Desarrollo", "tesseract", "Tesseract-OCR", "apt", "tesseract-ocr tesseract-ocr-spa tesseract-ocr-eng", "tesseract-ocr", ""),
     ("Desarrollo", "filezilla", "FileZilla", "apt", "filezilla", "filezilla", ""),
     # Inteligencia artificial
@@ -181,6 +183,15 @@ def hacer(item, simular, si):
             sudo(["usermod", "-aG", "docker", usuario], simular)
             if not simular:
                 print(c("  Te he añadido al grupo docker: cierra sesión y vuelve a entrar para usarlo sin sudo.", "33"))
+        return r
+    if tipo == "playwright":
+        r = apt("nodejs npm", simular)
+        if r == 0:
+            r = sudo(["npm", "install", "-g", "playwright"], simular)
+        if r == 0:
+            r = sudo(["playwright", "install-deps", "chromium"], simular)
+        if r == 0:
+            r = correr(["playwright", "install", "chromium"], simular)  # como usuario: va a ~/.cache/ms-playwright
         return r
     if tipo == "steam":
         sudo(["dpkg", "--add-architecture", "i386"], simular)
