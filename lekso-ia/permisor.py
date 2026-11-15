@@ -56,7 +56,9 @@ class Permisor:
                     or not set(perms) <= set("rwd") or len(ruta) > 4096 or not imprimible(ruta):
                 raise Denegado("carpetas o permisos no válidos")
         # se guardan resueltas (sin enlaces): lo que se ve al aprobar es la carpeta real
-        carpetas = {k: "".join(sorted(v["perms"])) for k, v in self.n.comprobar_carpetas(carpetas).items()}
+        raices = self.n.comprobar_carpetas(carpetas)
+        nuevas = sorted(k for k, v in raices.items() if v.get("nueva"))
+        carpetas = {k: "".join(sorted(v["perms"])) for k, v in raices.items()}
         self.n.limpiar_tareas()
         self.aprobadas = {k: v for k, v in self.aprobadas.items() if v in self.n.tareas}
         if len(self.pendientes) >= MAX_PENDIENTES:
@@ -67,7 +69,7 @@ class Permisor:
         if self._cubre_recordada(carpetas) and destino == "local":
             self.aprobadas[pid] = self.n.conceder(titulo, carpetas, destino, self.ttl)
             return {"pid": pid, "estado": "aprobada", "tarea": self.aprobadas[pid]}
-        self.pendientes[pid] = {"titulo": titulo, "carpetas": carpetas, "destino": destino}
+        self.pendientes[pid] = {"titulo": titulo, "carpetas": carpetas, "destino": destino, "nuevas": nuevas}
         return {"pid": pid, "estado": "pendiente"}
 
     def estado(self, pid):

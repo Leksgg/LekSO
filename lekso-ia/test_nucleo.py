@@ -83,6 +83,69 @@ class Alcance(Base):
         self.assertEqual(nombres, ["visible"])
 
 
+class CarpetasNuevas(Base):
+    """La IA puede pedir una carpeta que aún no existe (un nivel, dentro de una que sí existe)."""
+
+    def test_se_crea_al_conceder_y_se_puede_usar(self):
+        nueva = self.casa / "proyectos"
+        t = self.n.conceder("nueva", {str(nueva): "rw"})
+        self.assertTrue(nueva.is_dir())
+        self.n.escribir(t, str(nueva / "activos" / "README.md"), "x")        # y escribir crea las subcarpetas
+        self.assertEqual((nueva / "activos" / "README.md").read_text(), "x")
+
+    def test_pedirla_no_crea_nada(self):
+        nueva = self.casa / "proyectos"
+        r = self.n.comprobar_carpetas({str(nueva): "rw"})
+        self.assertTrue(r[str(nueva)]["nueva"])
+        self.assertFalse(nueva.exists())
+
+    def test_hace_falta_escritura(self):
+        with self.assertRaises(Denegado):
+            self.n.comprobar_carpetas({str(self.casa / "solo-leer"): "r"})
+
+    def test_un_solo_nivel(self):
+        with self.assertRaises(Denegado):
+            self.n.conceder("x", {str(self.casa / "a" / "b"): "rw"})
+        self.assertFalse((self.casa / "a").exists())
+
+    def test_nombres_y_sitios_prohibidos(self):
+        for ruta in (str(self.casa / ".oculta"), str(self.casa / "a" / ".." / "x"), "/etc/nueva", "/usr/nueva", "/var/nueva",
+                     "/nueva-en-raiz", "relativa/nueva", str(self.casa / (("x" * 201))), str(self.n.datos / "nueva")):
+            with self.assertRaises(Denegado, msg=ruta):
+                self.n.conceder("x", {ruta: "rw"})
+
+    def test_no_sigue_enlaces(self):
+        fuera = self.tmp / "fuera"
+        fuera.mkdir()
+        os.symlink(fuera, self.casa / "enlace")
+        t = self.n.conceder("x", {str(self.casa / "enlace" / "nueva"): "rw"})      # se resuelve: la carpeta real queda a la vista
+        self.assertTrue((fuera / "nueva").is_dir())
+        self.assertIn(str(fuera / "nueva"), self.n.tareas[t].raices)
+
+    def test_si_existe_como_archivo_no(self):
+        (self.casa / "archivo").write_text("x")
+        with self.assertRaises(Denegado):
+            self.n.conceder("x", {str(self.casa / "archivo"): "rw"})
+
+    def test_deshacer_borra_la_carpeta_vacia(self):
+        nueva = self.casa / "proyectos"
+        t = self.n.conceder("nueva", {str(nueva): "rw"})
+        self.assertEqual(self.n.deshacer_tarea(t), 1)
+        self.assertFalse(nueva.exists())
+
+    def test_deshacer_no_borra_si_hay_contenido(self):
+        nueva = self.casa / "proyectos"
+        t = self.n.conceder("nueva", {str(nueva): "rw"})
+        (nueva / "mio.txt").write_text("importante")
+        with self.assertRaises(Denegado):
+            self.n.deshacer_tarea(t)
+        self.assertTrue((nueva / "mio.txt").exists())
+
+    def test_la_casa_entera_sigue_prohibida(self):
+        with self.assertRaises(Denegado):
+            self.n.comprobar_carpetas({str(self.casa): "rwd"})
+
+
 class Deshacer(Base):
     def test_deshacer_edicion(self):
         f = self.proy / "a.txt"

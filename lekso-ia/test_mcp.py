@@ -232,6 +232,21 @@ class RutasDeLaCaja(Base):
         r, _ = llamar("leer", tarea=tarea, ruta="~/proy/nueva/sub/a.txt")
         self.assertEqual(r["texto"], "hola")
 
+    def test_pedir_una_carpeta_nueva(self):
+        nueva = self.casa / "proyectos"
+        r, err = llamar("pedir_acceso", titulo="estructura", carpetas={"~/proyectos": "rw"}, esperar_s=0)
+        self.assertFalse(err, r)
+        self.assertFalse(nueva.exists(), "pedirla no debe crearla")
+        self.assertEqual(self.p.pendientes[r["pid"]]["nuevas"], [str(nueva)])
+        tarea = self.p.manejar_control({"op": "aprobar", "pid": r["pid"]})["tarea"]
+        self.assertTrue(nueva.is_dir(), "al aprobar sí se crea")
+        r, _ = llamar("escribir", tarea=tarea, ruta="~/proyectos/activos/README.md", texto="# activos\n")
+        self.assertTrue(r["ok"], r)
+
+    def test_la_casa_entera_no_se_puede_pedir(self):
+        r, err = llamar("pedir_acceso", titulo="todo", carpetas={"~": "rwd"}, esperar_s=0)
+        self.assertTrue(err or not r["ok"])
+
     def test_la_traduccion_no_amplia_el_alcance(self):
         _, tarea = self.aprobar(perms="r")
         for ruta in ("~/secreto.txt", "/home/caja/secreto.txt", "~/../etc/passwd"):

@@ -45,7 +45,8 @@ def aprobar(pid, recordar):
     print(f"  Los datos que lea irán a: {'la NUBE' if p['destino'] == 'nube' else 'el modelo local'}")
     for ruta, perms in p["carpetas"].items():
         nombres = {"r": "leer", "w": "escribir", "d": "borrar (a la papelera)"}
-        print(f"  Carpeta {ruta}: " + ", ".join(nombres[x] for x in perms))
+        print(f"  Carpeta {ruta}: " + ", ".join(nombres[x] for x in perms)
+              + ("   (carpeta NUEVA: se creará)" if ruta in p.get("nuevas", []) else ""))
     if input("\n  ¿Permitir? [s/N] ").strip().lower() != "s":
         control(op="rechazar", pid=pid)
         return print("  Rechazada.")

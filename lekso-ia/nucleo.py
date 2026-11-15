@@ -170,24 +170,68 @@ class Nucleo:
         raices = {}
         for ruta, perms in carpetas.items():
             real = os.path.realpath(ruta)
+            nueva = False
+            if not os.path.lexists(real) and os.path.isabs(ruta):
+                # Carpeta que aún no existe: se crea al aprobar, un solo nivel y dentro de una carpeta que sí existe.
+                nombre = os.path.basename(os.path.normpath(ruta))
+                padre = os.path.realpath(os.path.dirname(os.path.normpath(ruta)))
+                if (not _limpio(nombre) or nombre.startswith(".") or "/" in nombre or ".." in Path(ruta).parts
+                        or len(nombre) > 200 or not os.path.isdir(padre) or padre in PROHIBIDAS):
+                    raise Denegado(f"no se puede crear esa carpeta nueva: {ruta}")
+                if "w" not in set(perms):
+                    raise Denegado("para crear una carpeta nueva hace falta permiso de escritura")
+                real = os.path.join(padre, nombre)
+                nueva = True
             if real in PROHIBIDAS or real == str(self.casa):
                 raise Denegado(f"carpeta demasiado amplia: {ruta}")
             if self.datos == Path(real) or str(self.datos).startswith(real + "/") \
                     or real.startswith(str(self.datos) + "/"):
                 raise Denegado("la carpeta incluye datos internos de LekSO")
-            if not os.path.isdir(real):
+            if not nueva and not os.path.isdir(real):
                 raise Denegado(f"no es una carpeta: {ruta}")
             if not set(perms) <= set("rwd") or not perms:
                 raise Denegado(f"permisos no válidos: {perms}")
+            if nueva:
+                raices[real] = {"perms": set(perms), "id": None, "nueva": True}
+                continue
             st = os.stat(real)
             previo = raices.get(real, {"perms": set()})["perms"]
             raices[real] = {"perms": previo | set(perms), "id": (st.st_dev, st.st_ino)}
         return raices
 
+    def _crear_nuevas(self, raices, tid):
+        """Crea las carpetas nuevas aprobadas (un nivel, sin seguir enlaces) y anota cada creación para poder deshacerla."""
+        for real, info in raices.items():
+            if not info.get("nueva"):
+                continue
+            padre, nombre = os.path.split(real)
+            fd = os.open(padre, FLAGS_DIR)
+            try:
+                try:
+                    os.mkdir(nombre, 0o755, dir_fd=fd)
+                    creada = True
+                except FileExistsError:
+                    creada = False
+                d = os.open(nombre, FLAGS_DIR, dir_fd=fd)       # si ahora es un enlace o un archivo, falla aquí
+                try:
+                    st = os.fstat(d)
+                finally:
+                    os.close(d)
+            except OSError as e:
+                raise Denegado(f"no se pudo crear la carpeta {real}: {e.strerror}")
+            finally:
+                os.close(fd)
+            info["id"] = (st.st_dev, st.st_ino)
+            info.pop("nueva", None)
+            if creada:
+                self._anotar({"id": self._nuevo_id(), "tarea": tid, "accion": "crear_carpeta", "ok": True,
+                              "ruta": real, "raiz": padre, "padre": [], "nombre": nombre})
+
     def conceder(self, titulo, carpetas, destino="local", ttl=3600):
         """carpetas: {ruta: 'rwd'}. Devuelve el id de la tarea."""
         raices = self.comprobar_carpetas(carpetas)
         tid = "t" + uuid.uuid4().hex[:6]
+        self._crear_nuevas(raices, tid)
         t = type("Tarea", (), {})()
         t.id, t.titulo, t.destino = tid, titulo, destino
         t.raices, t.expira, t.cerrada = raices, time.time() + ttl, False
@@ -505,6 +549,19 @@ class Nucleo:
                         info.unlink()
                 finally:
                     os.close(fd)
+            elif tipo == "crear_carpeta":
+                fd = self._fd_de(a["raiz"], a["padre"])
+                try:
+                    try:
+                        os.rmdir(a["nombre"], dir_fd=fd)
+                    except FileNotFoundError:
+                        raise Denegado("la carpeta ya no existe")
+                    except OSError as e:
+                        if e.errno in (errno.ENOTEMPTY, errno.EEXIST):
+                            raise Denegado("la carpeta ya no está vacía; no se deshace")
+                        raise
+                finally:
+                    os.close(fd)
             elif tipo == "mover":
                 f1 = self._fd_de(a["raiz2"], a["padre2"])
                 f2 = self._fd_de(a["raiz"], a["padre"])
@@ -524,7 +581,7 @@ class Nucleo:
     def deshacer_tarea(self, tid, forzar=False):
         hechas = [a for a in self.acciones.values()
                   if a.get("tarea") == tid and not a.get("deshecha")
-                  and a["accion"] in ("escribir", "borrar", "mover")]
+                  and a["accion"] in ("escribir", "borrar", "mover", "crear_carpeta")]
         for a in reversed(hechas):
             self.deshacer(a["id"], forzar)
         return len(hechas)

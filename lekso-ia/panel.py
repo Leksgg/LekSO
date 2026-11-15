@@ -56,7 +56,8 @@ def dibujar(p, s, sel, mensaje):
             p.addstr(y, 13, q["titulo"][: w - 14])
             y += 1
             for ruta, perms in q["carpetas"].items():
-                p.addstr(y, 3, f"{ruta}: " + ", ".join(NOMBRES[x] for x in perms))
+                marca = "  (carpeta NUEVA: se creará)" if ruta in q.get("nuevas", []) else ""
+                p.addstr(y, 3, f"{ruta}: " + ", ".join(NOMBRES[x] for x in perms) + marca)
                 y += 1
             if q["destino"] == "nube":
                 p.addstr(y, 3, "Lo que lea saldrá a la NUBE", curses.color_pair(2))
