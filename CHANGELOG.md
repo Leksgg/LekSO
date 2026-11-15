@@ -3,6 +3,11 @@
 Formato: `+` nuevo · `-` eliminado o retirado · `~` modificado · `*` otros.
 Lo más reciente, arriba.
 
+## Alpha 0.1.1 · 2026-11-15
+
++ Primera actualización de prueba: se publica como versión firmada y llega al equipo con aviso.
+~ El indicador de IA de la barra se actualiza cada 30 segundos en vez de cada 5, con menos despertares del procesador y más batería.
+
 ## Alpha 0.1.0 · 2026-11-15
 
 Primera versión de prueba.
