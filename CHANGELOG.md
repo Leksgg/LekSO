@@ -7,6 +7,9 @@ Lo más reciente, arriba.
 
 + `scripts/instalar.sh`: instala LekSO sobre un Debian 13 recién instalado. Descarga la versión más reciente (o la indicada), comprueba su firma con la clave incluida en el propio script (nunca con la del repositorio descargado), exige que el commit esté en la rama principal y pide confirmación. Acepta un origen local (`--origen`) para instalar desde un paquete del USB, y `--simular` para comprobarlo todo sin instalar.
 + Firmware y microcódigo según el hardware real (Wi-Fi, sonido, gráficos y control térmico en Intel; microcódigo en AMD), con detección automática de dispositivos. En una máquina virtual no se instala.
++ Instalador en USB que no necesita internet (`scripts/instalador/`): imagen de Debian 13 con firmware más el paquete de LekSO (repositorio local de 789 paquetes, 595 MB, creado con `construir-repo-offline.sh`) y una respuesta automática que borra el disco que elijas, lo cifra (LUKS + LVM), crea el intercambio para hibernar según la RAM (1,2 veces) e instala Debian y LekSO. Solo pregunta lo que decide quien instala: el disco, su usuario, su contraseña, la del cifrado y la confirmación final de borrado. `construir-iso.sh` genera la imagen; la versión que lleva se comprueba con su firma al instalar.
+~ El instalador y el endurecimiento funcionan sin red y dentro del instalador de Debian (sin systemd en marcha).
++ `publicar-version.sh --sin-subir`: prepara y firma una versión en local sin publicarla, para probar el instalador antes de subirla.
 + Pruebas del instalador (`scripts/test_instalar.py`): elección de versión, firma buena, de otra clave, sin firmar, huella distinta, commit fuera de la rama principal y una clave de atacante metida en el repositorio.
 
 ## Alpha 0.1.3 · 2026-11-15

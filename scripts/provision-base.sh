@@ -43,7 +43,7 @@ for f in /etc/apt/sources.list.d/*.sources; do
 done
 
 export DEBIAN_FRONTEND=noninteractive
-apt-get update
+apt-get update || echo "Sin conexión: se usan los paquetes locales disponibles."
 apt-get install -y --no-install-recommends \
   "${ESCRITORIO[@]}" "${AUDIO[@]}" "${AISLAMIENTO[@]}" \
   "${HERRAMIENTAS[@]}" "${GRAFICA[@]}" "${COMPATIBILIDAD[@]}"

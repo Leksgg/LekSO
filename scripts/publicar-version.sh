@@ -2,6 +2,7 @@
 # Publica una versión de LekSO: etiqueta firmada y subida. Solo para quien mantiene el repositorio.
 #
 # Uso: scripts/publicar-version.sh 0.1.2-alpha     una versión concreta (VERSION y CHANGELOG ya preparados)
+#      añade --sin-subir para preparar y firmar en local sin publicar (por ejemplo, para probar el instalador)
 #      scripts/publicar-version.sh --auto          la siguiente versión (+1 en el último número), con lo que haya
 #                                                  bajo «## Sin publicar» en CHANGELOG.md
 #
@@ -32,6 +33,8 @@ fi
 
 [ -z "$(git status --porcelain)" ] || { echo "Hay cambios sin subir: haz commit antes." >&2; exit 1; }
 
+SUBIR=1
+for a in "$@"; do [ "$a" = "--sin-subir" ] && SUBIR=0; done
 PREPARADA=0
 # Si algo falla después de preparar la versión (por ejemplo, la clave sigue bloqueada), se deshace el commit
 # de preparación para poder repetir el comando sin dejar nada a medias.
@@ -64,6 +67,11 @@ git rev-parse "v$V" >/dev/null 2>&1 && { echo "La etiqueta v$V ya existe." >&2; 
 
 git -c gpg.format=ssh -c user.signingkey="$FIRMA" tag -s "v$V" -m "LekSO $BONITA"
 git -c gpg.ssh.allowedSignersFile=config/allowed_signers tag -v "v$V"
-git push origin HEAD:main "v$V"
-PREPARADA=0
-echo "Publicada: LekSO $BONITA (v$V)"
+if [ "$SUBIR" = 1 ]; then
+  git push origin HEAD:main "v$V"
+  PREPARADA=0
+  echo "Publicada: LekSO $BONITA (v$V)"
+else
+  PREPARADA=0
+  echo "Etiqueta v$V creada y firmada EN LOCAL (no se ha subido). Para publicarla: git push origin HEAD:main v$V"
+fi

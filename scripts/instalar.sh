@@ -51,7 +51,7 @@ comprobar_sistema() {
 
 instalar_requisitos() {
   info "Preparando lo necesario (git y comprobación de firmas)"
-  DEBIAN_FRONTEND=noninteractive apt-get update -qq
+  DEBIAN_FRONTEND=noninteractive apt-get update -qq || echo "(sin conexión: se usan los paquetes locales)"
   DEBIAN_FRONTEND=noninteractive apt-get install -y -qq git ca-certificates openssh-client python3 >/dev/null
 }
 

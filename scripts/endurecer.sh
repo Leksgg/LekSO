@@ -41,9 +41,10 @@ table inet lekso {
   chain salida { type filter hook output priority 0; policy accept; }
 }
 NFT
-nft -c -f /etc/nftables.conf
+nft -c -f /etc/nftables.conf || echo "AVISO: no se pudo comprobar la sintaxis del cortafuegos aquí."
 systemctl enable nftables >/dev/null
-systemctl restart nftables
+# En el instalador (sin systemd en marcha) no se puede arrancar el servicio: arrancará en el primer inicio.
+if [ -d /run/systemd/system ]; then systemctl restart nftables; fi
 
 # 2. Actualizaciones de seguridad automáticas (solo el repositorio de seguridad de Debian; sin reinicio automático).
 cat > /etc/apt/apt.conf.d/20auto-upgrades <<'APT'
@@ -71,6 +72,6 @@ net.ipv4.conf.all.send_redirects = 0
 net.ipv6.conf.all.accept_redirects = 0
 net.ipv4.tcp_syncookies = 1
 SYS
-sysctl --system >/dev/null
+sysctl --system >/dev/null 2>&1 || true
 
 echo "Endurecimiento aplicado: cortafuegos, actualizaciones de seguridad y ajustes del núcleo."
