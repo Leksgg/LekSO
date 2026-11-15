@@ -6,6 +6,8 @@
 #   caja.sh [--rw CARPETA]... [--ro CARPETA]... [--red] [--gui] [--audio] [--gpu]
 #           [--wine PREFIJO] -- programa [argumentos]
 #   --gui: ventana en el escritorio (Wayland y Xwayland). --audio: PipeWire/Pulse. --gpu: /dev/dri.
+#   --ia: caja para una IA local; solo ve el socket del permisor (lekso-ia.sock) y pide permiso para todo.
+#   --ia-nube: igual para una IA en la nube (usa el canal «nube», que siempre pregunta); necesita --red.
 #   --estricta: filtro seccomp para programas NO fiables (sin espacios de usuario, mount, ptrace, bpf...).
 #               No sirve para Steam ni los juegos, que los necesitan.
 #
@@ -17,9 +19,11 @@
 # En Wine, la unidad Z: solo ve la caja, no tu sistema real.
 set -euo pipefail
 
-RW=(); RO=(); RED=0; PREFIJO=""; GUI=0; AUDIO=0; GPU=0; ESTRICTA=0
+RW=(); RO=(); RED=0; PREFIJO=""; GUI=0; AUDIO=0; GPU=0; ESTRICTA=0; IA=""
 while [ $# -gt 0 ]; do
   case "$1" in
+    --ia)      [ -z "$IA" ] || { echo "Usa --ia o --ia-nube, no los dos" >&2; exit 2; }; IA="lekso-ia.sock"; shift ;;
+    --ia-nube) [ -z "$IA" ] || { echo "Usa --ia o --ia-nube, no los dos" >&2; exit 2; }; IA="lekso-ia-nube.sock"; shift ;;
     --gui)   GUI=1; shift ;;
     --audio) AUDIO=1; shift ;;
     --gpu)   GPU=1; shift ;;
@@ -50,7 +54,13 @@ ARGS=(
 # se añaden únicamente estos sockets. Los sockets del permisor de IA (lekso-ia.sock y
 # lekso-control.sock) viven en el XDG_RUNTIME_DIR real y NUNCA se montan en la caja.
 RT="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}"; DENTRO="/run/user/$(id -u)"
-if [ "$GUI" -eq 1 ] || [ "$AUDIO" -eq 1 ]; then ARGS+=(--tmpfs "$DENTRO" --setenv XDG_RUNTIME_DIR "$DENTRO"); fi
+if [ "$GUI" -eq 1 ] || [ "$AUDIO" -eq 1 ] || [ -n "$IA" ]; then ARGS+=(--tmpfs "$DENTRO" --setenv XDG_RUNTIME_DIR "$DENTRO"); fi
+# --ia / --ia-nube: la caja de una IA. Dentro entra SOLO el socket de su canal; el de control nunca.
+# La IA no ve tus archivos: su único camino a ellos es pedir permiso al permisor.
+if [ -n "$IA" ]; then
+  [ -S "$RT/$IA" ] || { echo "El permisor no está en marcha (no existe $RT/$IA)" >&2; exit 4; }
+  ARGS+=(--bind "$RT/$IA" "$DENTRO/$IA")
+fi
 if [ "$GUI" -eq 1 ]; then
   WL="${WAYLAND_DISPLAY:-wayland-1}"
   [ -S "$RT/$WL" ] && ARGS+=(--bind "$RT/$WL" "$DENTRO/$WL" --setenv WAYLAND_DISPLAY "$WL")

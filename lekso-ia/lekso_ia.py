@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-"""lekso-ia: cliente de Leks para el permisor (aprobar, deshacer, registro) y cliente de la IA.
+"""lekso-ia: cliente del usuario para el permisor (aprobar, deshacer, registro) y cliente de la IA.
 
-Leks:   lekso-ia servir | pendientes | aprobar PID [-r] | rechazar PID | registro [N]
+Usuario: lekso-ia servir | pendientes | aprobar PID [-r] | rechazar PID | registro [N]
         lekso-ia deshacer ACCION [--forzar] | deshacer-tarea TAREA | recordadas | olvidar RUTA
 IA:     lekso-ia ia pedir TITULO RUTA:PERMISOS... | ia estado PID | ia listar|leer|borrar TAREA RUTA
         lekso-ia ia escribir TAREA RUTA TEXTO | ia mover TAREA ORIGEN DESTINO | ia cerrar TAREA
@@ -31,7 +31,10 @@ NUBE = False
 
 
 def ia(**m):
-    return hablar(permisor.ruta_nube() if NUBE else permisor.rutas()[0], m)
+    local, nube = permisor.rutas()[0], permisor.ruta_nube()
+    # Dentro de una caja solo existe el canal que le toca; se usa ese sin que la IA tenga que saberlo.
+    usar_nube = NUBE or (not local.exists() and nube.exists())
+    return hablar(nube if usar_nube else local, m)
 
 
 def aprobar(pid, recordar):

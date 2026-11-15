@@ -2,7 +2,7 @@
 
 Dos sockets Unix, ambos 0600 y solo del usuario:
   ia.sock       lo usa la IA: pedir una tarea y ejecutar acciones dentro de lo aprobado.
-  control.sock  lo usa solo Leks: aprobar, rechazar, deshacer, ver el registro.
+  control.sock  lo usa solo el usuario: aprobar, rechazar, deshacer, ver el registro.
 El de control no se monta nunca en una caja ni se entrega a la IA, así que la IA no
 puede aprobarse a sí misma. Protocolo: un JSON por línea, una respuesta por línea.
 """
@@ -116,7 +116,7 @@ class Permisor:
         except KeyError as e:
             raise Denegado(f"falta el campo {e}")
 
-    # ----- lado de Leks -----
+    # ----- lado del usuario -----
     def manejar_control(self, m):
         op = m.get("op")
         if op == "pendientes":

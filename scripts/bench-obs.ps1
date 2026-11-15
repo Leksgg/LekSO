@@ -1,6 +1,5 @@
 # Mide OBS en Windows grabando la misma escena fija; deja la misma línea CSV que bench-obs.sh.
 # Uso: .\bench-obs.ps1 [-Segundos 120] [-Coleccion bench] [-Perfil bench]
-# Estado: sin probar con OBS real.
 param([int]$Segundos = 120, [string]$Coleccion = 'bench', [string]$Perfil = 'bench',
       [string]$Obs = 'C:\Program Files\obs-studio\bin\64bit\obs64.exe')
 $logs = Join-Path $env:APPDATA 'obs-studio\logs'

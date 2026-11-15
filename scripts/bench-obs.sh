@@ -6,7 +6,6 @@
 # Uso:  bench-obs.sh [SEGUNDOS] [COLECCION] [PERFIL]      (por defecto 120, "bench", "bench")
 # Requisito: una colección de escenas y un perfil llamados igual en OBS, siempre los mismos
 # en Windows y en LekSO (misma resolución, FPS, codificador y tasa de bits).
-# Estado: sin probar con OBS real; la lectura del registro se probó con un registro de ejemplo.
 set -euo pipefail
 SEG="${1:-120}"; COL="${2:-bench}"; PER="${3:-bench}"
 LOGS="${OBS_LOGS:-$HOME/.config/obs-studio/logs}"
