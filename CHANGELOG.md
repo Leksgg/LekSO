@@ -3,7 +3,7 @@
 Formato: `+` nuevo · `-` eliminado o retirado · `~` modificado · `*` otros.
 Lo más reciente, arriba.
 
-## Sin publicar
+## Alpha 0.1.3 · 2026-11-15
 
 ~ Las teclas de micrófono y brillo avisan cuando el equipo no tiene micrófono o brillo regulable, y la captura de ventana avisa si no hay ninguna activa, en vez de no hacer nada.
 + Cuando la IA pide permiso aparece una notificación («La IA pide permiso», con la carpeta y lo que quiere hacer); al pulsarla se abre el panel donde se aprueba. Antes la petición esperaba en una pestaña que nadie estaba mirando y el asistente parecía bloqueado.
