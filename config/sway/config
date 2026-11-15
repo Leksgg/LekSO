@@ -9,7 +9,14 @@ workspace_layout tabbed
 default_border pixel 1
 titlebar_border_thickness 0
 titlebar_padding 8 4
-font pango:monospace 10
+font pango:DejaVu Sans 11
+
+# Colores (misma paleta que la barra): una sola pestaña activa en cian, el resto apagado.
+#                         borde    fondo    texto    indicador  borde hijo
+client.focused            #4cc3e0  #16384a  #dfe6ee  #4cc3e0    #4cc3e0
+client.focused_inactive   #2a3644  #1c2530  #8a98a8  #2a3644    #2a3644
+client.unfocused          #2a3644  #171e27  #8a98a8  #2a3644    #2a3644
+client.urgent             #f0b24a  #3a2d12  #f0b24a  #f0b24a    #f0b24a
 
 # Fondo y barra superior
 output * bg #10151b solid_color

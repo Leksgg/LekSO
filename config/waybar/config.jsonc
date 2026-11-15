@@ -1,0 +1,44 @@
+{
+  "layer": "top",
+  "position": "top",
+  "height": 30,
+  "spacing": 0,
+  "modules-left": ["sway/workspaces", "custom/ia"],
+  "modules-center": [],
+  "modules-right": ["cpu", "memory", "pulseaudio", "network", "clock"],
+
+  "sway/workspaces": {
+    "disable-scroll": true,
+    "format": "{name}"
+  },
+  "custom/ia": {
+    "exec": "$HOME/.config/lekso/estado-ia.sh",
+    "return-type": "json",
+    "interval": 5
+  },
+  "cpu": {
+    "format": "CPU {usage}%",
+    "interval": 3,
+    "states": { "warning": 80, "critical": 95 }
+  },
+  "memory": {
+    "format": "RAM {used:0.1f} GB",
+    "tooltip-format": "{used:0.1f} de {total:0.1f} GB en uso",
+    "interval": 3,
+    "states": { "warning": 80, "critical": 92 }
+  },
+  "pulseaudio": {
+    "format": "VOL {volume}%",
+    "format-muted": "VOL sin sonido"
+  },
+  "network": {
+    "format-ethernet": "Red",
+    "format-wifi": "Wi-Fi {signalStrength}%",
+    "format-disconnected": "Sin red",
+    "tooltip-format": "{ifname}: {ipaddr}"
+  },
+  "clock": {
+    "format": "{:%H:%M}",
+    "tooltip-format": "{:%A %d de %B de %Y}"
+  }
+}

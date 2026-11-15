@@ -22,7 +22,7 @@ HOME_USR="$(getent passwd "$USUARIO" | cut -d: -f6)"
 RAIZ="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
 # Paquetes por capa. Todos existen en Debian 13 (trixie); winetricks necesita la sección contrib.
-ESCRITORIO=(sway swaybg waybar foot fuzzel grim pcmanfm-qt qt6-wayland xwayland fonts-font-awesome seatd xdg-desktop-portal-wlr)
+ESCRITORIO=(sway swaybg waybar foot fuzzel grim pcmanfm-qt qt6-wayland qt6ct xwayland fonts-font-awesome seatd xdg-desktop-portal-wlr)
 AUDIO=(pipewire pipewire-pulse wireplumber)
 AISLAMIENTO=(bubblewrap firejail)
 HERRAMIENTAS=(git curl btop lm-sensors)
@@ -61,6 +61,16 @@ usermod -aG seatd "$USUARIO" 2>/dev/null || true
 # Configuración del escritorio.
 install -d -o "$USUARIO" -g "$USUARIO" "$HOME_USR/.config/sway"
 install -o "$USUARIO" -g "$USUARIO" -m 0644 "$RAIZ/config/sway/config" "$HOME_USR/.config/sway/config"
+
+# Barra superior, tema de las aplicaciones Qt y estado de la IA.
+install -d -o "$USUARIO" -g "$USUARIO" "$HOME_USR/.config/waybar" "$HOME_USR/.config/qt6ct/colors" "$HOME_USR/.config/lekso"
+install -o "$USUARIO" -g "$USUARIO" -m 0644 "$RAIZ/config/waybar/config.jsonc" "$HOME_USR/.config/waybar/config.jsonc"
+install -o "$USUARIO" -g "$USUARIO" -m 0644 "$RAIZ/config/waybar/style.css" "$HOME_USR/.config/waybar/style.css"
+install -o "$USUARIO" -g "$USUARIO" -m 0755 "$RAIZ/config/lekso/estado-ia.sh" "$HOME_USR/.config/lekso/estado-ia.sh"
+install -o "$USUARIO" -g "$USUARIO" -m 0644 "$RAIZ/config/qt6ct/colors/lekso.conf" "$HOME_USR/.config/qt6ct/colors/lekso.conf"
+sed "s|@HOME@|$HOME_USR|g" "$RAIZ/config/qt6ct/qt6ct.conf" > "$HOME_USR/.config/qt6ct/qt6ct.conf"
+chown "$USUARIO:$USUARIO" "$HOME_USR/.config/qt6ct/qt6ct.conf"
+grep -q '^QT_QPA_PLATFORMTHEME=' /etc/environment 2>/dev/null || echo 'QT_QPA_PLATFORMTHEME=qt6ct' >> /etc/environment
 
 echo
 echo "Listo. Cierra la sesión y vuelve a entrar, y arranca el escritorio con: sway"
