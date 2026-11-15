@@ -3,7 +3,7 @@
 Formato: `+` nuevo · `-` eliminado o retirado · `~` modificado · `*` otros.
 Lo más reciente, arriba.
 
-## Sin publicar
+## Alpha 0.1.2 · 2026-11-15
 
 + Antes de instalar se comprueba también que el commit de la versión pertenece a la rama principal del repositorio; se guarda y se muestra el commit y la firma de lo instalado.
 + `scripts/desbloquear-firma.sh` y `scripts/publicar-version.sh --auto`: publicar la siguiente versión con un solo comando, con la clave de firma protegida por contraseña y desbloqueada unas horas; si algo falla, se deshace la preparación.
