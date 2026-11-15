@@ -89,7 +89,7 @@ preparar_clon() {
 verificar_version() {
   local tag="$1" tmp huella salida
   tmp="$(mktemp -d)"
-  trap 'rm -rf "$tmp"' RETURN
+  trap "rm -rf '$tmp'" RETURN      # se expande ahora: el trap RETURN se repite al salir de otras funciones
   printf '%s\n' "$CLAVE_PUBLICA" > "$tmp/allowed_signers"
   # la clave incluida debe ser la esperada (huella publicada)
   huella="$(printf '%s\n' "${CLAVE_PUBLICA#* ssh-}" | sed 's/^/ssh-/' | ssh-keygen -lf - 2>/dev/null | awk '{print $2}' || true)"
