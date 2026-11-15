@@ -1,0 +1,35 @@
+#!/usr/bin/env python3
+"""Oculta o muestra las ventanas flotantes (menús, avisos, asistentes) para ver lo que hay debajo.
+
+Una pulsación las oculta todas; otra las devuelve. Es el «minimizar» de LekSO.
+"""
+import json
+import subprocess
+
+
+def sway(*args):
+    return subprocess.run(["swaymsg", *args], capture_output=True, text=True).stdout
+
+
+def recorrer(n, ruta=()):
+    yield n, ruta
+    for h in n.get("nodes", []) + n.get("floating_nodes", []):
+        yield from recorrer(h, ruta + (n.get("name"),))
+
+
+def main():
+    arbol = json.loads(sway("-t", "get_tree"))
+    visibles, ocultas = [], []
+    for n, ruta in recorrer(arbol):
+        if n.get("type") == "floating_con" and (n.get("app_id") or n.get("window_properties") or n.get("pid")):
+            (ocultas if "__i3_scratch" in ruta else visibles).append(n["id"])
+    if visibles:
+        for i in visibles:
+            sway(f"[con_id={i}]", "move", "scratchpad")
+    else:
+        for i in ocultas:
+            sway(f"[con_id={i}]", "scratchpad", "show")
+
+
+if __name__ == "__main__":
+    main()

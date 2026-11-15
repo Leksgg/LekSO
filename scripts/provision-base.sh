@@ -24,7 +24,7 @@ HOME_USR="$(getent passwd "$USUARIO" | cut -d: -f6)"
 RAIZ="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
 # Paquetes por capa. Todos existen en Debian 13 (trixie); winetricks necesita la sección contrib.
-ESCRITORIO=(labwc sway swaybg waybar foot fuzzel grim pcmanfm-qt qt6-wayland qt6-svg-plugins qt6ct xwayland fonts-font-awesome seatd xdg-desktop-portal-wlr micro imv zathura zathura-pdf-poppler mpv xarchiver udisks2 udiskie gvfs gvfs-backends polkitd ntfs-3g exfatprogs usbutils v4l-utils bluez pavucontrol-qt swaylock network-manager streamdeck-ui python3-pyside6.qtwidgets python3-pyside6.qtgui python3-pyside6.qtcore python3-pyside6.qtsvg)
+ESCRITORIO=(labwc sway swaybg waybar foot kitty fuzzel grim pcmanfm-qt qt6-wayland qt6-svg-plugins qt6ct xwayland fonts-font-awesome seatd xdg-desktop-portal-wlr micro imv zathura zathura-pdf-poppler mpv xarchiver udisks2 udiskie gvfs gvfs-backends polkitd ntfs-3g exfatprogs usbutils v4l-utils bluez pavucontrol-qt swaylock wl-clipboard mako-notifier libnotify-bin swayidle brightnessctl slurp cliphist wdisplays blueman cups fonts-noto-color-emoji fonts-liberation ffmpegthumbnailer power-profiles-daemon playerctl wlr-randr network-manager streamdeck-ui python3-pyside6.qtwidgets python3-pyside6.qtgui python3-pyside6.qtcore python3-pyside6.qtsvg)
 AUDIO=(pipewire pipewire-pulse wireplumber)
 AISLAMIENTO=(bubblewrap firejail python3-seccomp)
 HERRAMIENTAS=(git curl btop lm-sensors python3 bc)
@@ -86,13 +86,16 @@ grep -q '^QT_QPA_PLATFORMTHEME=' /etc/environment 2>/dev/null || echo 'QT_QPA_PL
 # Permisor de IA, panel, gestor de modelos y caja (en /usr/local, solo lectura para el usuario).
 install -d -m 0755 /usr/local/lib/lekso-ia
 install -m 0644 "$RAIZ"/lekso-ia/nucleo.py "$RAIZ"/lekso-ia/permisor.py "$RAIZ"/lekso-ia/modelo.py \
-  "$RAIZ"/lekso-ia/panel.py "$RAIZ"/lekso-ia/lekso_ia.py /usr/local/lib/lekso-ia/
+  "$RAIZ"/lekso-ia/panel.py "$RAIZ"/lekso-ia/lekso_ia.py "$RAIZ"/lekso-ia/mcp_permisor.py /usr/local/lib/lekso-ia/
 printf '#!/bin/sh\nexec python3 /usr/local/lib/lekso-ia/lekso_ia.py "$@"\n' > /usr/local/bin/lekso-ia
 install -m 0755 "$RAIZ/scripts/caja.sh" /usr/local/bin/caja
+install -m 0755 "$RAIZ/scripts/lekso-claude.sh" /usr/local/bin/lekso-claude
 install -m 0644 "$RAIZ/scripts/seccomp-estricta.py" /usr/local/lib/lekso-ia/seccomp-estricta.py
 chmod 0755 /usr/local/bin/lekso-ia
 install -d -o "$USUARIO" -g "$USUARIO" "$HOME_USR/.config/foot"
 install -o "$USUARIO" -g "$USUARIO" -m 0644 "$RAIZ/config/foot/foot.ini" "$HOME_USR/.config/foot/foot.ini"
+install -d -o "$USUARIO" -g "$USUARIO" "$HOME_USR/.config/kitty"
+install -o "$USUARIO" -g "$USUARIO" -m 0644 "$RAIZ/config/kitty/kitty.conf" "$HOME_USR/.config/kitty/kitty.conf"
 # Explorador: árbol de carpetas y barra de ruta con botones.
 install -d -o "$USUARIO" -g "$USUARIO" "$HOME_USR/.config/pcmanfm-qt/default"
 install -o "$USUARIO" -g "$USUARIO" -m 0644 "$RAIZ/config/pcmanfm-qt/settings.conf" "$HOME_USR/.config/pcmanfm-qt/default/settings.conf"
@@ -107,6 +110,11 @@ fi
 install -d -o "$USUARIO" -g "$USUARIO" "$HOME_USR/.config/fuzzel" "$HOME_USR/.local/share/applications"
 install -o "$USUARIO" -g "$USUARIO" -m 0644 "$RAIZ/config/fuzzel/fuzzel.ini" "$HOME_USR/.config/fuzzel/fuzzel.ini"
 install -o "$USUARIO" -g "$USUARIO" -m 0644 "$RAIZ"/config/applications-ocultas/*.desktop "$HOME_USR/.local/share/applications/"
+
+# Notificaciones y pantalla de bloqueo con la paleta de LekSO.
+install -d -o "$USUARIO" -g "$USUARIO" "$HOME_USR/.config/mako" "$HOME_USR/.config/swaylock"
+install -o "$USUARIO" -g "$USUARIO" -m 0644 "$RAIZ/config/mako/config" "$HOME_USR/.config/mako/config"
+install -o "$USUARIO" -g "$USUARIO" -m 0644 "$RAIZ/config/swaylock/config" "$HOME_USR/.config/swaylock/config"
 
 # Stream Deck: se inicia al conectarlo (el acceso a USB lo da la regla del paquete).
 install -m 0644 "$RAIZ/config/systemd/lekso-streamdeck.service" "$RAIZ/config/systemd/lekso-permisor.service" /etc/systemd/user/
@@ -127,7 +135,7 @@ install -d -o "$USUARIO" -g "$USUARIO" "$HOME_USR/Escritorio"
 install -o "$USUARIO" -g "$USUARIO" -m 0755 "$RAIZ"/config/escritorio/*.desktop "$HOME_USR/Escritorio/"
 
 # Programas predeterminados por tipo de archivo (no pisa lo que el usuario ya haya elegido).
-install -m 0755 "$RAIZ/config/bin/lekso-info" "$RAIZ/config/bin/lekso-wine" "$RAIZ/config/bin/lekso-menu" "$RAIZ/config/bin/lekso-energia" /usr/local/bin/
+install -m 0755 "$RAIZ/config/bin/lekso-info" "$RAIZ/config/bin/lekso-wine" "$RAIZ/config/bin/lekso-menu" "$RAIZ/config/bin/lekso-energia" "$RAIZ/config/bin/lekso-flotantes" "$RAIZ/config/bin/lekso-term" "$RAIZ/config/bin/lekso-medios" "$RAIZ/config/bin/lekso-captura" "$RAIZ/config/bin/lekso-reposo" "$RAIZ/config/bin/lekso-portapapeles" "$RAIZ/config/bin/lekso-ajustes" /usr/local/bin/
 install -d /usr/local/lib/lekso-ui
 install -m 0644 "$RAIZ/config/ui/lekso_ui.py" /usr/local/lib/lekso-ui/
 install -m 0644 "$RAIZ"/config/applications/*.desktop /usr/share/applications/
@@ -152,5 +160,8 @@ if [ "$(systemd-detect-virt 2>/dev/null || true)" = "microsoft" ]; then
 else
   bash "$RAIZ/scripts/endurecer.sh"
 fi
+
+# Libera la caché de paquetes descargados (cientos de MB que no hacen falta).
+apt-get clean
 
 echo "Listo. Reinicia: al iniciar sesión en la primera consola arranca el escritorio de LekSO."

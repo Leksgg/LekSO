@@ -65,7 +65,7 @@ def lanzar(comando, terminal):
     except ValueError:
         return
     if terminal:
-        args = ["foot", "-e"] + args
+        args = ["lekso-term", "-e"] + args
     subprocess.Popen(args, start_new_session=True, stdin=subprocess.DEVNULL,
                      stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 

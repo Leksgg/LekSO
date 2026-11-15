@@ -37,7 +37,7 @@ window#waybar {
 #custom-ia.activa { color: #58c987; }
 #custom-ia.sin-instalar { color: #5a6877; }
 
-#cpu, #memory, #pulseaudio, #network, #clock {
+#cpu, #memory, #pulseaudio, #network, #battery, #clock {
   padding: 0 12px;
   color: #dfe6ee;
 }
@@ -59,7 +59,7 @@ window#waybar.raiz {
   border-right: 1px solid #2a3644;
   border-top: none;
 }
-#custom-cuenta, #custom-apps, #custom-archivos, #custom-modelos, #custom-config, #custom-vista, #custom-energia, #custom-streamdeck {
+#custom-cuenta, #custom-portapapeles, #custom-apps, #custom-asistente, #custom-archivos, #custom-modelos, #custom-config, #custom-vista, #custom-flotantes, #custom-energia, #custom-streamdeck {
   font-family: "FontAwesome", "DejaVu Sans";
   font-size: 20px;
   padding: 14px 0;
@@ -67,9 +67,13 @@ window#waybar.raiz {
   color: #8a98a8;
   background: transparent;
 }
-#custom-apps:hover, #custom-archivos:hover, #custom-modelos:hover, #custom-config:hover, #custom-cuenta:hover, #custom-vista:hover, #custom-streamdeck:hover {
+#custom-portapapeles:hover, #custom-apps:hover, #custom-asistente:hover, #custom-archivos:hover, #custom-modelos:hover, #custom-config:hover, #custom-cuenta:hover, #custom-vista:hover, #custom-flotantes:hover, #custom-streamdeck:hover {
   color: #4cc3e0;
   background: #16384a;
 }
 
 #custom-energia:hover { color: #f08a82; background: #3a1d1d; }
+
+#battery.warning { color: #f0b24a; }
+#battery.critical { color: #f08a82; }
+#battery.charging { color: #58c987; }

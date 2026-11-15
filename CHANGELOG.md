@@ -3,6 +3,28 @@
 Formato: `+` nuevo · `-` eliminado o retirado · `~` modificado · `*` otros.
 Lo más reciente, arriba.
 
+## 2026-11-15 · Calidad de vida
+
++ Notificaciones (mako) con la paleta de LekSO, arriba a la derecha.
++ Teclas de volumen, micrófono, brillo y multimedia con aviso en pantalla, también con la pantalla bloqueada.
++ Capturas de pantalla: `Impr` (región), `Mayús+Impr` (pantalla) y `Mod+Impr` (ventana); se guardan en `~/Imágenes/Capturas`, se copian al portapapeles y avisan.
++ Historial del portapapeles (`Mod+V`, botón en el raíl).
++ Ajustes: un solo sitio (`Mod+I`, el engranaje del raíl) para sonido, red, pantallas, Bluetooth, apariencia, impresoras, aplicaciones y modo de energía.
++ Reposo: bloqueo a los 5 minutos, pantalla apagada a los 10 y suspensión a los 25 solo con batería; la pantalla completa (vídeo, juegos, directos) lo impide. `Mod+L` bloquea al momento.
++ Batería en la barra (solo en portátiles), Bluetooth con interfaz, servicio de impresión, miniaturas de vídeo, fuentes con emoji y compatibles con Arial.
+
+## 2026-11-15 · Asistente de IA con Claude Code
+
++ Adaptador MCP del permisor (`lekso-ia/mcp_permisor.py`, solo biblioteca estándar): ocho herramientas (pedir acceso, listar, leer, escribir, borrar, mover, cerrar tarea y consultar una petición). No expone aprobar, ejecutar programas ni el canal de control. Lo leído se recorta por defecto para ahorrar tokens y el acceso espera la aprobación en una sola llamada.
++ `lekso-claude`: Claude Code dentro de `caja --ia-nube`, con sus herramientas propias desactivadas y solo las del permisor; su sesión vive en una carpeta aparte.
++ `caja --env VAR=VALOR` para pasar variables a la caja de forma explícita.
++ Botón del asistente en el raíl; se acopla como pestaña en la zona derecha.
++ Terminal nueva (kitty, un solo proceso para todas las ventanas) con copiar y pegar como en cualquier otra aplicación: `Ctrl+C` copia si hay texto seleccionado y, si no, interrumpe el programa; `Ctrl+V` pega; seleccionar con el ratón copia solo.
+~ foot sigue instalado como alternativa; el resto del sistema abre terminales con `lekso-term`.
++ Botón y atajo (`Mod+M`) para ocultar y mostrar las ventanas flotantes: el «minimizar» de LekSO.
++ Pruebas del adaptador (`lekso-ia/test_mcp.py`): protocolo, flujo completo, argumentos hostiles y entrada gigante.
+* La caja del asistente tiene red completa; limitarla al dominio del proveedor queda pendiente.
+
 ## 2026-11-15 · Seguridad del equipo, energía y teclado
 
 + Cortafuegos (`scripts/endurecer.sh`): todo lo entrante bloqueado salvo respuestas a lo que el equipo pide; saliente libre.

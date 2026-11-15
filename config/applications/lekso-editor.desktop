@@ -1,7 +1,7 @@
 [Desktop Entry]
 Type=Application
 Name=Editor de texto
-Exec=foot -T "Editor de texto" -e micro %f
+Exec=lekso-term -T "Editor de texto" -e micro %f
 Terminal=false
 NoDisplay=true
 MimeType=text/plain;

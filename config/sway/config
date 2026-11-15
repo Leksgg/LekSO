@@ -4,7 +4,7 @@
 # Las zonas las monta lekso-zonas al iniciar.
 
 set $mod Mod4
-set $term foot
+set $term lekso-term
 set $menu lekso-menu
 
 default_border pixel 1
@@ -26,32 +26,63 @@ gaps inner 0
 exec waybar
 exec systemctl --user start lekso-permisor.service
 exec lekso-zonas
+exec mako
+exec wl-paste --type text --watch cliphist store
+exec wl-paste --type image --watch cliphist store
+# Reposo: bloquear a los 5 min, apagar pantalla a los 10 y suspender a los 25 (solo con batería)
+exec swayidle -w timeout 300 'swaylock -f' timeout 600 'swaymsg "output * power off"' resume 'swaymsg "output * power on"' timeout 1500 'lekso-reposo' before-sleep 'swaylock -f'
 exec udiskie --no-tray --no-notify --automount
 
 # El menú de aplicaciones flota en el centro de la pantalla
 for_window [app_id="lekso-menu"] floating enable, resize set 480 620, move position center
+# El asistente de IA se acopla como pestaña en la zona de la derecha
+for_window [app_id="lekso-asistente"] move container to mark panel-ia, focus
 for_window [app_id="lekso-energia"] floating enable, resize set 360 460, move position center
 
 # Atajos básicos (Mod = tecla Windows)
-bindsym $mod+Return exec foot -T Terminal
+bindsym $mod+Return exec lekso-term -T Terminal
 bindsym $mod+d exec $menu
 bindsym $mod+e exec pcmanfm-qt
 bindsym $mod+q kill
 bindsym $mod+Shift+c reload
 bindsym $mod+Shift+e exec swaymsg exit
-bindsym $mod+a exec foot -T "Panel de la IA" -e python3 /usr/local/lib/lekso-ia/panel.py
+bindsym $mod+a exec lekso-term -T "Panel de la IA" -e python3 /usr/local/lib/lekso-ia/panel.py
 
 # Cambiar de app en el centro
 bindsym $mod+Tab focus next
 bindsym $mod+Shift+Tab focus prev
 bindsym Mod1+Tab focus next
 bindsym $mod+f fullscreen toggle
+bindsym $mod+m exec lekso-flotantes
 
 # Mover el foco entre zonas con las flechas
 bindsym $mod+Left focus left
 bindsym $mod+Right focus right
 bindsym $mod+Up focus up
 bindsym $mod+Down focus down
+
+# Pantalla completa (vídeo, juegos, directos) no deja que el equipo se bloquee
+for_window [app_id=".*"] inhibit_idle fullscreen
+for_window [class=".*"] inhibit_idle fullscreen
+
+# Teclas de volumen, micrófono, brillo y multimedia (también con la pantalla bloqueada)
+bindsym --locked XF86AudioRaiseVolume exec lekso-medios volumen-subir
+bindsym --locked XF86AudioLowerVolume exec lekso-medios volumen-bajar
+bindsym --locked XF86AudioMute exec lekso-medios volumen-silencio
+bindsym --locked XF86AudioMicMute exec lekso-medios micro-silencio
+bindsym --locked XF86MonBrightnessUp exec lekso-medios brillo-subir
+bindsym --locked XF86MonBrightnessDown exec lekso-medios brillo-bajar
+bindsym --locked XF86AudioPlay exec lekso-medios play
+bindsym --locked XF86AudioNext exec lekso-medios siguiente
+bindsym --locked XF86AudioPrev exec lekso-medios anterior
+
+# Capturas, portapapeles y ajustes
+bindsym Print exec lekso-captura region
+bindsym Shift+Print exec lekso-captura pantalla
+bindsym $mod+Print exec lekso-captura ventana
+bindsym $mod+v exec lekso-portapapeles
+bindsym $mod+i exec lekso-ajustes
+bindsym $mod+l exec swaylock -f
 
 # Ajustes locales de este equipo (por ejemplo, la resolución en una máquina virtual).
 include ~/.config/sway/local.conf

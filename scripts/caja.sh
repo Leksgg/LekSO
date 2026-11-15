@@ -3,7 +3,7 @@
 # Sin red, sin acceso a tu carpeta personal y con el sistema en solo lectura.
 #
 # Uso:
-#   caja.sh [--rw CARPETA]... [--ro CARPETA]... [--red] [--gui] [--audio] [--gpu]
+#   caja.sh [--rw CARPETA]... [--ro CARPETA]... [--env VAR=VALOR]... [--red] [--gui] [--audio] [--gpu]
 #           [--wine PREFIJO] -- programa [argumentos]
 #   --gui: ventana en el escritorio (Wayland y Xwayland). --audio: PipeWire/Pulse. --gpu: /dev/dri.
 #   --ia: caja para una IA local; solo ve el socket del permisor (lekso-ia.sock) y pide permiso para todo.
@@ -19,7 +19,7 @@
 # En Wine, la unidad Z: solo ve la caja, no tu sistema real.
 set -euo pipefail
 
-RW=(); RO=(); RED=0; PREFIJO=""; GUI=0; AUDIO=0; GPU=0; ESTRICTA=0; IA=""
+RW=(); RO=(); ENV=(); RED=0; PREFIJO=""; GUI=0; AUDIO=0; GPU=0; ESTRICTA=0; IA=""
 while [ $# -gt 0 ]; do
   case "$1" in
     --ia)      [ -z "$IA" ] || { echo "Usa --ia o --ia-nube, no los dos" >&2; exit 2; }; IA="lekso-ia.sock"; shift ;;
@@ -30,6 +30,8 @@ while [ $# -gt 0 ]; do
     --estricta) ESTRICTA=1; shift ;;
     --rw)   RW+=("$(realpath "$2")"); shift 2 ;;
     --ro)   RO+=("$(realpath "$2")"); shift 2 ;;
+    --env)  case "${2%%=*}" in ""|[0-9]*|*[!A-Za-z0-9_]*) echo "Nombre de variable no válido: $2" >&2; exit 2 ;; esac
+            ENV+=(--setenv "${2%%=*}" "${2#*=}"); shift 2 ;;
     --red)  RED=1; shift ;;
     --wine) PREFIJO="$(realpath -m "$2")"; shift 2 ;;
     --)     shift; break ;;
@@ -74,6 +76,7 @@ if [ "$AUDIO" -eq 1 ]; then
 fi
 [ "$GPU" -eq 1 ] && [ -d /dev/dri ] && ARGS+=(--dev-bind /dev/dri /dev/dri)
 
+[ "${#ENV[@]}" -gt 0 ] && ARGS+=("${ENV[@]}")
 for d in "${RW[@]}"; do ARGS+=(--bind "$d" "/home/caja/$(basename "$d")"); done
 for d in "${RO[@]}"; do ARGS+=(--ro-bind "$d" "/home/caja/$(basename "$d")"); done
 

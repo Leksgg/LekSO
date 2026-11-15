@@ -1,0 +1,6 @@
+#!/bin/sh
+# Suspende el equipo por inactividad solo si funciona con batería (en un sobremesa o enchufado, no).
+for b in /sys/class/power_supply/BAT*; do
+  [ -e "$b/status" ] && grep -q Discharging "$b/status" && exec systemctl suspend
+done
+exit 0

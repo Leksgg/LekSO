@@ -1,7 +1,7 @@
 [Desktop Entry]
 Type=Application
 Name=Ver información del archivo
-Exec=foot -T "Información del archivo" -e lekso-info %f
+Exec=lekso-term -T "Información del archivo" -e lekso-info %f
 Terminal=false
 NoDisplay=true
 MimeType=application/octet-stream;

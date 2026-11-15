@@ -9,7 +9,9 @@
       "custom/cuenta",
       "custom/apps",
       "custom/archivos",
+      "custom/portapapeles",
       "custom/modelos",
+      "custom/asistente",
       "custom/streamdeck",
       "custom/config"
     ],
@@ -25,14 +27,15 @@
     "custom/modelos": {
       "format": "",
       "tooltip-format": "Modelos de IA",
-      "on-click": "foot -T \"Modelos de IA\" -e python3 /usr/local/lib/lekso-ia/modelo.py lista"
+      "on-click": "lekso-term -T \"Modelos de IA\" -e python3 /usr/local/lib/lekso-ia/modelo.py lista"
     },
     "custom/config": {
       "format": "",
-      "tooltip-format": "Configuración (apariencia)",
-      "on-click": "qt6ct"
+      "tooltip-format": "Ajustes",
+      "on-click": "lekso-ajustes"
     },
     "modules-right": [
+      "custom/flotantes",
       "custom/vista",
       "custom/energia"
     ],
@@ -55,6 +58,21 @@
       "format": "",
       "tooltip-format": "Apagar, suspender, hibernar…",
       "on-click": "lekso-energia"
+    },
+    "custom/asistente": {
+      "format": "",
+      "tooltip-format": "Asistente de IA (Claude)",
+      "on-click": "lekso-term -T \"Asistente de IA\" --app-id lekso-asistente -e sh -c 'lekso-claude; printf \"\n\nSesion terminada. Pulsa Intro para cerrar esta ventana (se vuelve a abrir desde el boton del asistente).\n\"; read -r _'"
+    },
+    "custom/flotantes": {
+      "format": "",
+      "tooltip-format": "Ocultar o mostrar las ventanas flotantes",
+      "on-click": "lekso-flotantes"
+    },
+    "custom/portapapeles": {
+      "format": "",
+      "tooltip-format": "Historial del portapapeles (Mod+V)",
+      "on-click": "lekso-portapapeles"
     }
   },
   {
@@ -72,6 +90,7 @@
       "cpu",
       "memory",
       "pulseaudio",
+      "battery",
       "network",
       "clock"
     ],
@@ -121,11 +140,22 @@
       "tooltip-format-ethernet": "Cable · {ifname}\nIP {ipaddr}\nPuerta de enlace {gwaddr}",
       "tooltip-format-wifi": "{essid} · señal {signalStrength}%\nIP {ipaddr}",
       "tooltip-format-disconnected": "Sin conexión",
-      "on-click": "foot -T \"Redes\" -e nmtui"
+      "on-click": "lekso-term -T \"Redes\" -e nmtui"
     },
     "clock": {
       "format": "{:%H:%M}",
       "tooltip-format": "{:%A %d de %B de %Y}"
+    },
+    "battery": {
+      "format": "BAT {capacity}%",
+      "format-charging": "CARGA {capacity}%",
+      "format-full": "BAT 100%",
+      "states": {
+        "warning": 25,
+        "critical": 10
+      },
+      "tooltip-format": "{timeTo}",
+      "interval": 30
     }
   }
 ]

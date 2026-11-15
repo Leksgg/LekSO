@@ -27,17 +27,20 @@ montar() {
   swaymsg 'workspace number 1; layout splith' >/dev/null
   swaymsg exec pcmanfm-qt >/dev/null
   marcar 'app_id="pcmanfm-qt" workspace="1"' explorador
-  swaymsg exec "foot -T \"Operativa usuario\" --app-id lekso-centro -e sh -c 'clear; printf \"\n  Operativa usuario\n\n  Aquí se abre la app que estés usando.\n  Una por vez, a pantalla completa de esta zona.\n\"; exec sleep infinity'" >/dev/null
+  swaymsg exec "lekso-term -T \"Operativa usuario\" --app-id lekso-centro -e sh -c 'clear; printf \"\n  Operativa usuario\n\n  Aquí se abre la app que estés usando.\n  Una por vez, a pantalla completa de esta zona.\n\"; exec sleep infinity'" >/dev/null
   marcar 'app_id="lekso-centro"' centro
-  swaymsg exec "foot -T \"Panel de la IA\" --app-id lekso-ia -e python3 /usr/local/lib/lekso-ia/panel.py" >/dev/null
+  swaymsg exec "lekso-term -T \"Panel de la IA\" --app-id lekso-ia -e python3 /usr/local/lib/lekso-ia/panel.py" >/dev/null
   marcar 'app_id="lekso-ia"' panel-ia
 
   # Terminal debajo del centro
   swaymsg '[con_mark="centro"] focus; splitv' >/dev/null
-  swaymsg exec "foot -T Terminal --app-id lekso-terminal" >/dev/null
+  swaymsg exec "lekso-term -T Terminal --app-id lekso-terminal" >/dev/null
   marcar 'app_id="lekso-terminal"' terminal
   # El centro pasa a ser un grupo de pestañas
   swaymsg '[con_mark="centro"] focus; splith; layout tabbed' >/dev/null
+
+  # La zona de la derecha pasa a ser un grupo de pestañas: panel de la IA y asistente
+  swaymsg '[con_mark="panel-ia"] focus; splith; layout tabbed' >/dev/null
 
   # Proporciones
   swaymsg '[con_mark="explorador"] resize set width 22 ppt' >/dev/null

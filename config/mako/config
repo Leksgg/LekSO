@@ -1,0 +1,25 @@
+# Notificaciones de LekSO: paleta propia, esquina superior derecha.
+font=DejaVu Sans 11
+background-color=#1c2530f2
+text-color=#dfe6ee
+border-color=#4cc3e0
+border-size=1
+border-radius=0
+progress-color=over #16384a
+padding=12
+margin=14
+width=360
+height=140
+anchor=top-right
+layer=overlay
+default-timeout=6000
+icons=1
+max-icon-size=40
+
+[urgency=low]
+border-color=#2a3644
+default-timeout=3000
+
+[urgency=critical]
+border-color=#f08a82
+default-timeout=0

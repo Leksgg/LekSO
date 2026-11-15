@@ -1,0 +1,15 @@
+color=10151b
+indicator-radius=90
+indicator-thickness=6
+inside-color=10151b
+ring-color=2a3644
+key-hl-color=4cc3e0
+bs-hl-color=f08a82
+line-color=00000000
+text-color=dfe6ee
+inside-ver-color=16384a
+ring-ver-color=4cc3e0
+inside-wrong-color=3a1d1d
+ring-wrong-color=f08a82
+font=DejaVu Sans
+show-failed-attempts
