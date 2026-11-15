@@ -23,7 +23,7 @@ set -euo pipefail
 
 REPO="https://github.com/Leksgg/LekSO.git"
 CLON="/var/lib/lekso/repo"
-CLAVE_PUBLICA='lekso-release namespaces="git" ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOlE6yy0lZmsYsRBZSGDhu8gTVTxhkIwFkmnR3oOYe7u'
+CLAVE_PUBLICA='lekso-release namespaces="git" ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOlE6yy0lZmsYsRBZSGDhu8VIWYVrjHbWNIrl20tAArL'
 HUELLA_ESPERADA='SHA256:rtOK+qmzbIgjUTGIb0KTjz9fzUq2+tF2ULf04uwAoRU'
 RAMA="origin/main"
 OSRELEASE="/etc/os-release"

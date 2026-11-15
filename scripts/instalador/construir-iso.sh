@@ -36,6 +36,10 @@ git show "$VERSION:scripts/instalador/receta.sh" > "$PAQ/receta.sh"
 git show "$VERSION:scripts/instalador/postinstalar.sh" > "$PAQ/postinstalar.sh"
 printf '%s\n' "$VERSION" > "$PAQ/VERSION_TAG"
 cp -r "$OFFLINE" "$PAQ/offline"
+# La clave incrustada en instalar.sh debe ser exactamente la de config/allowed_signers de esa versión.
+CLAVE_EN_SCRIPT="$(sed -n "s/^CLAVE_PUBLICA='\(.*\)'\$/\1/p" "$PAQ/instalar.sh")"
+[ -n "$CLAVE_EN_SCRIPT" ] && [ "$CLAVE_EN_SCRIPT" = "$(git show "$VERSION:config/allowed_signers" | head -n1)" ] \
+  || { echo "La clave incrustada en instalar.sh no coincide con config/allowed_signers." >&2; exit 1; }
 
 # 2. Imagen de pruebas: respuestas fijas para poder instalar sin nadie delante.
 if [ -n "$PRUEBA" ]; then
