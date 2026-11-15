@@ -3,7 +3,7 @@
 Formato: `+` nuevo · `-` eliminado o retirado · `~` modificado · `*` otros.
 Lo más reciente, arriba.
 
-## Sin publicar
+## Alpha 0.1.4 · 2026-11-15
 
 + `scripts/instalar.sh`: instala LekSO sobre un Debian 13 recién instalado. Descarga la versión más reciente (o la indicada), comprueba su firma con la clave incluida en el propio script (nunca con la del repositorio descargado), exige que el commit esté en la rama principal y pide confirmación. Acepta un origen local (`--origen`) para instalar desde un paquete del USB, y `--simular` para comprobarlo todo sin instalar.
 + Firmware y microcódigo según el hardware real (Wi-Fi, sonido, gráficos y control térmico en Intel; microcódigo en AMD), con detección automática de dispositivos. En una máquina virtual no se instala.
