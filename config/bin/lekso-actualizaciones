@@ -97,7 +97,7 @@ class Ventana(QtWidgets.QWidget):
         self.b_instalar.setEnabled(bool(disp))
         self.b_volver.setEnabled(os.path.exists("/var/lib/lekso/version-anterior"))
         if disp:
-            self.estado.setText(f"Hay una versión nueva: {disp}. Léela abajo y actualiza cuando quieras.")
+            self.estado.setText(f"Hay una versión nueva: {sal('lekso-actualizar', 'version', disp) or disp}. Léela abajo y actualiza cuando quieras.")
         elif c.get("comprobado"):
             self.estado.setText("Estás al día.")
         else:

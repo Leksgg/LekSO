@@ -145,13 +145,15 @@ def cambios(tag=None):
     with urllib.request.urlopen(req, timeout=20) as r:
         texto = r.read(300000).decode("utf-8", "replace")
     # solo la parte más reciente: hasta la segunda cabecera de versión o de fecha
-    lineas, vistas = [], 0
+    lineas, vistas, dentro = [], 0, False
     for linea in texto.splitlines():
         if linea.startswith("## "):
+            dentro = True
             vistas += 1
             if vistas > 2:
                 break
-        lineas.append(linea)
+        if dentro:
+            lineas.append(linea)
     print("\n".join(lineas[:80]))
     return 0
 
@@ -178,7 +180,7 @@ def verificar(tag):
         sys.exit(f"Falta {FIRMANTES}: no hay clave con la que comprobar la firma.")
     r = git("-c", f"gpg.ssh.allowedSignersFile={FIRMANTES}", "verify-tag", tag, cwd=CLON)
     salida = (r.stderr + r.stdout)
-    if r.returncode != 0 or "Good \"git\" signature" not in salida:
+    if r.returncode != 0 or "Good \"git\" signature for " not in salida:   # «for»: la firma coincide con un firmante autorizado
         sys.exit(f"La versión {tag} NO tiene una firma válida. No se instala nada.\n{salida.strip()[:300]}")
     print(f"Firma válida de la versión {tag}.")
 
@@ -253,7 +255,7 @@ def main(a):
     c = a[0]
     try:
         if c == "version":
-            v = version_actual()
+            v = a[1] if len(a) > 1 and clave(a[1]) else version_actual()   # con un argumento, solo le da nombre
             print(f"LekSO {bonita(v)}" if v else "LekSO (versión desconocida)")
             return 0
         if c == "comprobar":

@@ -3,6 +3,11 @@
 Formato: `+` nuevo · `-` eliminado o retirado · `~` modificado · `*` otros.
 Lo más reciente, arriba.
 
+## Sin publicar
+
+~ La comprobación de firma exige que coincida con un firmante autorizado, no solo que exista una firma.
+~ La ventana de Actualizaciones nombra las versiones por su nombre (Alpha 0.1.1) y muestra solo lo nuevo.
+
 ## Alpha 0.1.1 · 2026-11-15
 
 + Primera actualización de prueba: se publica como versión firmada y llega al equipo con aviso.
