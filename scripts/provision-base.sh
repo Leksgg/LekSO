@@ -133,6 +133,19 @@ install -m 0644 "$RAIZ/config/systemd/lekso-streamdeck.service" "$RAIZ/config/sy
 install -m 0644 "$RAIZ/config/udev/70-lekso-streamdeck.rules" /etc/udev/rules.d/
 udevadm control --reload 2>/dev/null || true
 
+# Firmware y microcódigo según el hardware real (Wi-Fi, sonido, gráficos...). En una máquina virtual no hace falta
+# (LEKSO_HARDWARE=1 lo fuerza). isenkram detecta qué dispositivos hay y qué paquete de firmware necesitan.
+if [ "$(systemd-detect-virt 2>/dev/null || echo none)" = "none" ] || [ "${LEKSO_HARDWARE:-}" = "1" ]; then
+  apt-get install -y --no-install-recommends isenkram-cli || true
+  isenkram-autoinstall-firmware || true
+  case "$(sed -n 's/^vendor_id[[:space:]]*:[[:space:]]*//p' /proc/cpuinfo | head -1)" in
+    GenuineIntel)   # portátiles Intel: Wi-Fi, sonido (SOF), gráficos, microcódigo y control térmico
+      apt-get install -y --no-install-recommends intel-microcode thermald firmware-iwlwifi firmware-sof-signed         firmware-intel-misc firmware-intel-graphics || true ;;
+    AuthenticAMD)
+      apt-get install -y --no-install-recommends amd64-microcode firmware-amd-graphics || true ;;
+  esac
+fi
+
 # Zonas del escritorio (sway) y alternativa labwc: ventanas con título y botones, barra de tareas en la barra superior.
 install -d -o "$USUARIO" -g "$USUARIO" "$HOME_USR/.config/labwc" "$HOME_USR/.local/share/themes"
 install -o "$USUARIO" -g "$USUARIO" -m 0644 "$RAIZ/config/labwc/rc.xml" "$RAIZ/config/labwc/menu.xml" "$HOME_USR/.config/labwc/"
