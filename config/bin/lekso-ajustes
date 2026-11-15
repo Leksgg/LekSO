@@ -35,7 +35,7 @@ def info():
         return subprocess.run(c, capture_output=True, text=True).stdout.strip()
     mem = sal("sh", "-c", "free -m | awk 'NR==2{printf \"%d MB de %d MB en uso\", $3, $2}'")
     disco = sal("sh", "-c", "df -h / | awk 'NR==2{print $3\" de \"$2\" en uso\"}'")
-    return (f"Sistema: LekSO (Debian {sal('cat', '/etc/debian_version')})\nNúcleo: {sal('uname', '-r')}\n"
+    return (f"{sal('lekso-actualizar', 'version')} (sobre Debian {sal('cat', '/etc/debian_version')})\nNúcleo: {sal('uname', '-r')}\n"
             f"Memoria: {mem}\nDisco: {disco}\nEquipo: {sal('hostname')}")
 
 
