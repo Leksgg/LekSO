@@ -5,7 +5,9 @@
 # Uso:
 #   sudo ./scripts/provision-base.sh [usuario]
 #
-# No incluye todavía: controlador de NVIDIA, Steam, Brave, Ollama ni el panel de IA.
+# Incluye escritorio por zonas, permisor de IA con su panel, caja, dispositivos, red e iconos.
+# No incluye: controlador de NVIDIA, Ollama ni las aplicaciones (Brave, Steam, Obsidian...):
+# esas se instalan después con `lekso-apps`.
 set -euo pipefail
 
 if [ "$(id -u)" -ne 0 ]; then
