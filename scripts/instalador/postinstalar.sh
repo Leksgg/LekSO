@@ -3,6 +3,9 @@
 # Instala LekSO con el instalador firmado: la versión sale del paquete del USB y se comprueba su firma.
 set -e
 PAQ=/opt/lekso-instalacion
+# Todo lo que pase queda en un registro del sistema instalado, para poder revisar un fallo después.
+exec >> /var/log/lekso-postinstalar.log 2>&1
+set -x
 export DEBIAN_FRONTEND=noninteractive
 
 # 1. Los paquetes de Debian que necesita LekSO están en el USB: se usan como fuente de apt local.

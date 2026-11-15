@@ -10,6 +10,7 @@ Lo más reciente, arriba.
 + Instalador en USB que no necesita internet (`scripts/instalador/`): imagen de Debian 13 con firmware más el paquete de LekSO (repositorio local de 789 paquetes, 595 MB, creado con `construir-repo-offline.sh`) y una respuesta automática que borra el disco que elijas, lo cifra (LUKS + LVM), crea el intercambio para hibernar según la RAM (1,2 veces) e instala Debian y LekSO. Solo pregunta lo que decide quien instala: el disco, su usuario, su contraseña, la del cifrado y la confirmación final de borrado. `construir-iso.sh` genera la imagen; la versión que lleva se comprueba con su firma al instalar.
 ~ El instalador y el endurecimiento funcionan sin red y dentro del instalador de Debian (sin systemd en marcha).
 + `publicar-version.sh --sin-subir`: prepara y firma una versión en local sin publicarla, para probar el instalador antes de subirla.
+~ El instalador en USB deja un registro de la instalación en `/var/log/lekso-postinstalar.log` y lleva también el servidor SSH en el repositorio local (solo se usa en las imágenes de prueba).
 + Pruebas del instalador (`scripts/test_instalar.py`): elección de versión, firma buena, de otra clave, sin firmar, huella distinta, commit fuera de la rama principal y una clave de atacante metida en el repositorio.
 
 ## Alpha 0.1.3 · 2026-11-15
