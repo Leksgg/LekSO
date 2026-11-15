@@ -24,6 +24,7 @@ AJUSTES = [
     ("Aplicaciones", "Instalar programas",
      ["lekso-term", "-T", "Aplicaciones", "-e", "sh", "-c", "lekso-apps; printf '\\nPulsa Intro para cerrar.'; read -r _"],
      "lekso-apps"),
+    ("Actualizaciones", "Versión y novedades", ["lekso-actualizaciones"], "lekso-actualizaciones"),
     ("Archivos y papelera", "Recuperar lo borrado", ["pcmanfm-qt", "trash:///"], "pcmanfm-qt"),
 ]
 PERFILES = [("Ahorro", "power-saver"), ("Equilibrado", "balanced"), ("Rendimiento", "performance")]

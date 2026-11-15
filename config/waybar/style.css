@@ -77,3 +77,6 @@ window#waybar.raiz {
 #battery.warning { color: #f0b24a; }
 #battery.critical { color: #f08a82; }
 #battery.charging { color: #58c987; }
+
+#custom-actualizacion { padding: 0 12px; color: #f0b24a; font-weight: bold; }
+#custom-actualizacion:hover { background: #3a2d12; }

@@ -116,6 +116,16 @@ install -d -o "$USUARIO" -g "$USUARIO" "$HOME_USR/.config/mako" "$HOME_USR/.conf
 install -o "$USUARIO" -g "$USUARIO" -m 0644 "$RAIZ/config/mako/config" "$HOME_USR/.config/mako/config"
 install -o "$USUARIO" -g "$USUARIO" -m 0644 "$RAIZ/config/swaylock/config" "$HOME_USR/.config/swaylock/config"
 
+# Versión y actualizaciones: la versión instalada, la clave con la que se comprueban las versiones nuevas
+# y la comprobación diaria. La clave instalada solo cambia con una versión ya firmada por la anterior.
+install -m 0755 "$RAIZ/scripts/lekso-actualizar.py" /usr/local/bin/lekso-actualizar
+install -d -m 0755 /etc/lekso /var/lib/lekso /etc/issue.d
+install -m 0644 "$RAIZ/config/allowed_signers" /etc/lekso/allowed_signers
+install -m 0644 "$RAIZ/VERSION" /etc/lekso-release
+echo "LekSO $(lekso-actualizar version | sed 's/^LekSO //')" > /etc/issue.d/20-lekso.issue
+install -m 0644 "$RAIZ"/config/systemd/lekso-actualizar.service "$RAIZ"/config/systemd/lekso-actualizar.timer /etc/systemd/user/
+systemctl --global enable lekso-actualizar.timer >/dev/null 2>&1 || true
+
 # Stream Deck: se inicia al conectarlo (el acceso a USB lo da la regla del paquete).
 install -m 0644 "$RAIZ/config/systemd/lekso-streamdeck.service" "$RAIZ/config/systemd/lekso-permisor.service" /etc/systemd/user/
 install -m 0644 "$RAIZ/config/udev/70-lekso-streamdeck.rules" /etc/udev/rules.d/
@@ -135,7 +145,7 @@ install -d -o "$USUARIO" -g "$USUARIO" "$HOME_USR/Escritorio"
 install -o "$USUARIO" -g "$USUARIO" -m 0755 "$RAIZ"/config/escritorio/*.desktop "$HOME_USR/Escritorio/"
 
 # Programas predeterminados por tipo de archivo (no pisa lo que el usuario ya haya elegido).
-install -m 0755 "$RAIZ/config/bin/lekso-info" "$RAIZ/config/bin/lekso-wine" "$RAIZ/config/bin/lekso-menu" "$RAIZ/config/bin/lekso-energia" "$RAIZ/config/bin/lekso-flotantes" "$RAIZ/config/bin/lekso-term" "$RAIZ/config/bin/lekso-medios" "$RAIZ/config/bin/lekso-captura" "$RAIZ/config/bin/lekso-reposo" "$RAIZ/config/bin/lekso-portapapeles" "$RAIZ/config/bin/lekso-ajustes" "$RAIZ/config/bin/lekso-redes" /usr/local/bin/
+install -m 0755 "$RAIZ/config/bin/lekso-info" "$RAIZ/config/bin/lekso-wine" "$RAIZ/config/bin/lekso-menu" "$RAIZ/config/bin/lekso-energia" "$RAIZ/config/bin/lekso-flotantes" "$RAIZ/config/bin/lekso-term" "$RAIZ/config/bin/lekso-medios" "$RAIZ/config/bin/lekso-captura" "$RAIZ/config/bin/lekso-reposo" "$RAIZ/config/bin/lekso-portapapeles" "$RAIZ/config/bin/lekso-ajustes" "$RAIZ/config/bin/lekso-redes" "$RAIZ/config/bin/lekso-actualizaciones" /usr/local/bin/
 install -d /usr/local/lib/lekso-ui
 install -m 0644 "$RAIZ/config/ui/lekso_ui.py" /usr/local/lib/lekso-ui/
 install -m 0644 "$RAIZ"/config/applications/*.desktop /usr/share/applications/

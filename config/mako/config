@@ -23,3 +23,7 @@ default-timeout=3000
 [urgency=critical]
 border-color=#f08a82
 default-timeout=0
+
+[app-name=lekso-actualizar]
+border-color=#f0b24a
+on-button-left=exec lekso-actualizaciones

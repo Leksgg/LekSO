@@ -81,6 +81,7 @@
     ],
     "modules-center": [],
     "modules-right": [
+      "custom/actualizacion",
       "custom/ia",
       "cpu",
       "memory",
@@ -151,6 +152,13 @@
       },
       "tooltip-format": "{timeTo}",
       "interval": 30
+    },
+    "custom/actualizacion": {
+      "exec": "lekso-actualizar barra",
+      "return-type": "json",
+      "interval": 900,
+      "hide-empty-text": true,
+      "on-click": "lekso-actualizaciones"
     }
   }
 ]

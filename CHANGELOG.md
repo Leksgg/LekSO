@@ -3,6 +3,17 @@
 Formato: `+` nuevo · `-` eliminado o retirado · `~` modificado · `*` otros.
 Lo más reciente, arriba.
 
+## Alpha 0.1.0 · 2026-11-15
+
+Primera versión de prueba.
+
++ Escritorio por zonas sobre Debian 13 y sway: raíl de iconos, explorador, centro con terminal, panel de la IA y barra de tareas.
++ Permisor de IA con alcance por tarea, registro firmado y deshacer; caja de Bubblewrap para programas y para la IA; asistente con Claude Code conectado solo al permisor.
++ Instalación repetible (`scripts/provision-base.sh`) y catálogo de aplicaciones (`lekso-apps`).
++ Notificaciones, capturas, portapapeles, ajustes, energía, reposo, red, Bluetooth, discos y Stream Deck.
++ Cortafuegos, actualizaciones de seguridad de Debian y ajustes del núcleo.
++ Versión visible y actualizaciones firmadas: `lekso-actualizar`, Ajustes → Actualizaciones y aviso en la barra.
+
 ## 2026-11-15 · Calidad de vida
 
 + Notificaciones (mako) con la paleta de LekSO, arriba a la derecha.

@@ -19,6 +19,10 @@ Escritorio ligero sobre Debian, con una capa de aislamiento para programas y un 
 - **La IA actúa bajo petición.** No lee ni indexa nada por su cuenta. Cada tarea lleva su alcance y sus permisos, cada acción queda registrada y se puede deshacer.
 - **Aislamiento por defecto.** Una caja sin red, sin tus archivos y con el sistema en solo lectura.
 
+## Versiones y actualizaciones
+
+La versión instalada se ve en Ajustes → Actualizaciones, con `lekso-actualizar version` y en la pantalla de inicio de sesión. Cuando se publica una versión nueva aparece un aviso en la barra y una notificación; se instala desde Ajustes, con tu permiso y solo si está firmada por LekSO. Se puede volver a la anterior.
+
 ## Pruebas
 
 ```

@@ -26,6 +26,7 @@ gaps inner 0
 exec waybar
 exec systemctl --user start lekso-permisor.service
 exec lekso-zonas
+exec lekso-actualizar comprobar --avisar
 exec mako
 exec wl-paste --type text --watch cliphist store
 exec wl-paste --type image --watch cliphist store
@@ -40,6 +41,7 @@ for_window [app_id="lekso-asistente"] move container to mark panel-ia, focus
 for_window [app_id="lekso-energia"] floating enable, resize set 360 460, move position center
 for_window [app_id="lekso-portapapeles"] floating enable, resize set 520 560, move position center
 for_window [app_id="lekso-ajustes"] floating enable, resize set 600 540, move position center
+for_window [app_id="lekso-actualizaciones"] floating enable, resize set 620 520, move position center
 
 # Atajos básicos (Mod = tecla Windows)
 bindsym $mod+Return exec lekso-term -T Terminal
