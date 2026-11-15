@@ -75,19 +75,15 @@ CATALOGO = [
 
 # Lo que no se puede instalar con un comando. (Windows, motivo, alternativa)
 PENDIENTES = [
-    ("Spine", "Software con licencia propia", "Descargar el instalador de Linux desde la web de Esoteric Software."),
-    ("TeamSpeak 3 Client", "Instalador .run sin dirección fija de descarga", "Descargarlo de teamspeak.com y ejecutarlo."),
-    ("WeChat", "Sin comprobar paquete oficial", "Versión web o paquete del proveedor."),
-    ("Notion", "Sin aplicación oficial para Linux", "Usar la versión web."),
-    ("Microsoft Teams", "Sin aplicación oficial para Linux", "Usar la versión web."),
-    ("Microsoft Edge, Google Chrome", "No se instalan: el único navegador es Brave", "—"),
-    ("Vortex", "Solo Windows", "Para mods de Nexus no hay equivalente; para Thunderstore, r2modman."),
-    ("Overwolf, DbD Stats, CrowdControl, Wand, MetaForge", "Solo Windows", "Sin equivalente."),
-    ("RGB Fusion, Hue Sync, JBL QuantumENGINE, EasyTune, APP Center", "Software de fabricante, solo Windows", "RGB: OpenRGB (no está en Debian)."),
-    ("NVIDIA App, controladores", "Necesita el repositorio non-free", "Se trata al instalar en el equipo con tarjeta NVIDIA."),
-    ("MuseHub, plugins TDR", "Plugins de audio", "Existen versiones VST3 para Linux de TDR; requieren un DAW."),
-    ("Gale", "Sin comprobar versión para Linux", "Usar r2modman."),
-    ("Juegos (Dead by Daylight, Baldur's Gate 3, etc.)", "Se instalan desde su launcher", "Comprobar cada uno en ProtonDB; Dead by Daylight y su antitrampas, sin verificar."),
+    ("Software con licencia propia", "Se descarga del proveedor", "Instalador de Linux en la web del fabricante."),
+    ("Instaladores sin dirección fija de descarga", "No se puede automatizar", "Descargar de la web del proveedor y ejecutar."),
+    ("Aplicaciones sin cliente oficial para Linux", "Notion, Teams y similares", "Usar su versión web."),
+    ("Navegadores adicionales", "No se instalan: el único navegador es Brave", "—"),
+    ("Aplicaciones solo de Windows", "Overlays de juegos, gestores de mods de Nexus, utilidades de fabricante", "Sin equivalente."),
+    ("Software de RGB, periféricos y placas base", "Específico de cada fabricante", "RGB: OpenRGB (no está en Debian)."),
+    ("Controladores de NVIDIA", "Necesitan el repositorio non-free", "Se tratan al instalar en el equipo con tarjeta NVIDIA."),
+    ("Plugins de audio y DAW", "Dependen de cada plugin", "Muchos tienen versión VST3 para Linux; requieren un DAW."),
+    ("Juegos", "Se instalan desde su launcher", "Comprobar cada uno en ProtonDB; los que llevan antitrampas, sin verificar."),
 ]
 
 COLOR = sys.stdout.isatty()
