@@ -1,0 +1,9 @@
+[Unit]
+Description=Stream Deck (se inicia al conectarlo)
+
+[Service]
+Type=simple
+Environment=DISPLAY=:0
+ExecStart=/usr/bin/streamdeck -n
+Restart=on-failure
+RestartSec=3

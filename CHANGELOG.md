@@ -3,11 +3,19 @@
 Formato: `+` nuevo · `-` eliminado o retirado · `~` modificado · `*` otros.
 Lo más reciente, arriba.
 
+## 2026-11-15 · Instalar aplicaciones
+
++ Comando `lekso-apps`: catálogo de equivalentes en Linux de las aplicaciones habituales de Windows (desarrollo, Docker, IA, navegadores, comunicación, multimedia, utilidades y juegos). Lista lo instalado, instala por nombre o por grupo, simula con `--simular` y explica lo que no tiene equivalente (`pendientes`).
++ Fuentes: paquetes de Debian, repositorios firmados (Brave, VS Code), descargas directas del proveedor (Discord, Obsidian, Heroic, r2modman) y npm.
+~ Al instalar un navegador, pasa a ser el predeterminado para páginas web y enlaces.
+
 ## 2026-11-15 · Dispositivos y nombres de ventana
 
 + Pendrives y discos: automontaje (también NTFS y exFAT) desde el explorador.
 + Soporte de cámaras, listado de USB y Bluetooth instalados.
 + Volumen: indica el dispositivo activo; clic abre el mezclador, clic derecho silencia, la rueda sube o baja.
++ Botón «Aplicaciones» en el raíl: menú flotante con iconos, buscador y botón de cerrar (X, Esc o el propio botón). No se cierra al mover el ratón. Sin entradas técnicas.
++ Stream Deck (streamdeck-ui): se inicia solo al conectarlo, con acceso por USB para el usuario y botón en el raíl para configurarlo.
 + Red con NetworkManager: la barra indica cable o Wi-Fi, IP y puerta de enlace al pasar el ratón; un clic abre el gestor de redes.
 ~ Las ventanas de la terminal, el editor, el panel de la IA y la información de archivo tienen nombre propio en la barra de tareas.
 

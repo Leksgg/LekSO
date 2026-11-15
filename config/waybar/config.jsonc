@@ -7,8 +7,10 @@
     "spacing": 6,
     "modules-left": [
       "custom/cuenta",
+      "custom/apps",
       "custom/archivos",
       "custom/modelos",
+      "custom/streamdeck",
       "custom/config"
     ],
     "custom/cuenta": {
@@ -37,6 +39,16 @@
       "format": "",
       "tooltip-format": "Restaurar la vista por defecto",
       "on-click": "sh -c 'lekso-zonas --restaurar >/tmp/lekso-zonas.log 2>&1'"
+    },
+    "custom/streamdeck": {
+      "format": "",
+      "tooltip-format": "Stream Deck",
+      "on-click": "streamdeck"
+    },
+    "custom/apps": {
+      "format": "",
+      "tooltip-format": "Aplicaciones",
+      "on-click": "lekso-menu"
     }
   },
   {

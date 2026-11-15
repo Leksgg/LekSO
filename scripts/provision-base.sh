@@ -22,7 +22,7 @@ HOME_USR="$(getent passwd "$USUARIO" | cut -d: -f6)"
 RAIZ="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
 # Paquetes por capa. Todos existen en Debian 13 (trixie); winetricks necesita la sección contrib.
-ESCRITORIO=(labwc sway swaybg waybar foot fuzzel grim pcmanfm-qt qt6-wayland qt6-svg-plugins qt6ct xwayland fonts-font-awesome seatd xdg-desktop-portal-wlr micro imv zathura zathura-pdf-poppler mpv xarchiver udisks2 udiskie gvfs gvfs-backends polkitd ntfs-3g exfatprogs usbutils v4l-utils bluez pavucontrol-qt network-manager)
+ESCRITORIO=(labwc sway swaybg waybar foot fuzzel grim pcmanfm-qt qt6-wayland qt6-svg-plugins qt6ct xwayland fonts-font-awesome seatd xdg-desktop-portal-wlr micro imv zathura zathura-pdf-poppler mpv xarchiver udisks2 udiskie gvfs gvfs-backends polkitd ntfs-3g exfatprogs usbutils v4l-utils bluez pavucontrol-qt network-manager streamdeck-ui python3-pyside6.qtwidgets python3-pyside6.qtgui python3-pyside6.qtcore python3-pyside6.qtsvg)
 AUDIO=(pipewire pipewire-pulse wireplumber)
 AISLAMIENTO=(bubblewrap firejail python3-seccomp)
 HERRAMIENTAS=(git curl btop lm-sensors python3 bc)
@@ -101,6 +101,16 @@ if [ -f /etc/network/interfaces ] && grep -qE '^(allow-hotplug|auto|iface) (e|w)
   systemctl restart NetworkManager || true
 fi
 
+# Lanzador de aplicaciones con la paleta de LekSO y sin entradas técnicas.
+install -d -o "$USUARIO" -g "$USUARIO" "$HOME_USR/.config/fuzzel" "$HOME_USR/.local/share/applications"
+install -o "$USUARIO" -g "$USUARIO" -m 0644 "$RAIZ/config/fuzzel/fuzzel.ini" "$HOME_USR/.config/fuzzel/fuzzel.ini"
+install -o "$USUARIO" -g "$USUARIO" -m 0644 "$RAIZ"/config/applications-ocultas/*.desktop "$HOME_USR/.local/share/applications/"
+
+# Stream Deck: se inicia al conectarlo (el acceso a USB lo da la regla del paquete).
+install -m 0644 "$RAIZ/config/systemd/lekso-streamdeck.service" /etc/systemd/user/
+install -m 0644 "$RAIZ/config/udev/70-lekso-streamdeck.rules" /etc/udev/rules.d/
+udevadm control --reload 2>/dev/null || true
+
 # Zonas del escritorio (sway) y alternativa labwc: ventanas con título y botones, barra de tareas en la barra superior.
 install -d -o "$USUARIO" -g "$USUARIO" "$HOME_USR/.config/labwc" "$HOME_USR/.local/share/themes"
 install -o "$USUARIO" -g "$USUARIO" -m 0644 "$RAIZ/config/labwc/rc.xml" "$RAIZ/config/labwc/menu.xml" "$HOME_USR/.config/labwc/"
@@ -115,9 +125,11 @@ install -d -o "$USUARIO" -g "$USUARIO" "$HOME_USR/Escritorio"
 install -o "$USUARIO" -g "$USUARIO" -m 0755 "$RAIZ"/config/escritorio/*.desktop "$HOME_USR/Escritorio/"
 
 # Programas predeterminados por tipo de archivo (no pisa lo que el usuario ya haya elegido).
-install -m 0755 "$RAIZ/config/bin/lekso-info" "$RAIZ/config/bin/lekso-wine" /usr/local/bin/
+install -m 0755 "$RAIZ/config/bin/lekso-info" "$RAIZ/config/bin/lekso-wine" "$RAIZ/config/bin/lekso-menu" /usr/local/bin/
 install -m 0644 "$RAIZ"/config/applications/*.desktop /usr/share/applications/
-sudo -u "$USUARIO" python3 "$RAIZ/scripts/asociar-archivos.py"
+install -m 0755 "$RAIZ/scripts/asociar-archivos.py" /usr/local/bin/lekso-asociar
+install -m 0755 "$RAIZ/scripts/lekso-apps.py" /usr/local/bin/lekso-apps
+sudo -u "$USUARIO" lekso-asociar
 
 echo
 echo "Listo. Cierra la sesión y vuelve a entrar, y arranca el escritorio con: sway"

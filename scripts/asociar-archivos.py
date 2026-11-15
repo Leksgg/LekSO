@@ -31,7 +31,14 @@ EXE = re.compile(r"^application/(x-ms-dos-executable|x-msdownload|vnd\.microsoft
 # Binarios de Linux: no se ejecutan con doble clic, a propósito. Se muestra su información.
 
 
+NAVEGADORES = ["brave-browser.desktop", "google-chrome.desktop"]
+WEB = ("text/html", "application/xhtml+xml", "x-scheme-handler/http", "x-scheme-handler/https")
+
+
 def elegir(tipo):
+    if tipo in WEB:
+        # El primer navegador instalado; si no hay ninguno, no se asigna nada (HTML cae al editor).
+        return next((n for n in NAVEGADORES if instalada(n)), EDITOR if tipo.startswith("text/") else INFO)
     if tipo.startswith("text/"):
         return EDITOR
     if tipo == "image/svg+xml":
@@ -58,6 +65,7 @@ def instalada(desktop):
 def main():
     ruta = os.path.expanduser("~/.config/mimeapps.list")
     tipos = [l.strip() for l in open("/usr/share/mime/types", encoding="utf-8") if "/" in l]
+    tipos += [t for t in WEB if t not in tipos]
     cfg = configparser.RawConfigParser(strict=False)
     cfg.optionxform = str
     if os.path.exists(ruta):
@@ -68,7 +76,9 @@ def main():
     nuevos = 0
     for t in tipos:
         if t in d and d[t].strip():
-            continue
+            # Los tipos web pasan al navegador cuando se instala uno, si aún tenían el valor automático.
+            if not (t in WEB and d[t] in (EDITOR, INFO) and elegir(t) in NAVEGADORES):
+                continue
         app = elegir(t)
         if instalada(app):
             d[t] = app

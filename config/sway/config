@@ -5,7 +5,7 @@
 
 set $mod Mod4
 set $term foot
-set $menu fuzzel
+set $menu lekso-menu
 
 default_border pixel 1
 titlebar_border_thickness 0
@@ -27,6 +27,9 @@ exec waybar
 exec python3 /usr/local/lib/lekso-ia/permisor.py
 exec lekso-zonas
 exec udiskie --no-tray --no-notify --automount
+
+# El menú de aplicaciones flota en el centro de la pantalla
+for_window [app_id="lekso-menu"] floating enable, resize set 480 620, move position center
 
 # Atajos básicos (Mod = tecla Windows)
 bindsym $mod+Return exec foot -T Terminal
