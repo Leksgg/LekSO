@@ -1,6 +1,8 @@
 """Ronda de estabilidad y rendimiento del núcleo del permisor, acorde a los límites de la VM.
 Uso: PYTHONPATH=. python3 estres.py [N]   (N = operaciones secuenciales, por defecto 2000)
 Nada pasa de ~300 MB de datos ni de 8 hilos. Devuelve error si algo falla."""
+import os as _os
+_os.environ["LEKSO_SIN_AVISOS"] = "1"   # sin notificaciones de escritorio durante las pruebas
 import os
 import resource
 import shutil

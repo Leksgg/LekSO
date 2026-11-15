@@ -1,4 +1,6 @@
 """Pruebas del núcleo. Ejecutar en Linux: python3 -I -m unittest test_nucleo -v"""
+import os as _os
+_os.environ["LEKSO_SIN_AVISOS"] = "1"   # sin notificaciones de escritorio durante las pruebas
 import os
 import tempfile
 import unittest

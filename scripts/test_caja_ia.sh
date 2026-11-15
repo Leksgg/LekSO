@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+export LEKSO_SIN_AVISOS=1   # sin notificaciones de escritorio durante las pruebas
 # La IA dentro de su caja (--ia): solo llega a tus archivos a través del permisor.
 # Ejecutar como usuario normal: bash scripts/test_caja_ia.sh
 set -u

@@ -1,4 +1,5 @@
 import os, socket, json, threading, time, tempfile, unittest
+os.environ["LEKSO_SIN_AVISOS"] = "1"   # sin notificaciones de escritorio durante las pruebas
 from pathlib import Path
 from nucleo import Nucleo, Denegado
 import permisor
@@ -99,6 +100,58 @@ def hablar(ruta, crudo):
         s.settimeout(5); s.connect(str(ruta)); s.sendall(crudo)
         try: return s.makefile().readline()
         except OSError: return ""
+
+class Avisos(unittest.TestCase):
+    """Cada petición que espera al usuario se avisa en el escritorio; la que se aprueba sola, no."""
+    def setUp(self):
+        self.tmp = Path(tempfile.mkdtemp(prefix="lekso-aviso-"))
+        (self.tmp / "casa" / "proy").mkdir(parents=True)
+        self.p = permisor.Permisor(self.tmp / "casa")
+        self.avisos = []
+        done = threading.Event()
+        self.hecho = done
+        def falso(titulo, carpetas, nuevas, destino):
+            self.avisos.append((titulo, carpetas, nuevas, destino)); done.set()
+        self.p.avisar = falso
+    def test_se_avisa_de_lo_pendiente(self):
+        proy = str(self.tmp / "casa" / "proy")
+        r = self.p.pedir("ordenar", {proy: "rw"}, "local")
+        self.assertEqual(r["estado"], "pendiente")
+        self.assertTrue(self.hecho.wait(3))
+        self.assertEqual(self.avisos[0][0], "ordenar")
+        self.assertEqual(self.avisos[0][3], "local")
+    def test_la_carpeta_nueva_se_avisa_como_nueva(self):
+        nueva = str(self.tmp / "casa" / "nueva")
+        self.p.pedir("crear", {nueva: "rw"}, "nube")
+        self.assertTrue(self.hecho.wait(3))
+        self.assertEqual(self.avisos[0][2], [nueva])
+        self.assertEqual(self.avisos[0][3], "nube")
+    def test_lo_recordado_no_molesta(self):
+        proy = str(self.tmp / "casa" / "proy")
+        self.p.recordadas[os.path.realpath(proy)] = "rw"
+        r = self.p.pedir("ya permitido", {proy: "rw"}, "local")
+        self.assertEqual(r["estado"], "aprobada")
+        self.assertFalse(self.hecho.wait(0.5))
+    def test_un_fallo_al_avisar_no_rompe_la_peticion(self):
+        def roto(*a): raise RuntimeError("sin notificaciones")
+        self.p.avisar = roto
+        r = self.p.pedir("x", {str(self.tmp / "casa" / "proy"): "r"}, "local")
+        self.assertEqual(r["estado"], "pendiente")
+    def test_texto_real_acotado(self):
+        enviado = {}
+        def espia(cmd, **k):
+            enviado["cmd"] = cmd
+            return None
+        import subprocess as sp
+        original = sp.run
+        sp.run = espia
+        try:
+            self.p._avisar_escritorio("t" * 500, {"/a/" + "x" * 300: "rwd"}, [], "nube")
+        finally:
+            sp.run = original
+        self.assertEqual(enviado["cmd"][0], "notify-send")
+        self.assertLessEqual(len(enviado["cmd"][-1]), 600)
+        self.assertIn("nube", enviado["cmd"][-1])
 
 class Socket(unittest.TestCase):
     def setUp(self):

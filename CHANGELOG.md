@@ -6,6 +6,7 @@ Lo más reciente, arriba.
 ## Alpha 0.1.2 · 2026-11-15
 
 ~ Las teclas de micrófono y brillo avisan cuando el equipo no tiene micrófono o brillo regulable, y la captura de ventana avisa si no hay ninguna activa, en vez de no hacer nada.
++ Cuando la IA pide permiso aparece una notificación («La IA pide permiso», con la carpeta y lo que quiere hacer); al pulsarla se abre el panel donde se aprueba. Antes la petición esperaba en una pestaña que nadie estaba mirando y el asistente parecía bloqueado.
 ~ El foco del teclado va a la ventana donde haces clic, no a donde se queda el ratón (antes, con el ratón sobre otra ventana, el teclado «no respondía» en la que estabas mirando).
 ~ El asistente ya no pregunta «¿confías en esta carpeta?» en cada inicio: su carpeta de trabajo, vacía y solo suya, se marca de confianza.
 + La IA puede pedir una carpeta nueva (un nivel, dentro de una que exista): el panel la marca como «carpeta NUEVA: se creará», se crea solo al aprobar y se puede deshacer si sigue vacía. La carpeta personal entera sigue sin poder pedirse.

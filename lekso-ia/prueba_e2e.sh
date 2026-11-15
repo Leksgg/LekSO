@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+export LEKSO_SIN_AVISOS=1   # sin notificaciones de escritorio durante las pruebas
 # Prueba de extremo a extremo del permisor con sockets reales y una casa aislada.
 set -u
 cd "$(dirname "$0")"

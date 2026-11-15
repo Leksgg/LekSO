@@ -1,4 +1,6 @@
 """Prueba del gestor de modelos con un Ollama falso. PYTHONPATH=. python3 -m unittest test_modelo"""
+import os as _os
+_os.environ["LEKSO_SIN_AVISOS"] = "1"   # sin notificaciones de escritorio durante las pruebas
 import json
 import threading
 import unittest

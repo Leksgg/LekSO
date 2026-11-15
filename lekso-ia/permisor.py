@@ -11,6 +11,7 @@ import os
 import socket
 import socketserver
 import struct
+import subprocess
 import threading
 import time
 import uuid
@@ -36,6 +37,23 @@ class Permisor:
         self.recordadas = {}
         if self.fichero_recordadas.exists():
             self.recordadas = json.loads(self.fichero_recordadas.read_text())
+        # Las pruebas (LEKSO_SIN_AVISOS=1) no deben llenar el escritorio de notificaciones.
+        self.avisar = (lambda *a: None) if os.environ.get("LEKSO_SIN_AVISOS") == "1" else self._avisar_escritorio
+
+    def _avisar_escritorio(self, titulo, carpetas, nuevas, destino):
+        """Notificación de escritorio: la petición espera en el panel de la IA y, si no, nadie la ve.
+        Solo usa texto ya validado (imprimible y acotado); si no hay notificaciones, no pasa nada."""
+        nombres = {"r": "leer", "w": "escribir", "d": "borrar"}
+        lineas = []
+        for ruta, perms in list(carpetas.items())[:4]:
+            lineas.append(f"{ruta}: " + ", ".join(nombres[x] for x in perms) + (" (carpeta nueva)" if ruta in nuevas else ""))
+        texto = (titulo[:120] + "\n" + "\n".join(lineas) +
+                 ("\nLo que lea saldrá a la nube." if destino == "nube" else "") + "\nPulsa aquí para responder.")
+        try:
+            subprocess.run(["notify-send", "-a", "lekso-ia", "-u", "critical", "-t", "60000",
+                            "La IA pide permiso", texto[:600]], timeout=5, capture_output=True)
+        except (OSError, subprocess.SubprocessError):
+            pass
 
     # ----- lado de la IA -----
     def _cubre_recordada(self, carpetas):
@@ -70,6 +88,7 @@ class Permisor:
             self.aprobadas[pid] = self.n.conceder(titulo, carpetas, destino, self.ttl)
             return {"pid": pid, "estado": "aprobada", "tarea": self.aprobadas[pid]}
         self.pendientes[pid] = {"titulo": titulo, "carpetas": carpetas, "destino": destino, "nuevas": nuevas}
+        threading.Thread(target=self.avisar, args=(titulo, dict(carpetas), nuevas, destino), daemon=True).start()
         return {"pid": pid, "estado": "pendiente"}
 
     def estado(self, pid):

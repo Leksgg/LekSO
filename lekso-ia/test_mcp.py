@@ -1,4 +1,6 @@
 """Pruebas del adaptador MCP del permisor: protocolo, herramientas, argumentos hostiles y flujo completo."""
+import os as _os
+_os.environ["LEKSO_SIN_AVISOS"] = "1"   # sin notificaciones de escritorio durante las pruebas
 import json
 import os
 import subprocess

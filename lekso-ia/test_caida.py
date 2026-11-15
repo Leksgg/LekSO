@@ -1,6 +1,8 @@
 """Corte brusco: se mata el permisor (SIGKILL) con muchas escrituras en vuelo y se comprueba que
 no quedan temporales, que el registro sigue siendo válido y que al volver se puede deshacer.
 Uso: PYTHONPATH=. python3 test_caida.py"""
+import os as _os
+_os.environ["LEKSO_SIN_AVISOS"] = "1"   # sin notificaciones de escritorio durante las pruebas
 import json
 import os
 import shutil

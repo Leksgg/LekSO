@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+export LEKSO_SIN_AVISOS=1   # sin notificaciones de escritorio durante las pruebas
 # Prueba del panel: una IA pide, el panel aprueba con la tecla a, la IA escribe, el panel deshace con u.
 set -u
 cd "$(dirname "$0")"

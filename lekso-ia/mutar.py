@@ -74,7 +74,7 @@ MUTANTES = [
 def correr(carpeta):
     try:
         r = subprocess.run([sys.executable, "-m", "unittest", *PRUEBAS], cwd=carpeta, timeout=180,
-                           env={**os.environ, "PYTHONPATH": str(carpeta)}, capture_output=True, text=True)
+                           env={**os.environ, "PYTHONPATH": str(carpeta), "LEKSO_SIN_AVISOS": "1"}, capture_output=True, text=True)
         return r.returncode == 0
     except subprocess.TimeoutExpired:
         return False                       # un mutante que cuelga el sistema también se detecta

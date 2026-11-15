@@ -27,3 +27,8 @@ default-timeout=0
 [app-name=lekso-actualizar]
 border-color=#f0b24a
 on-button-left=exec lekso-actualizaciones
+
+[app-name=lekso-ia]
+border-color=#f0b24a
+background-color=#2a2210f2
+on-button-left=exec lekso-panel-ia
