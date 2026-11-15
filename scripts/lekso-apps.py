@@ -158,6 +158,22 @@ def repo_clave(nombre, url_clave, linea, simular, dearmor=False):
     return sudo(["apt-get", "update"], simular)
 
 
+def configurar_code():
+    """VS Code con Wayland y sin telemetría, si el usuario no tiene ya sus propios ajustes."""
+    cfg = os.path.expanduser("~/.config")
+    os.makedirs(os.path.join(cfg, "Code", "User"), exist_ok=True)
+    flags = os.path.join(cfg, "code-flags.conf")
+    if not os.path.exists(flags):
+        with open(flags, "w") as f:
+            f.write("--ozone-platform-hint=auto\n--password-store=basic\n")
+    ajustes = os.path.join(cfg, "Code", "User", "settings.json")
+    if not os.path.exists(ajustes):
+        with open(ajustes, "w") as f:
+            json.dump({"telemetry.telemetryLevel": "off", "update.mode": "none",
+                       "workbench.enableExperiments": False}, f, indent=2)
+            f.write("\n")
+
+
 def hacer(item, simular, si):
     grupo, ident, win, tipo, objetivo, comprobar, nota = item
     print(c(f"\n▶ {ident}", "1;36") + f"  ({win})")
@@ -171,7 +187,10 @@ def hacer(item, simular, si):
         repo_clave("microsoft", "https://packages.microsoft.com/keys/microsoft.asc",
                    "deb [arch=amd64 signed-by={llave}] https://packages.microsoft.com/repos/code stable main",
                    simular, dearmor=True)
-        return apt(objetivo, simular)
+        r = apt(objetivo, simular)
+        if r == 0 and not simular:
+            configurar_code()
+        return r
     if tipo == "docker":
         r = apt(objetivo, simular)
         usuario = os.environ.get("SUDO_USER") or os.environ.get("USER") or ""

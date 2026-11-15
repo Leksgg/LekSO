@@ -15,16 +15,16 @@ from lekso_ui import ESTILO, alternar  # noqa: E402
 
 # (nombre, descripción, orden, programa que debe existir)
 AJUSTES = [
-    ("Sonido", "Salidas, entradas y volumen de cada app", ["pavucontrol-qt"], "pavucontrol-qt"),
-    ("Red", "Cable, Wi-Fi y contraseñas", ["lekso-term", "-T", "Redes", "-e", "nmtui"], "nmtui"),
-    ("Pantallas", "Resolución, posición y escala", ["wdisplays"], "wdisplays"),
-    ("Bluetooth", "Auriculares, mandos y teclados", ["blueman-manager"], "blueman-manager"),
-    ("Apariencia", "Colores, letra e iconos de las apps", ["qt6ct"], "qt6ct"),
-    ("Impresoras", "Añadir y gestionar impresoras", ["brave-browser", "http://localhost:631"], "cupsd"),
-    ("Aplicaciones", "Instalar programas del catálogo",
+    ("Sonido", "Salidas, entradas, volumen", ["pavucontrol-qt"], "pavucontrol-qt"),
+    ("Red", "Cable y Wi-Fi", ["lekso-term", "-T", "Redes", "-e", "lekso-redes"], "nmtui"),
+    ("Pantallas", "Resolución y escala", ["wdisplays"], "wdisplays"),
+    ("Bluetooth", "Auriculares y mandos", ["blueman-manager"], "blueman-manager"),
+    ("Apariencia", "Colores, letra, iconos", ["qt6ct"], "qt6ct"),
+    ("Impresoras", "Añadir impresoras", ["brave-browser", "http://localhost:631"], "cupsd"),
+    ("Aplicaciones", "Instalar programas",
      ["lekso-term", "-T", "Aplicaciones", "-e", "sh", "-c", "lekso-apps; printf '\\nPulsa Intro para cerrar.'; read -r _"],
      "lekso-apps"),
-    ("Archivos y papelera", "Explorador y recuperar lo borrado", ["pcmanfm-qt", "trash:///"], "pcmanfm-qt"),
+    ("Archivos y papelera", "Recuperar lo borrado", ["pcmanfm-qt", "trash:///"], "pcmanfm-qt"),
 ]
 PERFILES = [("Ahorro", "power-saver"), ("Equilibrado", "balanced"), ("Rendimiento", "performance")]
 
@@ -103,7 +103,7 @@ def main():
     app = QtWidgets.QApplication(sys.argv)
     app.setDesktopFileName("lekso-ajustes")
     w = Ajustes()
-    w.resize(560, 520)
+    w.resize(600, 540)
     w.show()
     return app.exec()
 
