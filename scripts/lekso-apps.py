@@ -212,6 +212,11 @@ def hacer(item, simular, si):
         return r
     if tipo == "docker":
         r = apt(objetivo, simular)
+        if r == 0:
+            # Bajo demanda: Docker no arranca con el equipo (retrasaba el inicio unos 6 s esperando la red y ocupaba
+            # memoria siempre). Queda escuchando su socket y se pone en marcha solo con la primera orden `docker`.
+            sudo(["systemctl", "disable", "--now", "docker.service", "containerd.service"], simular)
+            sudo(["systemctl", "enable", "--now", "docker.socket"], simular)
         usuario = os.environ.get("SUDO_USER") or os.environ.get("USER") or ""
         if r == 0 and usuario:
             sudo(["usermod", "-aG", "docker", usuario], simular)
