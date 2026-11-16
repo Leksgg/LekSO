@@ -3,7 +3,7 @@
 Formato: `+` nuevo · `-` eliminado o retirado · `~` modificado · `*` otros.
 Lo más reciente, arriba.
 
-## Sin publicar
+## Alpha 0.1.11 · 2026-11-16
 
 ~ Fase de pruebas: las versiones se publican sin firmar (`publicar-version.sh --sin-firma`). Solo las instalan los equipos que tienen `/etc/lekso/sin-firma`; los demás las rechazan.
 + Archivos de LekSO (`lekso-archivos`): el explorador en dos piezas que van juntas. A la izquierda, «Carpetas» (lugares habituales, dispositivos conectados y el árbol); en el centro, el contenido de la carpeta, que es lo que se ve cuando no hay ninguna aplicación abierta. Abrir una aplicación la pone encima, como una pestaña más. En español: abrir, copiar, cortar, pegar (sin pisar nada), renombrar, carpeta nueva, papelera, arrastrar y ver ocultos.
