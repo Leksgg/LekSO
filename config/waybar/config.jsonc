@@ -12,6 +12,7 @@
       "custom/modelos",
       "custom/asistente",
       "custom/streamdeck",
+      "custom/juego",
       "custom/config"
     ],
     "custom/archivos": {
@@ -23,6 +24,13 @@
       "format": "",
       "tooltip-format": "Modelos de IA",
       "on-click": "lekso-term -T \"Modelos de IA\" -e python3 /usr/local/lib/lekso-ia/modelo.py lista"
+    },
+    "custom/juego": {
+      "exec": "lekso-juego barra",
+      "return-type": "json",
+      "interval": 30,
+      "signal": 9,
+      "on-click": "lekso-juego"
     },
     "custom/config": {
       "format": "",

@@ -188,7 +188,14 @@ install -d -o "$USUARIO" -g "$USUARIO" "$HOME_USR/Escritorio"
 install -o "$USUARIO" -g "$USUARIO" -m 0755 "$RAIZ"/config/escritorio/*.desktop "$HOME_USR/Escritorio/"
 
 # Programas predeterminados por tipo de archivo (no pisa lo que el usuario ya haya elegido).
-install -m 0755 "$RAIZ/config/bin/lekso-info" "$RAIZ/config/bin/lekso-wine" "$RAIZ/config/bin/lekso-menu" "$RAIZ/config/bin/lekso-energia" "$RAIZ/config/bin/lekso-flotantes" "$RAIZ/config/bin/lekso-term" "$RAIZ/config/bin/lekso-medios" "$RAIZ/config/bin/lekso-captura" "$RAIZ/config/bin/lekso-reposo" "$RAIZ/config/bin/lekso-portapapeles" "$RAIZ/config/bin/lekso-ajustes" "$RAIZ/config/bin/lekso-redes" "$RAIZ/config/bin/lekso-actualizaciones" "$RAIZ/config/bin/lekso-panel-ia" "$RAIZ/config/bin/lekso-acceso-remoto" "$RAIZ/config/bin/lekso-archivos" /usr/local/bin/
+install -m 0755 "$RAIZ/config/bin/lekso-info" "$RAIZ/config/bin/lekso-wine" "$RAIZ/config/bin/lekso-menu" "$RAIZ/config/bin/lekso-energia" "$RAIZ/config/bin/lekso-flotantes" "$RAIZ/config/bin/lekso-term" "$RAIZ/config/bin/lekso-medios" "$RAIZ/config/bin/lekso-captura" "$RAIZ/config/bin/lekso-reposo" "$RAIZ/config/bin/lekso-portapapeles" "$RAIZ/config/bin/lekso-ajustes" "$RAIZ/config/bin/lekso-redes" "$RAIZ/config/bin/lekso-actualizaciones" "$RAIZ/config/bin/lekso-panel-ia" "$RAIZ/config/bin/lekso-acceso-remoto" "$RAIZ/config/bin/lekso-archivos" "$RAIZ/config/bin/lekso-juego" /usr/local/bin/
+# Modo juego: perfiles de energía, GameMode y la parte de administrador (un solo ajuste, sin contraseña)
+apt-get install -y --no-install-recommends power-profiles-daemon gamemode || echo "AVISO: sin power-profiles-daemon o gamemode (¿sin conexión?)"
+install -m 0755 "$RAIZ/scripts/lekso-juego-raiz.sh" /usr/local/sbin/lekso-juego-raiz
+printf '%%sudo ALL=(root) NOPASSWD: /usr/local/sbin/lekso-juego-raiz on, /usr/local/sbin/lekso-juego-raiz off
+' > /etc/sudoers.d/lekso-juego
+chmod 0440 /etc/sudoers.d/lekso-juego
+visudo -cf /etc/sudoers.d/lekso-juego >/dev/null || rm -f /etc/sudoers.d/lekso-juego
 install -d /usr/local/lib/lekso-ui
 install -m 0644 "$RAIZ/config/ui/lekso_ui.py" /usr/local/lib/lekso-ui/
 install -m 0644 "$RAIZ"/config/applications/*.desktop /usr/share/applications/

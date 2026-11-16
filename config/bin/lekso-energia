@@ -34,6 +34,14 @@ ACCIONES = [
 ]
 
 
+# (clave del sistema, texto, qué hace)
+PERFILES = [
+    ("power-saver", "Ahorro", "Ahorro: la batería dura más; el equipo va más lento y más fresco."),
+    ("balanced", "Equilibrado", "Equilibrado: rinde cuando hace falta y ahorra cuando no. El de uso normal."),
+    ("performance", "Rendimiento", "Rendimiento: todo al máximo. Gasta más batería y calienta más."),
+]
+
+
 class Energia(QtWidgets.QWidget):
     def __init__(self):
         super().__init__()
@@ -52,6 +60,24 @@ class Energia(QtWidgets.QWidget):
         x.clicked.connect(self.close)
         cab.addWidget(x)
         raiz.addLayout(cab)
+        # Perfil de energía: cuánto rinde y cuánto gasta el equipo. Solo si el equipo lo admite.
+        self.perfiles = {}
+        actual = self.perfil_actual()
+        if actual:
+            raiz.addWidget(QtWidgets.QLabel("Perfil de energía"))
+            fila = QtWidgets.QHBoxLayout()
+            for clave, texto, ayuda in PERFILES:
+                b = QtWidgets.QPushButton(texto)
+                b.setCheckable(True)
+                b.setToolTip(ayuda)
+                b.clicked.connect(lambda _=False, c=clave: self.poner_perfil(c))
+                self.perfiles[clave] = b
+                fila.addWidget(b)
+            raiz.addLayout(fila)
+            self.nota_perfil = QtWidgets.QLabel("")
+            self.nota_perfil.setWordWrap(True)
+            raiz.addWidget(self.nota_perfil)
+            self.marcar_perfil(actual)
         for nombre, desc, orden, metodo, confirma, peligro in ACCIONES:
             ok = metodo is None or admite(metodo)
             b = QtWidgets.QPushButton(f"{nombre}\n{desc}" if ok else f"{nombre}\nNo disponible en este equipo")
@@ -60,6 +86,25 @@ class Energia(QtWidgets.QWidget):
             b.clicked.connect(lambda _=False, n=nombre, o=orden, c=confirma: self.hacer(n, o, c))
             raiz.addWidget(b)
         raiz.addStretch()
+
+    @staticmethod
+    def perfil_actual():
+        try:
+            r = subprocess.run(["powerprofilesctl", "get"], capture_output=True, text=True, timeout=3)
+        except (OSError, subprocess.SubprocessError):
+            return ""
+        return r.stdout.strip() if r.returncode == 0 else ""
+
+    def marcar_perfil(self, actual):
+        for clave, b in self.perfiles.items():
+            b.setChecked(clave == actual)
+            b.setStyleSheet("background: #16384a; color: #4cc3e0; border: 1px solid #4cc3e0;" if clave == actual else "")
+        self.nota_perfil.setText(next((ayuda for clave, _, ayuda in PERFILES if clave == actual), ""))
+
+    def poner_perfil(self, clave):
+        subprocess.run(["powerprofilesctl", "set", clave], capture_output=True, timeout=5)
+        self.marcar_perfil(self.perfil_actual())
+        subprocess.run(["pkill", "-RTMIN+9", "waybar"], capture_output=True)
 
     def hacer(self, nombre, orden, confirma):
         if confirma:
@@ -86,7 +131,7 @@ def main():
     app = QtWidgets.QApplication(sys.argv)
     app.setDesktopFileName("lekso-energia")
     w = Energia()
-    w.resize(360, 460)
+    w.resize(380, 580)
     w.show()
     return app.exec()
 

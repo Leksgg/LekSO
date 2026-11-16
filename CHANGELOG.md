@@ -5,6 +5,8 @@ Lo más reciente, arriba.
 
 ## Sin publicar
 
++ Perfil de energía en la ventana de Energía: Ahorro, Equilibrado o Rendimiento, con lo que hace cada uno.
++ Modo juego (botón del mando en el carril, o `lekso-juego`): pone el perfil de rendimiento y quita la protección del núcleo que frena a algunos juegos de Windows; al apagarlo vuelve todo a como estaba. Se instala GameMode (en Steam: `gamemoderun %command%`).
 ~ `lekso-apps` dice en cada entrada si es «oficial» (el programa de su fabricante para Linux) o «alternativa» (otro programa, de terceros), y por qué. Antes se confundían. `--todo` ya solo instala lo oficial.
 ~ `lekso-apps` reconoce Playwright como instalado.
 
