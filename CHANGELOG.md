@@ -3,7 +3,7 @@
 Formato: `+` nuevo · `-` eliminado o retirado · `~` modificado · `*` otros.
 Lo más reciente, arriba.
 
-## Sin publicar
+## Alpha 0.1.8 · 2026-11-16
 
 + `lekso-asistente`: elige tu asistente de IA. Claude y Codex vienen instalados pero inactivos; ninguno se usa hasta que lo activas (`lekso-asistente activar claude|codex`). El botón del asistente abre el activo o te deja elegir. `desactivar` lo apaga sin desinstalar.
 + La IA puede medir el equipo: herramienta `estado_equipo` (memoria, disco, CPU, carga, batería, temperaturas y procesos que más consumen). Solo lectura, sin permiso: da cifras y nombres de proceso, nunca archivos ni argumentos.
