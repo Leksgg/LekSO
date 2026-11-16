@@ -3,6 +3,11 @@
 Formato: `+` nuevo · `-` eliminado o retirado · `~` modificado · `*` otros.
 Lo más reciente, arriba.
 
+## Sin publicar
+
+~ `lekso-apps` dice en cada entrada si es «oficial» (el programa de su fabricante para Linux) o «alternativa» (otro programa, de terceros), y por qué. Antes se confundían. `--todo` ya solo instala lo oficial.
+~ `lekso-apps` reconoce Playwright como instalado.
+
 ## Alpha 0.1.11 · 2026-11-16
 
 ~ Fase de pruebas: las versiones se publican sin firmar (`publicar-version.sh --sin-firma`). Solo las instalan los equipos que tienen `/etc/lekso/sin-firma`; los demás las rechazan.

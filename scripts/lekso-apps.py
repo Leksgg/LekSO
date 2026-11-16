@@ -73,6 +73,25 @@ CATALOGO = [
     ("Juegos", "wine", "Programas de Windows", "apt", "wine", "wine", "Se abren siempre dentro de la caja."),
 ]
 
+# Entradas que NO son el programa del fabricante para Linux, sino otro programa de terceros que hace una función
+# parecida (o que da acceso a tu cuenta desde fuera). La lista lo dice siempre: nadie instala una alternativa
+# creyendo que es la versión oficial.
+ALTERNATIVAS = {
+    "streamdeck": "Elgato no publica su programa para Linux; este es de terceros.",
+    "pdf": "No hay PDFelement para Linux; es otro lector, solo leer y anotar.",
+    "compresores": "No hay WinRAR con ventana para Linux; son compresores libres.",
+    "monitor": "No hay HWMonitor ni SIV para Linux; son otras herramientas.",
+    "logitech": "Logitech no publica Options+ para Linux; es de terceros.",
+    "copias": "No hay Smart Backup para Linux; son otros programas.",
+    "antivirus": "No hay Malwarebytes de escritorio para Linux; es otro antivirus.",
+    "vpn": "ExpressVPN tiene aplicación oficial para Linux (en su web, con tu cuenta); esto es WireGuard genérico.",
+    "heroic": "Epic, Amazon y GOG no publican su lanzador para Linux. Heroic es de terceros: entra con tu cuenta y ejecuta tus juegos.",
+    "minigalaxy": "GOG no publica Galaxy para Linux; es de terceros.",
+    "lutris": "Ubisoft no publica Connect para Linux; Lutris ejecuta el de Windows con Wine, sin garantía.",
+    "r2modman": "No es el gestor de Thunderstore (ese depende de Overwolf); es otro gestor que usa sus mods.",
+    "wine": "No es un programa de Windows: es la capa que permite ejecutarlos.",
+}
+
 # Lo que no se puede instalar con un comando. (Windows, motivo, alternativa)
 PENDIENTES = [
     ("Software con licencia propia", "Se descarga del proveedor", "Instalador de Linux en la web del fabricante."),
@@ -94,7 +113,7 @@ def c(t, k):
 
 
 def instalado(tipo, comprobar):
-    if tipo in ("npm", "script"):
+    if tipo in ("npm", "script", "playwright"):
         return shutil.which(comprobar) is not None
     r = subprocess.run(["dpkg-query", "-W", "-f=${Status}", comprobar], capture_output=True, text=True)
     return r.returncode == 0 and "install ok installed" in r.stdout
@@ -246,8 +265,11 @@ def lista():
             print("\n" + c(grupo, "1"))
         ok = instalado(it[3], it[5])
         marca = c("✓", "32") if ok else c("·", "2")
-        print(f"  {marca} {it[1]:<14} {c('←', '2')} {it[2]}" + (c(f"   {it[6]}", "2") if it[6] and not ok else ""))
+        clase = c("alternativa", "33") if it[1] in ALTERNATIVAS else c("oficial    ", "2")
+        nota = ALTERNATIVAS.get(it[1]) or (it[6] if not ok else "")
+        print(f"  {marca} {it[1]:<14} {clase} {c('←', '2')} {it[2]}" + (c(f"   {nota}", "2") if nota else ""))
     print(f"\n{c('✓', '32')} ya instalado   · disponible.   Instalar: lekso-apps instalar NOMBRE   (--todo para todo lo automático)")
+    print("oficial: el programa de su fabricante para Linux.   alternativa: otro programa, de terceros, que hace esa función.")
     print("Lo que no tiene comando: lekso-apps pendientes")
 
 
@@ -269,7 +291,8 @@ def main(argv):
         print(__doc__)
         return 2
     if "--todo" in argv:
-        sel = [it for it in CATALOGO if not instalado(it[3], it[5])]
+        # --todo instala solo lo oficial: las alternativas de terceros se piden siempre por su nombre
+        sel = [it for it in CATALOGO if it[1] not in ALTERNATIVAS and not instalado(it[3], it[5])]
     else:
         nombres = args[1:]
         if not nombres:
