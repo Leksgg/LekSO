@@ -3,7 +3,7 @@
 Formato: `+` nuevo · `-` eliminado o retirado · `~` modificado · `*` otros.
 Lo más reciente, arriba.
 
-## Sin publicar
+## Alpha 0.1.13 · 2026-11-16
 
 ~ Docker arranca bajo demanda: ya no se inicia con el equipo (retrasaba el arranque unos 6 segundos y ocupaba unos 135 MB siempre). Se pone en marcha solo con la primera orden `docker`.
 ~ Reiniciar y apagar ya no se quedan hasta dos minutos esperando a un servicio que no responde (pasaba con el ayudante de Bluetooth `mpris-proxy`): la espera máxima es de 20 segundos.
