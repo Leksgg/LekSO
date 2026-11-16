@@ -3,7 +3,7 @@
 Formato: `+` nuevo · `-` eliminado o retirado · `~` modificado · `*` otros.
 Lo más reciente, arriba.
 
-## Sin publicar
+## Alpha 0.1.10 · 2026-11-16
 
 + Permisos por asistente. Cada asistente (Claude, Codex) tiene los suyos, con casillas en la ventana «Asistentes de IA» (`lekso-asistentes`, o clic derecho en el botón del asistente): usarlo o no; archivos con permiso carpeta a carpeta o sin preguntar; ejecutar órdenes en el equipo con tu usuario; tareas de administrador (no, preguntando cada vez, sin preguntar). Tres niveles de un clic: «Solo archivos», «Este equipo» y «Acceso total».
 + La IA puede operar el equipo: herramienta `ejecutar` (también como administrador si se lo permites). Hace las cosas y cuenta el resultado, en vez de dictarte comandos. Cada orden queda en el registro del panel de la IA.
