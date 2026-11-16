@@ -26,6 +26,19 @@ if [ -f "$PAQ/PRUEBA" ]; then
   echo "$USUARIO ALL=(ALL) NOPASSWD:ALL" > "/etc/sudoers.d/$USUARIO"; chmod 440 "/etc/sudoers.d/$USUARIO"
 fi
 
+# 3b. USB de FASE DE PRUEBAS (lleva un archivo FASE_PRUEBAS): el equipo acepta actualizaciones sin exigir firma
+#     y arranca con el acceso remoto encendido (SSH solo desde la red local), para poder revisarlo.
+if [ -f "$PAQ/FASE_PRUEBAS" ]; then
+  apt-get install -y -qq openssh-server >/dev/null
+  install -d /etc/lekso /etc/ssh/sshd_config.d
+  touch /etc/lekso/sin-firma /etc/lekso/acceso-remoto
+  printf '# LekSO: acceso remoto
+PermitRootLogin no
+MaxAuthTries 4
+X11Forwarding no
+' > /etc/ssh/sshd_config.d/lekso.conf
+fi
+
 # 4. LekSO, con la comprobación de firma del instalador.
 VERSION="$(cat "$PAQ/VERSION_TAG")"
 SUDO_USER="$USUARIO" bash "$PAQ/instalar.sh" --origen "$PAQ/lekso.bundle" --version "$VERSION" --si

@@ -5,15 +5,16 @@
 #   --iso      imagen oficial «netinst con firmware» de Debian 13 (ya comprobada con su suma de Debian)
 #   --offline  repositorio local de paquetes (lo crea construir-repo-offline.sh)
 #   --version  versión de LekSO que lleva, con su etiqueta firmada (v0.1.4-alpha)
+#   --fase-pruebas  equipo real en pruebas: actualiza sin exigir firma y arranca con SSH en red local
 #   --prueba   imagen de PRUEBAS: respuestas fijas (disco /dev/sda, claves de prueba) y acceso por SSH. NUNCA para uso real.
 # Requiere: xorriso, git. Se ejecuta desde la raíz del repositorio de LekSO (que debe tener la etiqueta).
 set -euo pipefail
 
-ISO=""; OFFLINE=""; VERSION=""; SALIDA=""; PRUEBA=""
+ISO=""; OFFLINE=""; VERSION=""; SALIDA=""; PRUEBA=""; FASE=0
 while [ $# -gt 0 ]; do
   case "$1" in
     --iso) ISO="$2"; shift 2 ;; --offline) OFFLINE="$2"; shift 2 ;; --version) VERSION="$2"; shift 2 ;;
-    --salida) SALIDA="$2"; shift 2 ;; --prueba) PRUEBA="$2"; shift 2 ;;
+    --salida) SALIDA="$2"; shift 2 ;; --prueba) PRUEBA="$2"; shift 2 ;; --fase-pruebas) FASE=1; shift ;;
     *) echo "Opción desconocida: $1" >&2; exit 2 ;;
   esac
 done
@@ -40,6 +41,9 @@ cp -r "$OFFLINE" "$PAQ/offline"
 CLAVE_EN_SCRIPT="$(sed -n "s/^CLAVE_PUBLICA='\(.*\)'\$/\1/p" "$PAQ/instalar.sh")"
 [ -n "$CLAVE_EN_SCRIPT" ] && [ "$CLAVE_EN_SCRIPT" = "$(git show "$VERSION:config/allowed_signers" | head -n1)" ] \
   || { echo "La clave incrustada en instalar.sh no coincide con config/allowed_signers." >&2; exit 1; }
+
+# 1b. Fase de pruebas en equipos reales: sin exigir firma en las actualizaciones y con acceso remoto en red local.
+if [ "$FASE" = 1 ]; then echo "fase de pruebas" > "$PAQ/FASE_PRUEBAS"; fi
 
 # 2. Imagen de pruebas: respuestas fijas para poder instalar sin nadie delante.
 if [ -n "$PRUEBA" ]; then

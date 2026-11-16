@@ -3,6 +3,11 @@
 Formato: `+` nuevo · `-` eliminado o retirado · `~` modificado · `*` otros.
 Lo más reciente, arriba.
 
+## Sin publicar
+
++ Fase de pruebas en equipos reales: una imagen creada con `construir-iso.sh --fase-pruebas` instala un equipo que acepta actualizaciones sin exigir firma (`/etc/lekso/sin-firma`; se sigue exigiendo que la versión esté en la rama principal) y que arranca con el acceso remoto encendido en la red local. Borrar ese archivo vuelve a exigir firma.
+~ El actualizador distingue «no encuentro la versión descargada» de «firma no válida».
+
 ## Alpha 0.1.6 · 2026-11-16
 
 ~ Los equipos instalados desde USB no podían actualizarse: su copia del repositorio apuntaba al paquete del USB. Ahora el actualizador descarga siempre del repositorio oficial y el instalador lo deja bien al terminar. En un equipo ya instalado con la 0.1.4 o la 0.1.5 desde USB, una sola vez: `sudo git -C /var/lib/lekso/repo remote set-url origin https://github.com/Leksgg/LekSO.git`.

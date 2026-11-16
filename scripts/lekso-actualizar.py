@@ -26,6 +26,7 @@ FICHERO_VERSION = "/etc/lekso-release"
 FIRMANTES = "/etc/lekso/allowed_signers"
 CLON = "/var/lib/lekso/repo"
 ANTERIOR = "/var/lib/lekso/version-anterior"
+SIN_FIRMA = "/etc/lekso/sin-firma"                # fase de pruebas: si existe, no se exige firma (lo crea el USB de pruebas)
 INSTALADA = "/var/lib/lekso/instalada.json"      # versión, commit y firmante de lo instalado
 RAMA_PRINCIPAL = "origin/main"
 CACHE = os.path.expanduser("~/.cache/lekso/actualizacion.json")
@@ -184,12 +185,19 @@ def verificar(tag):
     1. La etiqueta está firmada con una clave de /etc/lekso/allowed_signers (la que ya hay instalada).
     2. El commit al que apunta pertenece a la rama principal del repositorio oficial.
     """
-    if not os.path.exists(FIRMANTES):
-        sys.exit(f"Falta {FIRMANTES}: no hay clave con la que comprobar la firma.")
-    r = git("-c", f"gpg.ssh.allowedSignersFile={FIRMANTES}", "verify-tag", tag, cwd=CLON)
-    salida = (r.stderr + r.stdout)
-    if r.returncode != 0 or "Good \"git\" signature for " not in salida:   # «for»: la firma coincide con un firmante autorizado
-        sys.exit(f"La versión {tag} NO tiene una firma válida. No se instala nada.\n{salida.strip()[:300]}")
+    if git("rev-parse", "-q", "--verify", f"refs/tags/{tag}", cwd=CLON).returncode != 0:
+        sys.exit(f"No encuentro la versión {tag} en la copia descargada del repositorio (¿falló la descarga?).")
+    sin_firma = os.path.exists(SIN_FIRMA)
+    salida = ""
+    if sin_firma:
+        print("AVISO: equipo en FASE DE PRUEBAS (/etc/lekso/sin-firma): no se comprueba la firma de la versión.")
+    else:
+        if not os.path.exists(FIRMANTES):
+            sys.exit(f"Falta {FIRMANTES}: no hay clave con la que comprobar la firma.")
+        r = git("-c", f"gpg.ssh.allowedSignersFile={FIRMANTES}", "verify-tag", tag, cwd=CLON)
+        salida = (r.stderr + r.stdout)
+        if r.returncode != 0 or "Good \"git\" signature for " not in salida:   # «for»: la firma coincide con un firmante autorizado
+            sys.exit(f"La versión {tag} NO tiene una firma válida. No se instala nada.\n{salida.strip()[:300]}")
     c = git("rev-list", "-n", "1", tag, cwd=CLON)
     commit = c.stdout.strip()
     if c.returncode != 0 or not re.fullmatch(r"[0-9a-f]{40}", commit):
@@ -199,6 +207,9 @@ def verificar(tag):
         sys.exit(f"La versión {tag} no pertenece a la rama principal del repositorio. No se instala nada.")
     m = re.search(r"key (\S+:\S+)", salida)
     huella = m[1] if m else ""
+    if sin_firma:
+        print(f"Versión {tag} (commit {commit[:7]}, rama principal) SIN comprobar firma.")
+        return commit, "sin-comprobar"
     print(f"Firma válida de la versión {tag} (commit {commit[:7]}, rama principal).")
     return commit, huella
 
