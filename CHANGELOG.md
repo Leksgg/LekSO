@@ -3,6 +3,10 @@
 Formato: `+` nuevo · `-` eliminado o retirado · `~` modificado · `*` otros.
 Lo más reciente, arriba.
 
+## Sin publicar
+
+~ Reiniciar y apagar ya no se quedan hasta dos minutos esperando a un servicio que no responde (pasaba con el ayudante de Bluetooth `mpris-proxy`): la espera máxima es de 20 segundos.
+
 ## Alpha 0.1.12 · 2026-11-16
 
 + Perfil de energía en la ventana de Energía: Ahorro, Equilibrado o Rendimiento, con lo que hace cada uno.

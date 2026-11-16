@@ -189,6 +189,20 @@ install -o "$USUARIO" -g "$USUARIO" -m 0755 "$RAIZ"/config/escritorio/*.desktop 
 
 # Programas predeterminados por tipo de archivo (no pisa lo que el usuario ya haya elegido).
 install -m 0755 "$RAIZ/config/bin/lekso-info" "$RAIZ/config/bin/lekso-wine" "$RAIZ/config/bin/lekso-menu" "$RAIZ/config/bin/lekso-energia" "$RAIZ/config/bin/lekso-flotantes" "$RAIZ/config/bin/lekso-term" "$RAIZ/config/bin/lekso-medios" "$RAIZ/config/bin/lekso-captura" "$RAIZ/config/bin/lekso-reposo" "$RAIZ/config/bin/lekso-portapapeles" "$RAIZ/config/bin/lekso-ajustes" "$RAIZ/config/bin/lekso-redes" "$RAIZ/config/bin/lekso-actualizaciones" "$RAIZ/config/bin/lekso-panel-ia" "$RAIZ/config/bin/lekso-acceso-remoto" "$RAIZ/config/bin/lekso-archivos" "$RAIZ/config/bin/lekso-juego" /usr/local/bin/
+# Apagar y reiniciar no se quedan esperando a un servicio que no responde (por defecto serían hasta 2 minutos).
+install -d /etc/systemd/system.conf.d /etc/systemd/user.conf.d /etc/systemd/system/user@.service.d /etc/systemd/user/mpris-proxy.service.d
+printf '[Manager]
+DefaultTimeoutStopSec=15s
+' > /etc/systemd/system.conf.d/lekso-apagado.conf
+printf '[Manager]
+DefaultTimeoutStopSec=10s
+' > /etc/systemd/user.conf.d/lekso-apagado.conf
+printf '[Service]
+TimeoutStopSec=20s
+' > /etc/systemd/system/user@.service.d/lekso-apagado.conf
+printf '[Service]
+TimeoutStopSec=3s
+' > /etc/systemd/user/mpris-proxy.service.d/lekso-apagado.conf
 # Modo juego: perfiles de energía, GameMode y la parte de administrador (un solo ajuste, sin contraseña)
 apt-get install -y --no-install-recommends power-profiles-daemon gamemode || echo "AVISO: sin power-profiles-daemon o gamemode (¿sin conexión?)"
 install -m 0755 "$RAIZ/scripts/lekso-juego-raiz.sh" /usr/local/sbin/lekso-juego-raiz
