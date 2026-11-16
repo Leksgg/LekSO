@@ -3,6 +3,8 @@
 #
 # Uso: scripts/publicar-version.sh 0.1.2-alpha     una versión concreta (VERSION y CHANGELOG ya preparados)
 #      añade --sin-subir para preparar y firmar en local sin publicar (por ejemplo, para probar el instalador)
+#      añade --sin-firma para publicar SIN firmar (fase de pruebas): solo la instalan los equipos que tienen
+#      /etc/lekso/sin-firma; los demás la rechazan. Una imagen de instalación sigue necesitando una versión firmada.
 #      scripts/publicar-version.sh --auto          la siguiente versión (+1 en el último número), con lo que haya
 #                                                  bajo «## Sin publicar» en CHANGELOG.md
 #
@@ -13,9 +15,11 @@
 # cuyo commit pertenezca a la rama principal.
 set -euo pipefail
 
+FIRMAR=1
+for a in "$@"; do [ "$a" = "--sin-firma" ] && FIRMAR=0; done
 CLAVE="${LEKSO_CLAVE_FIRMA:-$HOME/.ssh/lekso_release}"
 SOCK="${LEKSO_AGENTE:-$HOME/.ssh/lekso-agent.sock}"
-[ -f "$CLAVE" ] || { echo "No encuentro la clave de firma: $CLAVE" >&2; exit 1; }
+[ "$FIRMAR" = 0 ] || [ -f "$CLAVE" ] || { echo "No encuentro la clave de firma: $CLAVE" >&2; exit 1; }
 cd "$(dirname "$0")/.."
 
 patron='^([0-9]+)\.([0-9]+)\.([0-9]+)-(alpha|beta|rc)$'
@@ -27,7 +31,7 @@ if [ -S "$SOCK" ] && SSH_AUTH_SOCK="$SOCK" ssh-add -l >/dev/null 2>&1; then
   export SSH_AUTH_SOCK="$SOCK"
   FIRMA="$CLAVE.pub"
 fi
-if ssh-keygen -y -P "" -f "$CLAVE" >/dev/null 2>&1; then
+if [ "$FIRMAR" = 1 ] && ssh-keygen -y -P "" -f "$CLAVE" >/dev/null 2>&1; then
   echo "AVISO: la clave de firma no tiene contraseña. Ponle una con: ssh-keygen -p -f \"$CLAVE\"" >&2
 fi
 
@@ -65,8 +69,13 @@ grep -qE "^## .*(${V}|${BONITA})" CHANGELOG.md || { echo "CHANGELOG.md no tiene 
 [ -z "$(git status --porcelain)" ] || { echo "Hay cambios sin subir: haz commit antes." >&2; exit 1; }
 git rev-parse "v$V" >/dev/null 2>&1 && { echo "La etiqueta v$V ya existe." >&2; exit 1; }
 
-git -c gpg.format=ssh -c user.signingkey="$FIRMA" tag -s "v$V" -m "LekSO $BONITA"
-git -c gpg.ssh.allowedSignersFile=config/allowed_signers tag -v "v$V"
+if [ "$FIRMAR" = 1 ]; then
+  git -c gpg.format=ssh -c user.signingkey="$FIRMA" tag -s "v$V" -m "LekSO $BONITA"
+  git -c gpg.ssh.allowedSignersFile=config/allowed_signers tag -v "v$V"
+else
+  git tag -a "v$V" -m "LekSO $BONITA (sin firmar: fase de pruebas)"
+  echo "AVISO: v$V va SIN FIRMA. Solo la aceptan los equipos en fase de pruebas (/etc/lekso/sin-firma)."
+fi
 if [ "$SUBIR" = 1 ]; then
   git push origin HEAD:main "v$V"
   PREPARADA=0
