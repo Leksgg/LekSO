@@ -3,7 +3,7 @@
 Formato: `+` nuevo · `-` eliminado o retirado · `~` modificado · `*` otros.
 Lo más reciente, arriba.
 
-## Sin publicar
+## Alpha 0.1.12 · 2026-11-16
 
 + Perfil de energía en la ventana de Energía: Ahorro, Equilibrado o Rendimiento, con lo que hace cada uno.
 + Modo juego (botón del mando en el carril, o `lekso-juego`): pone el perfil de rendimiento y quita la protección del núcleo que frena a algunos juegos de Windows; al apagarlo vuelve todo a como estaba. Se instala GameMode (en Steam: `gamemoderun %command%`).
