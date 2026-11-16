@@ -3,7 +3,7 @@
 Formato: `+` nuevo · `-` eliminado o retirado · `~` modificado · `*` otros.
 Lo más reciente, arriba.
 
-## Sin publicar
+## Alpha 0.1.9 · 2026-11-16
 
 ~ Barra: iconos para Wi-Fi, batería (con rayo al cargar y enchufe si está conectada) y volumen, en vez de «Wi-Fi 82%» o «BAT 99%». Los títulos largos ya no empujan los indicadores fuera de la pantalla, y las zonas fijas no aparecen como ventanas.
 + La versión de LekSO se ve en la barra y en el panel de la IA.
