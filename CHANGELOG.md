@@ -6,6 +6,7 @@ Lo más reciente, arriba.
 ## Sin publicar
 
 + `lekso-asistente`: elige tu asistente de IA. Claude y Codex vienen instalados pero inactivos; ninguno se usa hasta que lo activas (`lekso-asistente activar claude|codex`). El botón del asistente abre el activo o te deja elegir. `desactivar` lo apaga sin desinstalar.
++ La IA puede medir el equipo: herramienta `estado_equipo` (memoria, disco, CPU, carga, batería, temperaturas y procesos que más consumen). Solo lectura, sin permiso: da cifras y nombres de proceso, nunca archivos ni argumentos.
 + `lekso-codex`: Codex CLI dentro de la caja de IA, conectado al permisor.
 ~ La instalación incluye Node y los dos asistentes cuando hay conexión; sin red, se instalan al elegirlos.
 ~ `lekso-claude` avisa con claridad si Claude Code no está instalado, en vez de cerrarse sin explicación.

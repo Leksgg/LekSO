@@ -85,7 +85,7 @@ grep -q '^QT_QPA_PLATFORMTHEME=' /etc/environment 2>/dev/null || echo 'QT_QPA_PL
 
 # Permisor de IA, panel, gestor de modelos y caja (en /usr/local, solo lectura para el usuario).
 install -d -m 0755 /usr/local/lib/lekso-ia
-install -m 0644 "$RAIZ"/lekso-ia/nucleo.py "$RAIZ"/lekso-ia/permisor.py "$RAIZ"/lekso-ia/modelo.py \
+install -m 0644 "$RAIZ"/lekso-ia/nucleo.py "$RAIZ"/lekso-ia/permisor.py "$RAIZ"/lekso-ia/modelo.py "$RAIZ"/lekso-ia/equipo.py \
   "$RAIZ"/lekso-ia/panel.py "$RAIZ"/lekso-ia/lekso_ia.py "$RAIZ"/lekso-ia/mcp_permisor.py /usr/local/lib/lekso-ia/
 printf '#!/bin/sh\nexec python3 /usr/local/lib/lekso-ia/lekso_ia.py "$@"\n' > /usr/local/bin/lekso-ia
 install -m 0755 "$RAIZ/scripts/caja.sh" /usr/local/bin/caja

@@ -78,7 +78,7 @@ class Protocolo(unittest.TestCase):
         tools = rpc("tools/list")["result"]["tools"]
         nombres = {t["name"] for t in tools}
         self.assertEqual(nombres, {"pedir_acceso", "estado_peticion", "listar", "leer", "escribir",
-                                   "borrar", "mover", "cerrar_tarea"})
+                                   "borrar", "mover", "cerrar_tarea", "estado_equipo"})
         for t in tools:
             self.assertFalse(t["inputSchema"]["additionalProperties"])
         for prohibido in ("aprobar", "rechazar", "ejecutar", "shell", "control", "deshacer"):
@@ -280,7 +280,7 @@ class Stdio(unittest.TestCase):
         lineas = [json.loads(x) for x in salida.strip().splitlines()]
         self.assertEqual(len(lineas), 3)           # la notificación no tiene respuesta
         self.assertEqual(lineas[1]["error"]["code"], -32700)
-        self.assertEqual(len(lineas[2]["result"]["tools"]), 8)
+        self.assertEqual(len(lineas[2]["result"]["tools"]), 9)
 
     def test_linea_gigante_no_cuelga(self):
         p = self.lanzar()

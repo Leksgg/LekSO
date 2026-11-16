@@ -17,6 +17,7 @@ import time
 import uuid
 from pathlib import Path
 
+import equipo
 from nucleo import Nucleo, Denegado, imprimible
 
 MAX_LINEA = 16 * 1024 * 1024        # un mensaje no pasa de 16 MB
@@ -133,6 +134,8 @@ class Permisor:
                 return self.pedir(m["titulo"], m["carpetas"], destino)   # el campo 'destino' del mensaje se ignora
             if op == "estado":
                 return self.estado(m["pid"])
+            if op == "equipo":            # foto de solo lectura del equipo (cifras, sin archivos ni datos del usuario)
+                return equipo.estado()
             return self.accion_ia(m)
         except KeyError as e:
             raise Denegado(f"falta el campo {e}")
