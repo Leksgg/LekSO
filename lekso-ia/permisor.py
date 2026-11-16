@@ -135,6 +135,7 @@ class Permisor:
             if op == "estado":
                 return self.estado(m["pid"])
             if op == "equipo":            # foto de solo lectura del equipo (cifras, sin archivos ni datos del usuario)
+                self.n.anotar_consulta("medir_equipo", "memoria, disco, CPU, batería y procesos")
                 return equipo.estado()
             return self.accion_ia(m)
         except KeyError as e:

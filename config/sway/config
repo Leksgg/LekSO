@@ -11,6 +11,8 @@ default_border pixel 1
 # El foco del teclado va a la ventana donde haces clic, no a donde se queda el ratón
 focus_follows_mouse no
 titlebar_border_thickness 0
+# Las marcas ([centro], [panel-ia]) son internas: no se enseñan en los títulos.
+show_marks no
 titlebar_padding 8 4
 font pango:DejaVu Sans 11
 workspace_layout default

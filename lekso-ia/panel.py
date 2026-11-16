@@ -37,7 +37,15 @@ def instantanea():
     hechas = {r["deshace"] for r in reg.get("registro", []) if "deshace" in r}
     for r in acciones:
         r["deshecha"] = r["id"] in hechas
-    return {"ia": est["text"], "ram": f"{modelo.gb(total - libre)} de {modelo.gb(total)}",
+    consultas = [r for r in reg.get("registro", [])
+                 if r.get("ok") and r.get("accion") in ("leer", "listar", "medir_equipo")]
+    try:
+        with open("/etc/lekso-release", encoding="utf-8") as f:
+            version = f.read().strip()
+    except OSError:
+        version = ""
+    return {"ia": est["text"], "ram": f"{modelo.gb(total - libre)} de {modelo.gb(total)}", "version": version,
+            "consultas": list(reversed(consultas))[:6],
             "pendientes": pend.get("pendientes", {}), "error": pend.get("error"),
             "acciones": list(reversed(acciones))[:12]}
 
@@ -46,6 +54,9 @@ def dibujar(p, s, sel, mensaje):
     p.erase()
     h, w = p.getmaxyx()
     p.addstr(0, 1, f"{s['ia']}    RAM {s['ram']}"[: w - 2], curses.A_BOLD)
+    if s.get("version") and w > 60:
+        v = f"LekSO {s['version']}"
+        p.addstr(0, w - len(v) - 2, v, curses.color_pair(4))
     y = 2
     if s["error"]:
         p.addstr(y, 1, s["error"][: w - 2], curses.color_pair(3))
@@ -76,6 +87,20 @@ def dibujar(p, s, sel, mensaje):
         linea = f"{a['t'][11:]} {a['accion']:<9} {a['ruta']} {marca}"
         p.addstr(y, 3, linea[: w - 4], curses.A_REVERSE if i == sel else curses.A_NORMAL)
         y += 1
+    if not s["acciones"] and y < h - 2:
+        p.addstr(y, 3, "Todavía no ha cambiado ningún archivo."[: w - 4], curses.color_pair(4))
+        y += 1
+    if s.get("consultas") and y < h - 4:
+        y += 1
+        p.addstr(y, 1, "Lo que ha consultado (solo lectura)"[: w - 2], curses.A_BOLD)
+        y += 1
+        nombres = {"leer": "leyó", "listar": "listó", "medir_equipo": "midió el equipo"}
+        for c in s["consultas"]:
+            if y >= h - 2:
+                break
+            linea = f"{c['t'][11:]} {nombres.get(c['accion'], c['accion'])} {c.get('ruta', '')}"
+            p.addstr(y, 3, linea[: w - 4])
+            y += 1
     if mensaje:
         p.addstr(h - 1, 1, mensaje[: w - 2], curses.color_pair(2))
     p.refresh()

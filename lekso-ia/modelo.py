@@ -61,15 +61,37 @@ def gb(b):
     return f"{b / 1024 ** 3:.1f} GB"
 
 
+ASISTENTES = {"claude": "Claude", "codex": "Codex"}
+
+
+def asistente_activo():
+    """El asistente en la nube que el usuario ha elegido con lekso-asistente (o None)."""
+    base = os.environ.get("XDG_CONFIG_HOME") or os.path.join(os.path.expanduser("~"), ".config")
+    try:
+        with open(os.path.join(base, "lekso", "asistente"), encoding="utf-8") as f:
+            nombre = f.read().strip()
+    except OSError:
+        return None
+    return nombre if nombre in ASISTENTES and shutil.which(nombre) else None
+
+
 def estado_barra():
-    if not ollama_instalado():
-        return {"text": "IA · sin instalar", "class": "sin-instalar", "tooltip": "Ollama no está instalado"}
-    c = cargados()
-    if c:
-        m = c[0]
-        return {"text": "IA · activa", "class": "activa",
-                "tooltip": f"Modelo cargado: {m['name']} ({gb(m.get('size', 0))} en memoria)"}
-    return {"text": "IA · reposo", "class": "reposo", "tooltip": "Ningún modelo cargado: no consume memoria"}
+    """Texto para la barra y el panel: asistente elegido (nube) y modelo local (Ollama), los dos si los hay."""
+    a = asistente_activo()
+    local = cargados() if ollama_instalado() else []
+    if local:
+        m = local[0]
+        extra = f"Modelo local cargado: {m['name']} ({gb(m.get('size', 0))} en memoria)"
+        if a:
+            return {"text": f"IA · {ASISTENTES[a]} + local", "class": "activa", "tooltip": f"Asistente: {ASISTENTES[a]}\n{extra}"}
+        return {"text": "IA · local activa", "class": "activa", "tooltip": extra}
+    if a:
+        nota = "Modelo local en reposo" if ollama_instalado() else "Sin modelos locales (Ollama no está instalado)"
+        return {"text": f"IA · {ASISTENTES[a]}", "class": "asistente", "tooltip": f"Asistente activo: {ASISTENTES[a]}\n{nota}"}
+    if ollama_instalado():
+        return {"text": "IA · reposo", "class": "reposo", "tooltip": "Ningún modelo cargado: no consume memoria"}
+    return {"text": "IA · sin elegir", "class": "sin-instalar",
+            "tooltip": "Ningún asistente activo. Elige uno con el botón del asistente (lekso-asistente)."}
 
 
 def cargar(nombre, forzar=False):

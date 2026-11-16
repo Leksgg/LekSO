@@ -202,6 +202,11 @@ def instrucciones():
          "Si el usuario quiere una carpeta nueva (por ejemplo ~/proyectos), pídela con pedir_acceso: se crea al aprobar. "
          "No se puede pedir la carpeta personal entera. escribir crea las subcarpetas que falten. "
          "Para medir el equipo (memoria, disco, CPU, batería, temperatura, procesos) usa estado_equipo: no leas /proc.")
+    t += (" No puedes administrar el equipo (ni sudo ni servicios). Si el usuario pide algo de administración, "
+          "dile el comando PROPIO de LekSO para que lo ejecute él en su terminal, no recetas genéricas de Linux: "
+          "acceso por SSH en la red local: `sudo lekso-acceso-remoto on|off`; instalar aplicaciones: `lekso-apps instalar NOMBRE` "
+          "(`lekso-apps` las lista); actualizar LekSO: `sudo lekso-actualizar aplicar`; elegir asistente: `lekso-asistente`; "
+          "redes: `lekso-redes`. El cortafuegos es nftables (no ufw) y lo gestiona LekSO.")
     if casa:
         t += (f" Las rutas son las del equipo real, no las de tu caja: la carpeta personal es {casa} "
               f"(puedes escribir ~/…); tu HOME dentro de la caja ({CASA_CAJA}) no es esa.")

@@ -36,8 +36,12 @@ window#waybar {
 }
 #custom-ia.activa { color: #58c987; }
 #custom-ia.sin-instalar { color: #5a6877; }
+#custom-ia.asistente { color: #4cc3e0; }
+#custom-version { padding: 0 12px; color: #5a6877; }
+#custom-version:hover { color: #dfe6ee; }
 
 #cpu, #memory, #pulseaudio, #network, #battery, #clock {
+  font-family: "DejaVu Sans", "Font Awesome 5 Free", "FontAwesome";
   padding: 0 12px;
   color: #dfe6ee;
 }

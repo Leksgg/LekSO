@@ -155,6 +155,10 @@ class Nucleo:
                 r["deshecha"] = False
                 self.acciones[r["id"]] = r
 
+    def anotar_consulta(self, accion, detalle=""):
+        """Deja constancia de una consulta de solo lectura que no toca archivos (por ejemplo, medir el equipo)."""
+        self._anotar({"tarea": None, "accion": accion, "ruta": detalle, "ok": True})
+
     def _nuevo_id(self):
         return "a" + uuid.uuid4().hex[:8]
 

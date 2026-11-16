@@ -3,6 +3,15 @@
 Formato: `+` nuevo · `-` eliminado o retirado · `~` modificado · `*` otros.
 Lo más reciente, arriba.
 
+## Sin publicar
+
+~ Barra: iconos para Wi-Fi, batería (con rayo al cargar y enchufe si está conectada) y volumen, en vez de «Wi-Fi 82%» o «BAT 99%». Los títulos largos ya no empujan los indicadores fuera de la pantalla, y las zonas fijas no aparecen como ventanas.
++ La versión de LekSO se ve en la barra y en el panel de la IA.
+~ El estado de la IA muestra el asistente elegido («IA · Claude»), no solo los modelos locales. Clic: abre el panel.
++ El panel de la IA enseña también lo que ha consultado (leer, listar, medir el equipo), no solo lo que ha cambiado.
+~ El asistente conoce los comandos propios de LekSO y los recomienda en vez de recetas genéricas de Linux.
+~ Los títulos de las zonas ya no muestran sus nombres internos.
+
 ## Alpha 0.1.8 · 2026-11-16
 
 + `lekso-asistente`: elige tu asistente de IA. Claude y Codex vienen instalados pero inactivos; ninguno se usa hasta que lo activas (`lekso-asistente activar claude|codex`). El botón del asistente abre el activo o te deja elegir. `desactivar` lo apaga sin desinstalar.
