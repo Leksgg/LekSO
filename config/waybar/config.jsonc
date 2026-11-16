@@ -16,8 +16,8 @@
     ],
     "custom/archivos": {
       "format": "",
-      "tooltip-format": "Archivos",
-      "on-click": "pcmanfm-qt"
+      "tooltip-format": "Plegar o desplegar las carpetas (Súper+E)",
+      "on-click": "lekso-zonas --plegar"
     },
     "custom/modelos": {
       "format": "",
@@ -94,7 +94,7 @@
     ],
     "wlr/taskbar": {
       "format": "{icon} {title:.26}",
-      "ignore-list": ["Operativa usuario", "Panel de la IA"],
+      "ignore-list": ["Operativa usuario", "Panel de la IA", "Carpetas"],
       "icon-size": 18,
       "all-outputs": true,
       "on-click": "activate",
@@ -162,7 +162,7 @@
     },
     "custom/version": {
       "exec": "lekso-actualizar version",
-      "interval": 600,
+      "interval": 60,
       "tooltip-format": "Versión instalada de LekSO (clic: actualizaciones)",
       "on-click": "lekso-actualizaciones"
     },

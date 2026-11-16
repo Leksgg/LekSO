@@ -3,6 +3,13 @@
 Formato: `+` nuevo · `-` eliminado o retirado · `~` modificado · `*` otros.
 Lo más reciente, arriba.
 
+## Sin publicar
+
++ Archivos de LekSO (`lekso-archivos`): el explorador en dos piezas que van juntas. A la izquierda, «Carpetas» (lugares habituales, dispositivos conectados y el árbol); en el centro, el contenido de la carpeta, que es lo que se ve cuando no hay ninguna aplicación abierta. Abrir una aplicación la pone encima, como una pestaña más. En español: abrir, copiar, cortar, pegar (sin pisar nada), renombrar, carpeta nueva, papelera, arrastrar y ver ocultos.
++ Las carpetas se pliegan y despliegan (botón de archivos del carril o Súper+E) para dar más sitio a la aplicación.
+~ El explorador completo (pcmanfm-qt) sigue instalado para pestañas, miniaturas y discos; se abre desde el menú de aplicaciones.
+~ Panel de la IA: el título de «lo que ha cambiado» ya no se pisa con el texto de debajo. La versión de la barra se refresca cada minuto.
+
 ## Alpha 0.1.10 · 2026-11-16
 
 + Permisos por asistente. Cada asistente (Claude, Codex) tiene los suyos, con casillas en la ventana «Asistentes de IA» (`lekso-asistentes`, o clic derecho en el botón del asistente): usarlo o no; archivos con permiso carpeta a carpeta o sin preguntar; ejecutar órdenes en el equipo con tu usuario; tareas de administrador (no, preguntando cada vez, sin preguntar). Tres niveles de un clic: «Solo archivos», «Este equipo» y «Acceso total».

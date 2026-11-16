@@ -52,7 +52,7 @@ for_window [app_id="lekso-actualizaciones"] floating enable, resize set 620 520,
 # Atajos básicos (Mod = tecla Windows)
 bindsym $mod+Return exec lekso-term -T Terminal
 bindsym $mod+d exec $menu
-bindsym $mod+e exec pcmanfm-qt
+bindsym $mod+e exec lekso-zonas --plegar
 bindsym $mod+q kill
 bindsym $mod+Shift+c reload
 bindsym $mod+Shift+e exec swaymsg exit

@@ -96,8 +96,11 @@ def dibujar(p, s, sel, mensaje):
     else:
         p.addstr(y, 1, "La IA no ha pedido nada.", curses.color_pair(4))
         y += 2
-    p.addstr(y, 1, "Lo que ha hecho (↑↓ elegir, u deshacer, t toda la tarea)", curses.A_BOLD)
+    p.addstr(y, 1, "Lo que ha cambiado"[: w - 2], curses.A_BOLD)
     y += 1
+    if s["acciones"] and y < h - 2:
+        p.addstr(y, 3, "↑↓ elegir · u deshacer · t deshacer toda la tarea"[: w - 4], curses.color_pair(4))
+        y += 1
     for i, a in enumerate(s["acciones"]):
         if y >= h - 2:
             break
