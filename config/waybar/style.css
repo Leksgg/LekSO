@@ -37,6 +37,7 @@ window#waybar {
 #custom-ia.activa { color: #58c987; }
 #custom-ia.sin-instalar { color: #5a6877; }
 #custom-ia.asistente { color: #4cc3e0; }
+#custom-ia.admin { color: #f0b24a; font-weight: bold; }
 #custom-version { padding: 0 12px; color: #5a6877; }
 #custom-version:hover { color: #dfe6ee; }
 

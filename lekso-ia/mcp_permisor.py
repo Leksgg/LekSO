@@ -26,12 +26,17 @@ ESPERA_DEF, ESPERA_MAX = 60, 300
 def _ruta_canal():
     """Dentro de la caja solo existe el canal que le toca; fuera, se usa el local."""
     local, nube = permisor.rutas()[0], permisor.ruta_nube()
+    if not local.exists():
+        for nombre in permisor.asistentes.NOMBRES:      # dentro de la caja de un asistente solo está su canal
+            propio = permisor.ruta_asistente(nombre)
+            if propio.exists():
+                return propio
     return nube if (not local.exists() and nube.exists()) else local
 
 
-def hablar(msg, ruta=None):
+def hablar(msg, ruta=None, espera=30):
     with socket.socket(socket.AF_UNIX) as s:
-        s.settimeout(30)
+        s.settimeout(espera)
         s.connect(str(ruta or _ruta_canal()))
         s.sendall((json.dumps(msg) + "\n").encode())
         linea = s.makefile().readline(MAX_LINEA + 1)
@@ -111,6 +116,29 @@ def t_estado_peticion(a):
     return hablar({"op": "estado", "pid": _cadena(a, "pid", 64)})
 
 
+def t_ejecutar(a):
+    orden = _cadena(a, "orden", 8000)
+    admin = a.get("admin") is True
+    espera = _entero(a, "espera_s", 120, 1, 1800)
+    r = hablar({"op": "ejecutar", "orden": orden, "admin": admin, "espera": espera}, espera=espera + 60)
+    if r.get("ok") and r.get("estado") == "pendiente":      # hace falta el visto bueno del usuario en el panel
+        limite = time.time() + _entero(a, "esperar_aprobacion_s", 120, 0, ESPERA_MAX)
+        while time.time() < limite:
+            time.sleep(1)
+            e = hablar({"op": "estado", "pid": r["pid"]})
+            if e.get("estado") == "aprobada":
+                return hablar({"op": "ejecutar", "pid": r["pid"], "espera": espera}, espera=espera + 60)
+            if e.get("estado") != "pendiente":
+                return {"ok": False, "error": "El usuario rechazó la orden."}
+        return {"ok": False, "error": "El usuario aún no ha respondido en el panel de la IA. Pídele que la apruebe "
+                                      "y vuelve a intentarlo.", "pid": r["pid"]}
+    return r
+
+
+def t_mis_permisos(a):
+    return hablar({"op": "permisos"})
+
+
 def t_estado_equipo(a):
     return hablar({"op": "equipo"})
 
@@ -174,6 +202,16 @@ HERRAMIENTAS = {
                       "temperaturas y los procesos que más memoria usan. Solo lectura; no necesita permiso ni tarea. "
                       "Úsala para cualquier pregunta de rendimiento o de estado del ordenador.",
                       _obj({}, []), t_estado_equipo),
+    "ejecutar": ("Ejecuta una orden de terminal (bash) en el equipo real del usuario y devuelve su salida y su código. "
+                 "Con admin=true corre como administrador (root): instalar paquetes, servicios, configuración del sistema. "
+                 "Hazlo tú en vez de pedirle al usuario que teclee. Si tu nivel de permisos no lo permite, se te dirá; "
+                 "lo destructivo y, según el nivel, la administración esperan a que el usuario lo apruebe en el panel.",
+                 _obj({"orden": {**_S, "description": "La orden, tal como se escribiría en la terminal. Sin sudo: usa admin."},
+                       "admin": {"type": "boolean", "description": "true = como administrador."},
+                       "espera_s": {"type": "integer", "description": "Segundos máximos de ejecución (por defecto 120)."},
+                       "esperar_aprobacion_s": {"type": "integer"}}, ["orden"]), t_ejecutar),
+    "mis_permisos": ("Dice qué puedes hacer en este equipo según lo que ha elegido el usuario (archivos, órdenes, administración).",
+                     _obj({}, []), t_mis_permisos),
     "cerrar_tarea": ("Termina la tarea y revoca sus permisos. Hazlo al acabar.", _obj({"tarea": _S}, ["tarea"]), t_cerrar_tarea),
 }
 
@@ -202,8 +240,21 @@ def instrucciones():
          "Si el usuario quiere una carpeta nueva (por ejemplo ~/proyectos), pídela con pedir_acceso: se crea al aprobar. "
          "No se puede pedir la carpeta personal entera. escribir crea las subcarpetas que falten. "
          "Para medir el equipo (memoria, disco, CPU, batería, temperatura, procesos) usa estado_equipo: no leas /proc.")
-    t += (" No puedes administrar el equipo (ni sudo ni servicios). Si el usuario pide algo de administración, "
-          "dile el comando PROPIO de LekSO para que lo ejecute él en su terminal, no recetas genéricas de Linux: "
+    try:
+        mios = hablar({"op": "permisos"})
+        p = mios.get("permisos") or {}
+    except (OSError, ValueError):
+        p = {}
+    if p.get("comandos"):
+        t += (" Puedes operar el equipo con la herramienta ejecutar"
+              + (" (también como administrador, con admin=true)" if p.get("admin") not in (None, "no") else
+                 " (sin administración: si algo la necesita, dile al usuario que te la dé en Ajustes de asistentes)")
+              + ". Haz tú las cosas y cuenta el resultado; no le pidas al usuario que teclee. "
+              "Usa los comandos PROPIOS de LekSO antes que recetas genéricas de Linux: ")
+    else:
+        t += (" No tienes permiso para ejecutar órdenes en el equipo: el usuario puede dártelo en Ajustes de asistentes "
+              "(lekso-asistentes). Mientras tanto, si pide algo de administración, dile el comando PROPIO de LekSO: ")
+    t += (""
           "acceso por SSH en la red local: `sudo lekso-acceso-remoto on|off`; instalar aplicaciones: `lekso-apps instalar NOMBRE` "
           "(`lekso-apps` las lista); actualizar LekSO: `sudo lekso-actualizar aplicar`; elegir asistente: `lekso-asistente`; "
           "redes: `lekso-redes`. El cortafuegos es nftables (no ufw) y lo gestiona LekSO.")

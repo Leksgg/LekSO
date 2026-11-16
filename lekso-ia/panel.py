@@ -27,6 +27,10 @@ def llamar(**m):
         return {"ok": False, "error": "El permisor no está en marcha (lekso-ia servir)"}
 
 
+def modelo_nombre(n):
+    return {"claude": "Claude", "codex": "Codex"}.get(n, "La IA")
+
+
 def instantanea():
     total, libre = modelo.ram()
     est = modelo.estado_barra()
@@ -38,14 +42,14 @@ def instantanea():
     for r in acciones:
         r["deshecha"] = r["id"] in hechas
     consultas = [r for r in reg.get("registro", [])
-                 if r.get("ok") and r.get("accion") in ("leer", "listar", "medir_equipo")]
+                 if r.get("ok") and r.get("accion") in ("leer", "listar", "medir_equipo", "orden", "orden_admin")]
     try:
         with open("/etc/lekso-release", encoding="utf-8") as f:
             version = f.read().strip()
     except OSError:
         version = ""
     return {"ia": est["text"], "ram": f"{modelo.gb(total - libre)} de {modelo.gb(total)}", "version": version,
-            "consultas": list(reversed(consultas))[:6],
+            "consultas": list(reversed(consultas))[:8],
             "pendientes": pend.get("pendientes", {}), "error": pend.get("error"),
             "acciones": list(reversed(acciones))[:12]}
 
@@ -63,6 +67,20 @@ def dibujar(p, s, sel, mensaje):
         y += 2
     if s["pendientes"]:
         for pid, q in s["pendientes"].items():
+            if q.get("tipo") == "orden":
+                quien = modelo_nombre(q.get("asistente"))
+                como = " como ADMINISTRADOR" if q.get("admin") else ""
+                p.addstr(y, 1, f"{quien} quiere ejecutar{como}:"[: w - 2], curses.A_BOLD | curses.color_pair(2))
+                y += 1
+                for trozo in [q["titulo"][i:i + w - 6] for i in range(0, min(len(q["titulo"]), (w - 6) * 6), w - 6)]:
+                    p.addstr(y, 3, trozo)
+                    y += 1
+                if q.get("motivo") == "destructiva":
+                    p.addstr(y, 3, "Puede borrar o cambiar algo importante. Léela antes de permitir."[: w - 4], curses.color_pair(3))
+                    y += 1
+                p.addstr(y, 3, "[a] permitir esta vez   [x] rechazar", curses.color_pair(1))
+                y += 2
+                continue
             p.addstr(y, 1, "La IA pide:", curses.A_BOLD)
             p.addstr(y, 13, q["titulo"][: w - 14])
             y += 1
@@ -92,9 +110,10 @@ def dibujar(p, s, sel, mensaje):
         y += 1
     if s.get("consultas") and y < h - 4:
         y += 1
-        p.addstr(y, 1, "Lo que ha consultado (solo lectura)"[: w - 2], curses.A_BOLD)
+        p.addstr(y, 1, "Lo que ha consultado y ejecutado"[: w - 2], curses.A_BOLD)
         y += 1
-        nombres = {"leer": "leyó", "listar": "listó", "medir_equipo": "midió el equipo"}
+        nombres = {"leer": "leyó", "listar": "listó", "medir_equipo": "midió el equipo",
+                   "orden": "ejecutó", "orden_admin": "ejecutó (ADMIN)"}
         for c in s["consultas"]:
             if y >= h - 2:
                 break

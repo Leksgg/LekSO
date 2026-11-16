@@ -61,37 +61,42 @@ def gb(b):
     return f"{b / 1024 ** 3:.1f} GB"
 
 
-ASISTENTES = {"claude": "Claude", "codex": "Codex"}
-
-
-def asistente_activo():
-    """El asistente en la nube que el usuario ha elegido con lekso-asistente (o None)."""
-    base = os.environ.get("XDG_CONFIG_HOME") or os.path.join(os.path.expanduser("~"), ".config")
+def asistentes_activos():
+    """Asistentes que el usuario tiene activos y si alguno puede administrar: [(nombre visible, admin)]."""
     try:
-        with open(os.path.join(base, "lekso", "asistente"), encoding="utf-8") as f:
-            nombre = f.read().strip()
-    except OSError:
-        return None
-    return nombre if nombre in ASISTENTES and shutil.which(nombre) else None
+        import pwd
+        import asistentes
+        suyos = asistentes.leer(pwd.getpwuid(os.getuid()).pw_name)
+    except (ImportError, KeyError, OSError):
+        return []
+    return [(asistentes.NOMBRES[n], p["admin"] != "no") for n, p in suyos.items() if p["activo"]]
 
 
 def estado_barra():
-    """Texto para la barra y el panel: asistente elegido (nube) y modelo local (Ollama), los dos si los hay."""
-    a = asistente_activo()
+    """Texto para la barra y el panel: asistentes activos (nube) y modelo local (Ollama), lo que haya."""
+    activos = asistentes_activos()
+    nombres = " + ".join(n for n, _ in activos)
+    administra = [n for n, adm in activos if adm]
     local = cargados() if ollama_instalado() else []
+    detalle = []
+    if activos:
+        detalle.append("Asistentes activos: " + nombres)
+    if administra:
+        detalle.append("Con permiso de ADMINISTRADOR: " + ", ".join(administra))
     if local:
         m = local[0]
-        extra = f"Modelo local cargado: {m['name']} ({gb(m.get('size', 0))} en memoria)"
-        if a:
-            return {"text": f"IA · {ASISTENTES[a]} + local", "class": "activa", "tooltip": f"Asistente: {ASISTENTES[a]}\n{extra}"}
-        return {"text": "IA · local activa", "class": "activa", "tooltip": extra}
-    if a:
-        nota = "Modelo local en reposo" if ollama_instalado() else "Sin modelos locales (Ollama no está instalado)"
-        return {"text": f"IA · {ASISTENTES[a]}", "class": "asistente", "tooltip": f"Asistente activo: {ASISTENTES[a]}\n{nota}"}
+        detalle.append(f"Modelo local cargado: {m['name']} ({gb(m.get('size', 0))} en memoria)")
+    elif ollama_instalado():
+        detalle.append("Modelo local en reposo")
+    if activos:
+        texto = f"IA · {nombres}" + (" + local" if local else "") + (" · admin" if administra else "")
+        return {"text": texto, "class": "admin" if administra else "asistente", "tooltip": "\n".join(detalle)}
+    if local:
+        return {"text": "IA · local activa", "class": "activa", "tooltip": "\n".join(detalle)}
     if ollama_instalado():
         return {"text": "IA · reposo", "class": "reposo", "tooltip": "Ningún modelo cargado: no consume memoria"}
     return {"text": "IA · sin elegir", "class": "sin-instalar",
-            "tooltip": "Ningún asistente activo. Elige uno con el botón del asistente (lekso-asistente)."}
+            "tooltip": "Ningún asistente activo. Elige en el botón del asistente (lekso-asistentes)."}
 
 
 def cargar(nombre, forzar=False):

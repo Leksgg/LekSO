@@ -78,10 +78,12 @@ class Protocolo(unittest.TestCase):
         tools = rpc("tools/list")["result"]["tools"]
         nombres = {t["name"] for t in tools}
         self.assertEqual(nombres, {"pedir_acceso", "estado_peticion", "listar", "leer", "escribir",
-                                   "borrar", "mover", "cerrar_tarea", "estado_equipo"})
+                                   "borrar", "mover", "cerrar_tarea", "estado_equipo", "ejecutar", "mis_permisos"})
         for t in tools:
             self.assertFalse(t["inputSchema"]["additionalProperties"])
-        for prohibido in ("aprobar", "rechazar", "ejecutar", "shell", "control", "deshacer"):
+        # «ejecutar» existe desde la 0.1.10 (decisión de producto): el permisor decide por asistente si se permite.
+        # Lo que la IA no puede tener nunca es el lado del usuario: aprobar, rechazar, deshacer o el canal de control.
+        for prohibido in ("aprobar", "rechazar", "shell", "control", "deshacer"):
             self.assertNotIn(prohibido, nombres)
 
 
@@ -280,7 +282,7 @@ class Stdio(unittest.TestCase):
         lineas = [json.loads(x) for x in salida.strip().splitlines()]
         self.assertEqual(len(lineas), 3)           # la notificación no tiene respuesta
         self.assertEqual(lineas[1]["error"]["code"], -32700)
-        self.assertEqual(len(lineas[2]["result"]["tools"]), 9)
+        self.assertEqual(len(lineas[2]["result"]["tools"]), 11)
 
     def test_linea_gigante_no_cuelga(self):
         p = self.lanzar()

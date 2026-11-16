@@ -1,0 +1,243 @@
+#!/usr/bin/env python3
+"""Asistentes de IA de LekSO: cuáles usas y qué puede hacer cada uno en tu equipo.
+
+  lekso-asistentes              abre la ventana de ajustes
+  lekso-asistentes abrir [NOMBRE]   abre ese asistente; sin nombre, el único activo (o la ventana si hay varios o ninguno)
+  lekso-asistentes estado       lista los asistentes y sus permisos
+  sudo lekso-asistentes aplicar ARCHIVO.json    guarda los permisos (lo usa la ventana; pide tu contraseña)
+
+Cada asistente tiene sus propios permisos. Puedes tener varios activos a la vez, cada uno en su ventana.
+"""
+import json
+import os
+import shutil
+import subprocess
+import sys
+import tempfile
+
+sys.path.insert(0, "/usr/local/lib/lekso-ia")
+import asistentes  # noqa: E402
+
+PROGRAMA = {"claude": "claude", "codex": "codex"}
+PAQUETE = {"claude": "@anthropic-ai/claude-code", "codex": "@openai/codex"}
+
+
+def usuario():
+    import pwd
+    return pwd.getpwuid(os.getuid()).pw_name
+
+
+def instalado(n):
+    return shutil.which(PROGRAMA[n]) is not None
+
+
+def lanzar(n):
+    """Cada asistente en su propia ventana de terminal, en la zona del panel de la IA."""
+    titulo = f"Asistente · {asistentes.NOMBRES[n]}"
+    fin = 'printf "\\n\\nSesion terminada. Pulsa Intro para cerrar esta ventana.\\n"; read -r _'
+    subprocess.Popen(["lekso-term", "-T", titulo, "--app-id", f"lekso-asistente-{n}", "-e", "sh", "-c",
+                      f"lekso-{n}; {fin}"], start_new_session=True, stdin=subprocess.DEVNULL,
+                     stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+
+
+def aplicar(ruta):
+    if os.getuid() != 0:
+        sys.exit("Hace falta ser administrador: sudo lekso-asistentes aplicar ARCHIVO")
+    quien = os.environ.get("SUDO_USER") or ""
+    if not quien or quien == "root":
+        sys.exit("Ejecuta con sudo desde tu usuario.")
+    with open(ruta, encoding="utf-8") as f:
+        nuevos = json.load(f)
+    asistentes.guardar(quien, nuevos)
+    for n, p in asistentes.leer(quien).items():
+        print(f"  {asistentes.NOMBRES[n]:<8} {'activo' if p['activo'] else 'apagado':<8} {asistentes.resumen(p)}")
+    print("Permisos guardados. Se aplican a partir de la próxima orden del asistente.")
+
+
+def estado():
+    for n, p in asistentes.leer(usuario()).items():
+        marca = ("activo" if p["activo"] else "apagado") + ("" if instalado(n) else " · sin instalar")
+        print(f"  {n:<7} {asistentes.NOMBRES[n]:<8} {marca:<24} {asistentes.resumen(p)}")
+
+
+def ventana():
+    from PySide6 import QtCore, QtWidgets
+    sys.path.insert(0, "/usr/local/lib/lekso-ui")
+    from lekso_ui import ESTILO, alternar
+    if alternar("lekso-asistentes"):
+        return 0
+
+    class Fila(QtWidgets.QGroupBox):
+        def __init__(self, n, p):
+            super().__init__(asistentes.NOMBRES[n] + ("" if instalado(n) else "  (sin instalar: se instala al abrirlo)"))
+            self.n = n
+            v = QtWidgets.QVBoxLayout(self)
+            arriba = QtWidgets.QHBoxLayout()
+            self.activo = QtWidgets.QCheckBox("Usar este asistente")
+            self.activo.setChecked(p["activo"])
+            arriba.addWidget(self.activo)
+            arriba.addStretch()
+            self.abrir = QtWidgets.QPushButton("Abrir")
+            self.abrir.setObjectName("accion")
+            arriba.addWidget(self.abrir)
+            v.addLayout(arriba)
+            pre = QtWidgets.QHBoxLayout()
+            pre.addWidget(QtWidgets.QLabel("Nivel:"))
+            for clave, texto in asistentes.NOMBRE_PREAJUSTE.items():
+                b = QtWidgets.QPushButton(texto)
+                b.clicked.connect(lambda _=False, c=clave: self.poner(asistentes.PREAJUSTES[c]))
+                pre.addWidget(b)
+            pre.addStretch()
+            v.addLayout(pre)
+            self.archivos = QtWidgets.QCheckBox("Archivos de mi carpeta personal sin pedirme permiso cada vez")
+            self.comandos = QtWidgets.QCheckBox("Ejecutar órdenes en el equipo con mi usuario")
+            v.addWidget(self.archivos)
+            v.addWidget(self.comandos)
+            adm = QtWidgets.QHBoxLayout()
+            adm.addWidget(QtWidgets.QLabel("Tareas de administrador:"))
+            self.admin = QtWidgets.QComboBox()
+            for clave, texto in (("no", "No"), ("preguntar", "Sí, preguntándome cada vez"), ("libre", "Sí, sin preguntar")):
+                self.admin.addItem(texto, clave)
+            adm.addWidget(self.admin)
+            adm.addStretch()
+            v.addLayout(adm)
+            self.aviso = QtWidgets.QLabel("")
+            self.aviso.setWordWrap(True)
+            v.addWidget(self.aviso)
+            self.admin.currentIndexChanged.connect(self.coherencia)
+            self.comandos.toggled.connect(self.coherencia)
+            self.poner(p)
+
+        def poner(self, p):
+            self.archivos.setChecked(p["archivos"] == "libre")
+            self.comandos.setChecked(p["comandos"])
+            self.admin.setCurrentIndex(max(self.admin.findData(p["admin"]), 0))
+            self.coherencia()
+
+        def coherencia(self):
+            adm = self.admin.currentData()
+            if adm != "no":
+                self.comandos.setChecked(True)
+            self.comandos.setEnabled(adm == "no")
+            if adm == "libre":
+                self.aviso.setText("Acceso total: podrá cambiar cualquier cosa del equipo sin preguntarte. "
+                                   "Lo destructivo (borrar el sistema, formatear, contraseñas) te lo preguntará igualmente.")
+            elif self.comandos.isChecked():
+                self.aviso.setText("Podrá ejecutar órdenes y ver todos tus archivos. Todo queda en el registro del panel de la IA.")
+            else:
+                self.aviso.setText("Solo toca los archivos de las carpetas que le concedas.")
+
+        def valor(self):
+            return {"activo": self.activo.isChecked(), "archivos": "libre" if self.archivos.isChecked() else "preguntar",
+                    "comandos": self.comandos.isChecked(), "admin": self.admin.currentData()}
+
+    class V(QtWidgets.QWidget):
+        def __init__(self):
+            super().__init__()
+            self.setWindowTitle("Asistentes de IA")
+            self.setStyleSheet(ESTILO)
+            raiz = QtWidgets.QVBoxLayout(self)
+            raiz.setContentsMargins(14, 10, 14, 14)
+            cab = QtWidgets.QHBoxLayout()
+            t = QtWidgets.QLabel("Asistentes de IA")
+            t.setObjectName("titulo")
+            cab.addWidget(t)
+            cab.addStretch()
+            x = QtWidgets.QPushButton("✕")
+            x.setObjectName("cerrar")
+            x.clicked.connect(self.close)
+            cab.addWidget(x)
+            raiz.addLayout(cab)
+            intro = QtWidgets.QLabel("Elige cuáles usas y qué puede hacer cada uno. Puedes tener varios a la vez.")
+            intro.setWordWrap(True)
+            raiz.addWidget(intro)
+            self.guardados = asistentes.leer(usuario())
+            self.filas = {}
+            for n, p in self.guardados.items():
+                f = Fila(n, p)
+                f.abrir.clicked.connect(lambda _=False, nombre=n: self.abrir(nombre))
+                self.filas[n] = f
+                raiz.addWidget(f)
+            raiz.addStretch()
+            pie = QtWidgets.QHBoxLayout()
+            self.estado = QtWidgets.QLabel("")
+            pie.addWidget(self.estado)
+            pie.addStretch()
+            g = QtWidgets.QPushButton("Guardar cambios")
+            g.setObjectName("accion")
+            g.clicked.connect(self.guardar)
+            pie.addWidget(g)
+            raiz.addLayout(pie)
+
+        def actual(self):
+            return {n: asistentes.validar(f.valor()) for n, f in self.filas.items()}
+
+        def guardar(self):
+            nuevos = self.actual()
+            if nuevos == asistentes.leer(usuario()):
+                self.estado.setText("No hay cambios.")
+                return True
+            fd, ruta = tempfile.mkstemp(prefix="lekso-asistentes-", suffix=".json")
+            with os.fdopen(fd, "w", encoding="utf-8") as f:
+                json.dump(nuevos, f)
+            orden = (f"echo 'Guardar los permisos de los asistentes necesita tu contraseña.'; "
+                     f"sudo lekso-asistentes aplicar {ruta}; rm -f {ruta}; "
+                     "printf '\\nPulsa Intro para cerrar.'; read -r _")
+            subprocess.Popen(["lekso-term", "-T", "Guardar permisos", "-e", "sh", "-c", orden], start_new_session=True)
+            self.estado.setText("Confirma con tu contraseña en la ventana que se ha abierto.")
+            return False
+
+        def abrir(self, n):
+            if self.actual() != asistentes.leer(usuario()):
+                self.estado.setText("Guarda los cambios antes de abrirlo.")
+                return
+            if not self.filas[n].activo.isChecked():
+                self.estado.setText(f"Marca «Usar este asistente» en {asistentes.NOMBRES[n]} y guarda.")
+                return
+            lanzar(n)
+            self.close()
+
+        def keyPressEvent(self, ev):
+            if ev.key() == QtCore.Qt.Key_Escape:
+                self.close()
+            else:
+                super().keyPressEvent(ev)
+
+    app = QtWidgets.QApplication(sys.argv)
+    app.setDesktopFileName("lekso-asistentes")
+    w = V()
+    w.resize(560, 640)
+    w.show()
+    return app.exec()
+
+
+def abrir(nombre=None):
+    activos = [n for n, p in asistentes.leer(usuario()).items() if p["activo"]]
+    if nombre:
+        if nombre not in asistentes.NOMBRES:
+            sys.exit(f"No conozco «{nombre}». Disponibles: {', '.join(asistentes.NOMBRES)}")
+        if nombre not in activos:
+            sys.exit(f"{asistentes.NOMBRES[nombre]} está apagado. Actívalo en la ventana de asistentes (lekso-asistentes).")
+        lanzar(nombre)
+        return 0
+    if len(activos) == 1:
+        lanzar(activos[0])
+        return 0
+    return ventana()
+
+
+def main(a):
+    if not a:
+        return ventana()
+    if a[0] == "abrir":
+        return abrir(a[1] if len(a) > 1 else None)
+    if a[0] == "estado":
+        return estado()
+    if a[0] == "aplicar" and len(a) == 2:
+        return aplicar(a[1])
+    print(__doc__)
+    return 2
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv[1:]) or 0)

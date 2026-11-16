@@ -17,6 +17,7 @@ import time
 import uuid
 from pathlib import Path
 
+import asistentes
 import equipo
 from nucleo import Nucleo, Denegado, imprimible
 
@@ -24,6 +25,40 @@ MAX_LINEA = 16 * 1024 * 1024        # un mensaje no pasa de 16 MB
 MAX_ESCRIBIR = 8 * 1024 * 1024      # una escritura no pasa de 8 MB
 MAX_PENDIENTES = 10                 # peticiones sin responder a la vez
 MAX_TAREAS = 50                     # tareas abiertas a la vez
+MAX_ORDEN = 8000                    # caracteres de una orden
+MAX_SALIDA_ORDEN = 400_000          # caracteres de salida que se guardan de una orden
+ADMIN_SOCK = "/run/lekso-admin.sock"
+
+
+def _usuario():
+    import pwd
+    return pwd.getpwuid(os.getuid()).pw_name
+
+
+def correr_usuario(orden, espera, casa):
+    """Ejecuta la orden con el usuario, FUERA del endurecimiento del permisor (unidad temporal de systemd)."""
+    base = ["systemd-run", "--user", "--pipe", "--wait", "--collect", "--quiet",
+            f"--working-directory={casa}", "/bin/bash", "-lc", orden]
+    try:
+        r = subprocess.run(base, stdin=subprocess.DEVNULL, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+                           timeout=espera)
+        return {"codigo": r.returncode, "salida": r.stdout.decode("utf-8", "replace")[-MAX_SALIDA_ORDEN:]}
+    except subprocess.TimeoutExpired as e:
+        return {"codigo": 124, "salida": (e.stdout or b"").decode("utf-8", "replace")[-MAX_SALIDA_ORDEN:]
+                + f"\n[se cortó a los {espera} s]"}
+
+
+def correr_admin(orden, espera, casa):
+    """Pide al servicio de administración que ejecute la orden como root."""
+    with socket.socket(socket.AF_UNIX) as c:
+        c.settimeout(espera + 30)
+        c.connect(ADMIN_SOCK)
+        c.sendall((json.dumps({"orden": orden, "espera": espera}) + "\n").encode())
+        linea = c.makefile().readline()
+    r = json.loads(linea) if linea else {"ok": False, "error": "el servicio de administración no responde"}
+    if not r.get("ok"):
+        raise Denegado(r.get("error", "el servicio de administración lo rechazó"))
+    return {"codigo": r["codigo"], "salida": r["salida"]}
 
 
 class Permisor:
@@ -34,6 +69,9 @@ class Permisor:
         self.pendientes = {}          # pid -> petición
         self.aprobadas = {}           # pid -> id de tarea
         self.rechazadas = set()
+        self.ordenes = {}             # pid -> orden aprobada, a la espera de ejecutarse
+        self.usuario = _usuario()
+        self.correr = {False: correr_usuario, True: correr_admin}   # las pruebas lo sustituyen
         self.fichero_recordadas = self.n.datos / "recordadas.json"
         self.recordadas = {}
         if self.fichero_recordadas.exists():
@@ -92,7 +130,71 @@ class Permisor:
         threading.Thread(target=self.avisar, args=(titulo, dict(carpetas), nuevas, destino), daemon=True).start()
         return {"pid": pid, "estado": "pendiente"}
 
+    # ----- órdenes en el equipo -----
+    def permisos(self, asistente):
+        if asistente not in asistentes.NOMBRES:
+            return dict(asistentes.DEFECTO)
+        return asistentes.leer(self.usuario)[asistente]
+
+    def _avisar_orden(self, asistente, orden, admin):
+        try:
+            subprocess.run(["notify-send", "-a", "lekso-ia", "-u", "critical", "-t", "60000",
+                            f"{asistentes.NOMBRES.get(asistente, 'La IA')} pide ejecutar una orden"
+                            + (" como ADMINISTRADOR" if admin else ""),
+                            orden[:400] + "\nResponde en el panel de la IA."], timeout=5, capture_output=True)
+        except (OSError, subprocess.SubprocessError):
+            pass
+
+    def ejecutar(self, asistente, m):
+        """Ejecuta una orden en el equipo real si el asistente tiene permiso. Lo destructivo y la administración
+        «preguntando» pasan antes por el panel: se devuelve una petición pendiente y se ejecuta al aprobarla."""
+        if asistente not in asistentes.NOMBRES:
+            raise Denegado("este canal no puede ejecutar órdenes")
+        espera = m.get("espera", 120)
+        espera = 120 if isinstance(espera, bool) or not isinstance(espera, int) else min(max(espera, 1), 1800)
+        if "pid" in m:                                   # segunda llamada: la orden ya aprobada por el usuario
+            o = self.ordenes.pop(m["pid"], None)
+            if not o or o["asistente"] != asistente:
+                raise Denegado("no hay una orden aprobada con ese identificador")
+            return self._correr(asistente, o["orden"], o["admin"], espera)
+        orden, admin = m.get("orden"), m.get("admin") is True
+        if not isinstance(orden, str) or not 0 < len(orden) <= MAX_ORDEN or "\0" in orden:
+            raise Denegado("orden no válida")
+        p = self.permisos(asistente)
+        if not p["activo"]:
+            raise Denegado("este asistente está desactivado")
+        if admin and p["admin"] == "no":
+            raise Denegado("este asistente no tiene permiso de administración. El usuario puede dárselo en "
+                           "Ajustes de asistentes (lekso-asistentes).")
+        if not admin and not p["comandos"]:
+            raise Denegado("este asistente no tiene permiso para ejecutar órdenes en el equipo. El usuario puede "
+                           "dárselo en Ajustes de asistentes (lekso-asistentes).")
+        motivo = "destructiva" if asistentes.destructivo(orden) else \
+                 ("administración" if admin and p["admin"] == "preguntar" else "")
+        if not motivo:
+            return self._correr(asistente, orden, admin, espera)
+        if len(self.pendientes) >= MAX_PENDIENTES:
+            raise Denegado("hay demasiadas peticiones sin responder")
+        pid = "p" + uuid.uuid4().hex[:6]
+        self.pendientes[pid] = {"tipo": "orden", "titulo": orden, "admin": admin, "asistente": asistente,
+                                "motivo": motivo, "carpetas": {}, "destino": "nube", "nuevas": []}
+        threading.Thread(target=self._avisar_orden, args=(asistente, orden, admin), daemon=True).start() \
+            if os.environ.get("LEKSO_SIN_AVISOS") != "1" else None
+        return {"pid": pid, "estado": "pendiente", "motivo": motivo}
+
+    def _correr(self, asistente, orden, admin, espera):
+        accion = "orden_admin" if admin else "orden"
+        try:
+            r = self.correr[admin](orden, espera, str(self.n.casa))
+        except (OSError, ValueError) as e:
+            self.n.anotar_consulta(accion, f"[{asistente}] {orden[:300]} → no se pudo ejecutar")
+            raise Denegado(f"no se pudo ejecutar: {e}")
+        self.n.anotar_consulta(accion, f"[{asistente}] {orden[:300]} → código {r['codigo']}")
+        return r
+
     def estado(self, pid):
+        if pid in self.ordenes:
+            return {"estado": "aprobada", "orden": True}
         if pid in self.aprobadas:
             return {"estado": "aprobada", "tarea": self.aprobadas[pid]}
         if pid in self.rechazadas:
@@ -125,13 +227,24 @@ class Permisor:
             return {}
         raise Denegado("operación desconocida")
 
-    def manejar_ia(self, m, destino="local"):
+    def manejar_ia(self, m, destino="local", asistente=None):
+        """asistente lo fija el canal (cada asistente tiene su socket), nunca el contenido del mensaje."""
         if not isinstance(m, dict):
             raise Denegado("mensaje no válido")
         op = m.get("op")
         try:
+            if op == "permisos":
+                p = self.permisos(asistente)
+                return {"asistente": asistente, "permisos": p, "resumen": asistentes.resumen(p)}
+            if op == "ejecutar":
+                return self.ejecutar(asistente, m)
             if op == "pedir":
-                return self.pedir(m["titulo"], m["carpetas"], destino)   # el campo 'destino' del mensaje se ignora
+                r = self.pedir(m["titulo"], m["carpetas"], destino)   # el campo 'destino' del mensaje se ignora
+                if r["estado"] == "pendiente" and asistente and self.permisos(asistente)["archivos"] == "libre":
+                    q = self.pendientes.pop(r["pid"])                 # archivos sin preguntar: se concede ya
+                    self.aprobadas[r["pid"]] = self.n.conceder(q["titulo"], q["carpetas"], q["destino"], self.ttl)
+                    return {"pid": r["pid"], "estado": "aprobada", "tarea": self.aprobadas[r["pid"]]}
+                return r
             if op == "estado":
                 return self.estado(m["pid"])
             if op == "equipo":            # foto de solo lectura del equipo (cifras, sin archivos ni datos del usuario)
@@ -150,6 +263,9 @@ class Permisor:
             p = self.pendientes.pop(m["pid"], None)
             if not p:
                 raise Denegado("no hay tal petición pendiente")
+            if p.get("tipo") == "orden":          # una orden: queda lista para que el asistente la ejecute
+                self.ordenes[m["pid"]] = {"orden": p["titulo"], "admin": p["admin"], "asistente": p["asistente"]}
+                return {"orden": True}
             carpetas = m.get("carpetas") or p["carpetas"]
             tarea = self.n.conceder(p["titulo"], carpetas, p["destino"], self.ttl)
             self.aprobadas[m["pid"]] = tarea
@@ -190,7 +306,7 @@ def _servidor(ruta, funcion):
                 socket.SOL_SOCKET, socket.SO_PEERCRED, struct.calcsize("3i")))
             if uid != os.getuid():
                 return
-            self.request.settimeout(60)             # una conexión muda no ocupa un hilo para siempre
+            self.request.settimeout(1900)           # una conexión muda no ocupa un hilo para siempre (una orden puede tardar)
             while True:
                 try:
                     linea = self.rfile.readline(MAX_LINEA + 1)   # sin tope, una línea enorme llenaría la RAM
@@ -239,12 +355,20 @@ def ruta_nube():
     return rutas()[0].with_name("lekso-ia-nube.sock")
 
 
+def ruta_asistente(nombre):
+    return rutas()[0].with_name(f"lekso-ia-{nombre}.sock")
+
+
 def servir(casa=None):
     casa = casa or Path.home()
     p = Permisor(casa)
     ia, control = rutas()
     s1 = _servidor(str(ia), lambda m: p.manejar_ia(m, "local"))
     s3 = _servidor(str(ruta_nube()), lambda m: p.manejar_ia(m, "nube"))
+    # Un canal por asistente: su identidad (y por tanto sus permisos) la da el socket, no lo que diga el mensaje.
+    for nombre in asistentes.NOMBRES:
+        sa = _servidor(str(ruta_asistente(nombre)), lambda m, n=nombre: p.manejar_ia(m, "nube", n))
+        threading.Thread(target=sa.serve_forever, daemon=True).start()
     s2 = _servidor(str(control), p.manejar_control)
     threading.Thread(target=s1.serve_forever, daemon=True).start()
     threading.Thread(target=s3.serve_forever, daemon=True).start()

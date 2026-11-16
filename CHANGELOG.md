@@ -3,6 +3,16 @@
 Formato: `+` nuevo · `-` eliminado o retirado · `~` modificado · `*` otros.
 Lo más reciente, arriba.
 
+## Sin publicar
+
++ Permisos por asistente. Cada asistente (Claude, Codex) tiene los suyos, con casillas en la ventana «Asistentes de IA» (`lekso-asistentes`, o clic derecho en el botón del asistente): usarlo o no; archivos con permiso carpeta a carpeta o sin preguntar; ejecutar órdenes en el equipo con tu usuario; tareas de administrador (no, preguntando cada vez, sin preguntar). Tres niveles de un clic: «Solo archivos», «Este equipo» y «Acceso total».
++ La IA puede operar el equipo: herramienta `ejecutar` (también como administrador si se lo permites). Hace las cosas y cuenta el resultado, en vez de dictarte comandos. Cada orden queda en el registro del panel de la IA.
++ Varios asistentes activos a la vez, cada uno en su ventana.
+~ Lo destructivo (borrar carpetas del sistema, formatear, contraseñas, apagar) pide confirmación siempre, sea cual sea el nivel. Es una red de seguridad para lo evidente, no una garantía.
+~ Los permisos viven en `/etc/lekso/asistentes.json` y solo se cambian con tu contraseña: un asistente no puede dárselos a sí mismo. La identidad de cada asistente la da su propio canal, no lo que diga.
+~ Instalación nueva: asistentes instalados, apagados y en «Solo archivos». La barra avisa («· admin») si alguno puede administrar.
+* Aviso: con «Ejecutar órdenes» el asistente actúa con tu usuario y ve todos tus archivos; con «Acceso total», todo el equipo. Un texto malicioso en una web o un archivo podría manipularlo. Actívalo sabiendo eso.
+
 ## Alpha 0.1.9 · 2026-11-16
 
 ~ Barra: iconos para Wi-Fi, batería (con rayo al cargar y enchufe si está conectada) y volumen, en vez de «Wi-Fi 82%» o «BAT 99%». Los títulos largos ya no empujan los indicadores fuera de la pantalla, y las zonas fijas no aparecen como ventanas.

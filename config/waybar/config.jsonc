@@ -56,8 +56,9 @@
     },
     "custom/asistente": {
       "format": "",
-      "tooltip-format": "Asistente de IA",
-      "on-click": "lekso-term -T \"Asistente de IA\" --app-id lekso-asistente -e sh -c 'lekso-asistente; printf \"\n\nSesion terminada. Pulsa Intro para cerrar esta ventana (se vuelve a abrir desde el boton del asistente).\n\"; read -r _'"
+      "tooltip-format": "Asistentes de IA (clic derecho: ajustes y permisos)",
+      "on-click": "lekso-asistentes abrir",
+      "on-click-right": "lekso-asistentes"
     },
     "custom/flotantes": {
       "format": "",

@@ -7,12 +7,13 @@
 # - Su sesión y ajustes viven en una carpeta aparte (~/.lekso/codex), que es lo único que ve de tu usuario.
 # Uso: lekso-codex [argumentos de codex]
 if ! command -v codex >/dev/null 2>&1; then
-  echo "Codex no está instalado. Instálalo con: lekso-asistente instalar codex" >&2; exit 1
+  echo "Codex no está instalado todavía. Se instala ahora (necesita conexión y tu contraseña)."
+  lekso-asistente instalar codex || exit 1
 fi
 CASA="${LEKSO_CODEX_CASA:-$HOME/.lekso/codex}"
 mkdir -p "$CASA" && chmod 700 "$CASA"
 NOTA='Estás en LekSO, dentro de una caja: tu carpeta (/home/caja) NO es la del usuario. Para tocar sus archivos usa solo las herramientas del servidor MCP «lekso», con rutas del equipo real. Cada acción pasa por el permisor, que pide permiso al usuario.'
-exec caja --ia-nube --red --rw "$CASA" \
+exec caja --ia-asistente codex --red --rw "$CASA" \
   --env CODEX_HOME=/home/caja/codex \
   --env LEKSO_HOME_REAL="$HOME" \
   -- codex --sandbox danger-full-access \

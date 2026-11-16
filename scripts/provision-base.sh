@@ -85,13 +85,30 @@ grep -q '^QT_QPA_PLATFORMTHEME=' /etc/environment 2>/dev/null || echo 'QT_QPA_PL
 
 # Permisor de IA, panel, gestor de modelos y caja (en /usr/local, solo lectura para el usuario).
 install -d -m 0755 /usr/local/lib/lekso-ia
-install -m 0644 "$RAIZ"/lekso-ia/nucleo.py "$RAIZ"/lekso-ia/permisor.py "$RAIZ"/lekso-ia/modelo.py "$RAIZ"/lekso-ia/equipo.py \
+install -m 0644 "$RAIZ"/lekso-ia/nucleo.py "$RAIZ"/lekso-ia/permisor.py "$RAIZ"/lekso-ia/modelo.py "$RAIZ"/lekso-ia/equipo.py "$RAIZ"/lekso-ia/asistentes.py "$RAIZ"/lekso-ia/lekso_admin.py \
   "$RAIZ"/lekso-ia/panel.py "$RAIZ"/lekso-ia/lekso_ia.py "$RAIZ"/lekso-ia/mcp_permisor.py /usr/local/lib/lekso-ia/
 printf '#!/bin/sh\nexec python3 /usr/local/lib/lekso-ia/lekso_ia.py "$@"\n' > /usr/local/bin/lekso-ia
 install -m 0755 "$RAIZ/scripts/caja.sh" /usr/local/bin/caja
 install -m 0755 "$RAIZ/scripts/lekso-claude.sh" /usr/local/bin/lekso-claude
 install -m 0755 "$RAIZ/scripts/lekso-codex.sh" /usr/local/bin/lekso-codex
 install -m 0755 "$RAIZ/config/bin/lekso-asistente" /usr/local/bin/lekso-asistente
+install -m 0755 "$RAIZ/config/bin/lekso-asistentes" /usr/local/bin/lekso-asistentes
+# Permisos de los asistentes: archivo del administrador. En una instalación nueva, todos apagados y en «solo archivos».
+# Si el usuario ya había elegido uno con la versión anterior, se conserva activo (solo archivos).
+install -d -m 0755 /etc/lekso
+if [ ! -f /etc/lekso/asistentes.json ]; then
+  ANTERIOR="$(cat "$HOME_USR/.config/lekso/asistente" 2>/dev/null || true)"
+  python3 - "$USUARIO" "$ANTERIOR" <<'PY'
+import sys
+sys.path.insert(0, "/usr/local/lib/lekso-ia")
+import asistentes
+usuario, anterior = sys.argv[1], sys.argv[2].strip()
+asistentes.guardar(usuario, {anterior: {"activo": True}} if anterior in asistentes.NOMBRES else {})
+PY
+fi
+install -m 0644 "$RAIZ/config/systemd/lekso-admin.service" /etc/systemd/system/lekso-admin.service
+systemctl enable lekso-admin.service >/dev/null 2>&1 || true
+if [ -d /run/systemd/system ]; then systemctl daemon-reload; systemctl restart lekso-admin.service || true; fi
 # Asistentes de IA: vienen instalados pero INACTIVOS; cada usuario elige cuál activa (lekso-asistente).
 # Necesitan conexión: sin red se omiten y se instalan después, al elegirlos.
 if apt-get install -y --no-install-recommends nodejs npm; then

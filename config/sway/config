@@ -41,7 +41,9 @@ exec udiskie --no-tray --no-notify --automount
 # El menú de aplicaciones flota en el centro de la pantalla
 for_window [app_id="lekso-menu"] floating enable, resize set 480 620, move position center
 # El asistente de IA se acopla como pestaña en la zona de la derecha
-for_window [app_id="lekso-asistente"] move container to mark panel-ia, focus
+for_window [app_id="^lekso-asistente-"] move container to mark panel-ia, focus
+for_window [app_id="^lekso-asistente$"] move container to mark panel-ia, focus
+for_window [app_id="lekso-asistentes"] floating enable
 for_window [app_id="lekso-energia"] floating enable, resize set 360 460, move position center
 for_window [app_id="lekso-portapapeles"] floating enable, resize set 520 560, move position center
 for_window [app_id="lekso-ajustes"] floating enable, resize set 600 540, move position center

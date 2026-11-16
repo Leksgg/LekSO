@@ -1,79 +1,20 @@
 #!/usr/bin/env bash
-# Asistente de IA de LekSO: qué proveedor usas. Vienen instalados, pero ninguno está activo hasta que tú lo eliges.
+# Atajo del asistente de IA. Los ajustes (cuáles usas y qué puede hacer cada uno) están en la ventana lekso-asistentes.
 #
-#   lekso-asistente              abre el asistente activo (si no hay ninguno, te deja elegir)
-#   lekso-asistente estado       proveedores, cuáles están instalados y cuál está activo
-#   lekso-asistente activar NOMBRE     claude | codex
-#   lekso-asistente desactivar   ninguno activo (no se desinstala nada)
-#   lekso-asistente instalar NOMBRE    lo instala si falta (necesita conexión y tu contraseña)
-#
-# Cada proveedor corre dentro de la caja de IA: no ve tus archivos; su único camino a ellos es el permisor.
+#   lekso-asistente [abrir] [NOMBRE]   abre el asistente (el único activo, o el que digas; si no, la ventana)
+#   lekso-asistente estado             asistentes y permisos
+#   lekso-asistente instalar NOMBRE    instala el programa si falta (necesita conexión y tu contraseña)
 set -uo pipefail
-ESTADO="${XDG_CONFIG_HOME:-$HOME/.config}/lekso/asistente"
-PROVEEDORES="claude codex"
-
-nombre()   { case "$1" in claude) echo "Claude (Anthropic)";; codex) echo "Codex (OpenAI)";; esac; }
-programa() { case "$1" in claude) echo claude;; codex) echo codex;; esac; }
-paquete()  { case "$1" in claude) echo "@anthropic-ai/claude-code";; codex) echo "@openai/codex";; esac; }
-lanzador() { echo "lekso-$1"; }
-valido()   { case " $PROVEEDORES " in *" $1 "*) return 0;; *) return 1;; esac; }
-instalado() { command -v "$(programa "$1")" >/dev/null 2>&1; }
-activo()   { local a; a="$(cat "$ESTADO" 2>/dev/null || true)"; if valido "${a:-x}"; then echo "$a"; fi; }
-
-estado() {
-  local a p marca; a="$(activo)"
-  for p in $PROVEEDORES; do
-    if instalado "$p"; then marca="instalado"; else marca="sin instalar"; fi
-    [ "$p" = "$a" ] && marca="$marca · ACTIVO"
-    printf '  %-7s %-20s %s\n' "$p" "$(nombre "$p")" "$marca"
-  done
-  [ -n "$a" ] || echo "  Ninguno activo. Elige con: lekso-asistente activar NOMBRE"
-}
-
-instalar() {
-  local p="$1"
-  valido "$p" || { echo "No conozco «$p». Disponibles: $PROVEEDORES" >&2; return 2; }
-  instalado "$p" && { echo "$(nombre "$p") ya está instalado."; return 0; }
-  echo "Instalando $(nombre "$p") (necesita conexión)…"
-  if ! command -v npm >/dev/null 2>&1; then
-    sudo env DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends nodejs npm || { echo "No se pudo instalar Node (¿hay conexión?)." >&2; return 1; }
-  fi
-  sudo npm install -g "$(paquete "$p")" || { echo "No se pudo instalar $(nombre "$p") (¿hay conexión?)." >&2; return 1; }
-}
-
-activar() {
-  local p="$1"
-  valido "$p" || { echo "No conozco «$p». Disponibles: $PROVEEDORES" >&2; return 2; }
-  instalado "$p" || instalar "$p" || return 1
-  mkdir -p "$(dirname "$ESTADO")" && printf '%s\n' "$p" > "$ESTADO"
-  echo "Asistente activo: $(nombre "$p"). La primera vez te pedirá iniciar sesión con tu cuenta."
-}
-
-elegir() {
-  local r
-  echo "Ningún asistente de IA está activo. Están instalados pero apagados hasta que elijas uno:"
-  echo; estado; echo
-  printf 'Escribe el nombre del que quieres activar (%s) o Intro para salir: ' "$PROVEEDORES"
-  read -r r || return 1
-  [ -n "$r" ] || return 1
-  activar "$r"
-}
-
-abrir() {
-  local a; a="$(activo)"
-  if [ -z "$a" ]; then elegir || return 0; a="$(activo)"; [ -n "$a" ] || return 0; fi
-  if ! instalado "$a"; then
-    echo "$(nombre "$a") está elegido pero no instalado."
-    instalar "$a" || return 1
-  fi
-  exec "$(lanzador "$a")" "$@"
-}
-
+paquete() { case "$1" in claude) echo "@anthropic-ai/claude-code";; codex) echo "@openai/codex";; *) return 1;; esac; }
 case "${1:-abrir}" in
-  abrir) shift 2>/dev/null || true; abrir "$@" ;;
-  estado) estado ;;
-  activar) activar "${2:?Falta el nombre: $PROVEEDORES}" ;;
-  desactivar) rm -f "$ESTADO"; echo "Ningún asistente activo (siguen instalados)." ;;
-  instalar) instalar "${2:?Falta el nombre: $PROVEEDORES}" ;;
-  *) sed -n '2,9p' "$0" | sed 's/^# \{0,1\}//'; exit 2 ;;
+  abrir) shift 2>/dev/null || true; exec lekso-asistentes abrir "$@" ;;
+  estado) exec lekso-asistentes estado ;;
+  instalar)
+    p="$(paquete "${2:-}")" || { echo "Disponibles: claude codex" >&2; exit 2; }
+    command -v "$2" >/dev/null 2>&1 && { echo "$2 ya está instalado."; exit 0; }
+    command -v npm >/dev/null 2>&1 || sudo env DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends nodejs npm \
+      || { echo "No se pudo instalar Node (¿hay conexión?)." >&2; exit 1; }
+    sudo npm install -g "$p" || { echo "No se pudo instalar (¿hay conexión?)." >&2; exit 1; } ;;
+  activar|desactivar) echo "Eso se elige ahora en la ventana de asistentes: lekso-asistentes" ;;
+  *) sed -n '2,6p' "$0" | sed 's/^# \{0,1\}//'; exit 2 ;;
 esac

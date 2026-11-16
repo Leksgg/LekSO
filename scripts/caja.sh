@@ -24,6 +24,9 @@ while [ $# -gt 0 ]; do
   case "$1" in
     --ia)      [ -z "$IA" ] || { echo "Usa --ia o --ia-nube, no los dos" >&2; exit 2; }; IA="lekso-ia.sock"; shift ;;
     --ia-nube) [ -z "$IA" ] || { echo "Usa --ia o --ia-nube, no los dos" >&2; exit 2; }; IA="lekso-ia-nube.sock"; shift ;;
+    --ia-asistente) [ -z "$IA" ] || { echo "Usa una sola opción --ia" >&2; exit 2; }
+               case "$2" in ""|*[!a-z]*) echo "Nombre de asistente no válido: $2" >&2; exit 2 ;; esac
+               IA="lekso-ia-$2.sock"; shift 2 ;;
     --gui)   GUI=1; shift ;;
     --audio) AUDIO=1; shift ;;
     --gpu)   GPU=1; shift ;;
