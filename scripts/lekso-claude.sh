@@ -5,6 +5,9 @@
 # - Se le quitan todas sus herramientas propias (shell, editar, web...): solo tiene las del permisor.
 # - Su sesión y ajustes viven en una carpeta aparte (~/.lekso/claude), que es lo único que ve de tu usuario.
 # Uso: lekso-claude [argumentos de claude]
+if ! command -v claude >/dev/null 2>&1; then
+  echo "Claude Code no está instalado. Instálalo con: lekso-asistente instalar claude" >&2; exit 1
+fi
 CASA="${LEKSO_CLAUDE_CASA:-$HOME/.lekso/claude}"
 mkdir -p "$CASA" && chmod 700 "$CASA"
 # La carpeta de trabajo de la caja (/home/caja) está vacía y es solo suya: se marca como de confianza para

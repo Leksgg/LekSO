@@ -90,6 +90,17 @@ install -m 0644 "$RAIZ"/lekso-ia/nucleo.py "$RAIZ"/lekso-ia/permisor.py "$RAIZ"/
 printf '#!/bin/sh\nexec python3 /usr/local/lib/lekso-ia/lekso_ia.py "$@"\n' > /usr/local/bin/lekso-ia
 install -m 0755 "$RAIZ/scripts/caja.sh" /usr/local/bin/caja
 install -m 0755 "$RAIZ/scripts/lekso-claude.sh" /usr/local/bin/lekso-claude
+install -m 0755 "$RAIZ/scripts/lekso-codex.sh" /usr/local/bin/lekso-codex
+install -m 0755 "$RAIZ/config/bin/lekso-asistente" /usr/local/bin/lekso-asistente
+# Asistentes de IA: vienen instalados pero INACTIVOS; cada usuario elige cuál activa (lekso-asistente).
+# Necesitan conexión: sin red se omiten y se instalan después, al elegirlos.
+if apt-get install -y --no-install-recommends nodejs npm; then
+  for paquete in @anthropic-ai/claude-code @openai/codex; do
+    npm install -g "$paquete" >/dev/null 2>&1 || echo "AVISO: no se pudo instalar $paquete (¿sin conexión?). Se instalará al elegirlo."
+  done
+else
+  echo "AVISO: sin Node (¿sin conexión?): los asistentes de IA se instalarán al elegirlos."
+fi
 install -m 0644 "$RAIZ/scripts/seccomp-estricta.py" /usr/local/lib/lekso-ia/seccomp-estricta.py
 chmod 0755 /usr/local/bin/lekso-ia
 install -d -o "$USUARIO" -g "$USUARIO" "$HOME_USR/.config/foot"

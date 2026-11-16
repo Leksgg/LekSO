@@ -3,6 +3,13 @@
 Formato: `+` nuevo · `-` eliminado o retirado · `~` modificado · `*` otros.
 Lo más reciente, arriba.
 
+## Sin publicar
+
++ `lekso-asistente`: elige tu asistente de IA. Claude y Codex vienen instalados pero inactivos; ninguno se usa hasta que lo activas (`lekso-asistente activar claude|codex`). El botón del asistente abre el activo o te deja elegir. `desactivar` lo apaga sin desinstalar.
++ `lekso-codex`: Codex CLI dentro de la caja de IA, conectado al permisor.
+~ La instalación incluye Node y los dos asistentes cuando hay conexión; sin red, se instalan al elegirlos.
+~ `lekso-claude` avisa con claridad si Claude Code no está instalado, en vez de cerrarse sin explicación.
+
 ## Alpha 0.1.7 · 2026-11-16
 
 + Fase de pruebas en equipos reales: una imagen creada con `construir-iso.sh --fase-pruebas` instala un equipo que acepta actualizaciones sin exigir firma (`/etc/lekso/sin-firma`; se sigue exigiendo que la versión esté en la rama principal) y que arranca con el acceso remoto encendido en la red local. Borrar ese archivo vuelve a exigir firma.
