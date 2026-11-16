@@ -19,6 +19,8 @@ apt-get install -y --no-install-recommends nftables unattended-upgrades
 # 1. Cortafuegos: todo lo entrante se bloquea salvo lo que responde a lo que tú abres.
 REGLA_SSH=""
 [ "$SSH" -eq 1 ] && REGLA_SSH="tcp dport 22 accept"
+# Si el acceso remoto está encendido (lekso-acceso-remoto on), se conserva su regla: solo red local.
+[ "$SSH" -eq 0 ] && [ -f /etc/lekso/acceso-remoto ] &&   REGLA_SSH='ip saddr { 10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16 } tcp dport 22 accept comment "lekso-acceso-remoto"'
 cat > /etc/nftables.conf <<NFT
 #!/usr/sbin/nft -f
 # LekSO: entrante bloqueado por defecto. Saliente libre.

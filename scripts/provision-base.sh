@@ -160,7 +160,7 @@ install -d -o "$USUARIO" -g "$USUARIO" "$HOME_USR/Escritorio"
 install -o "$USUARIO" -g "$USUARIO" -m 0755 "$RAIZ"/config/escritorio/*.desktop "$HOME_USR/Escritorio/"
 
 # Programas predeterminados por tipo de archivo (no pisa lo que el usuario ya haya elegido).
-install -m 0755 "$RAIZ/config/bin/lekso-info" "$RAIZ/config/bin/lekso-wine" "$RAIZ/config/bin/lekso-menu" "$RAIZ/config/bin/lekso-energia" "$RAIZ/config/bin/lekso-flotantes" "$RAIZ/config/bin/lekso-term" "$RAIZ/config/bin/lekso-medios" "$RAIZ/config/bin/lekso-captura" "$RAIZ/config/bin/lekso-reposo" "$RAIZ/config/bin/lekso-portapapeles" "$RAIZ/config/bin/lekso-ajustes" "$RAIZ/config/bin/lekso-redes" "$RAIZ/config/bin/lekso-actualizaciones" "$RAIZ/config/bin/lekso-panel-ia" /usr/local/bin/
+install -m 0755 "$RAIZ/config/bin/lekso-info" "$RAIZ/config/bin/lekso-wine" "$RAIZ/config/bin/lekso-menu" "$RAIZ/config/bin/lekso-energia" "$RAIZ/config/bin/lekso-flotantes" "$RAIZ/config/bin/lekso-term" "$RAIZ/config/bin/lekso-medios" "$RAIZ/config/bin/lekso-captura" "$RAIZ/config/bin/lekso-reposo" "$RAIZ/config/bin/lekso-portapapeles" "$RAIZ/config/bin/lekso-ajustes" "$RAIZ/config/bin/lekso-redes" "$RAIZ/config/bin/lekso-actualizaciones" "$RAIZ/config/bin/lekso-panel-ia" "$RAIZ/config/bin/lekso-acceso-remoto" /usr/local/bin/
 install -d /usr/local/lib/lekso-ui
 install -m 0644 "$RAIZ/config/ui/lekso_ui.py" /usr/local/lib/lekso-ui/
 install -m 0644 "$RAIZ"/config/applications/*.desktop /usr/share/applications/

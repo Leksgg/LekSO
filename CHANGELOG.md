@@ -5,6 +5,7 @@ Lo más reciente, arriba.
 
 ## Sin publicar
 
++ `lekso-acceso-remoto on|off|estado`: acceso por SSH a tu equipo, apagado por defecto. Encendido, solo acepta conexiones de la red local, nunca como root, y sobrevive a reinicios y actualizaciones hasta que lo apagues.
 + `scripts/instalador/crear-usb.ps1`: crea la memoria USB de instalación desde Windows. Comprueba la suma y la firma de la imagen, solo ofrece discos USB (nunca el del sistema), pide escribir BORRAR y graba la imagen tal cual.
 + `scripts/instalador/firmar-imagen.sh`: firma la imagen de instalación (suma SHA-256 y firma con la clave de versiones).
 
