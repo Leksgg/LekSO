@@ -3,6 +3,10 @@
 Formato: `+` nuevo · `-` eliminado o retirado · `~` modificado · `*` otros.
 Lo más reciente, arriba.
 
+## Sin publicar
+
+~ Los equipos instalados desde USB no podían actualizarse: su copia del repositorio apuntaba al paquete del USB. Ahora el actualizador descarga siempre del repositorio oficial y el instalador lo deja bien al terminar. En un equipo ya instalado con la 0.1.4 o la 0.1.5 desde USB, una sola vez: `sudo git -C /var/lib/lekso/repo remote set-url origin https://github.com/Leksgg/LekSO.git`.
+
 ## Alpha 0.1.5 · 2026-11-16
 
 + `lekso-acceso-remoto on|off|estado`: acceso por SSH a tu equipo, apagado por defecto. Encendido, solo acepta conexiones de la red local, nunca como root, y sobrevive a reinicios y actualizaciones hasta que lo apagues.

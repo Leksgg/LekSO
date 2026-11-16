@@ -171,6 +171,8 @@ def preparar_clon():
         r = git("clone", "--no-checkout", REPO_URL, CLON)
         if r.returncode != 0:
             sys.exit("No se pudo descargar el repositorio: " + r.stderr.strip()[:200])
+    # la copia de un equipo instalado desde USB apunta al paquete del USB: siempre se baja del repositorio oficial
+    git("remote", "set-url", "origin", REPO_URL, cwd=CLON)
     r = git("fetch", "--tags", "--force", "origin", cwd=CLON)
     if r.returncode != 0:
         sys.exit("No se pudo actualizar la copia local: " + r.stderr.strip()[:200])

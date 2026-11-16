@@ -22,6 +22,7 @@
 set -euo pipefail
 
 REPO="https://github.com/Leksgg/LekSO.git"
+REPO_OFICIAL="$REPO"
 CLON="/var/lib/lekso/repo"
 CLAVE_PUBLICA='lekso-release namespaces="git" ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOlE6yy0lZmsYsRBZSGDhu8VIWYVrjHbWNIrl20tAArL'
 HUELLA_ESPERADA='SHA256:rtOK+qmzbIgjUTGIb0KTjz9fzUq2+tF2ULf04uwAoRU'
@@ -142,6 +143,8 @@ main() {
   bash "$CLON/scripts/provision-base.sh" "$USUARIO"
   install -d -m 0755 /var/lib/lekso
   printf '{"version": "%s", "commit": "%s", "firma": "%s"}\n' "${tag#v}" "$COMMIT" "$FIRMA" > /var/lib/lekso/instalada.json
+  # instalado desde un paquete local (USB): las actualizaciones vendrán del repositorio oficial
+  if [ "$REPO" != "$REPO_OFICIAL" ] && [ "${LEKSO_INSTALAR_PRUEBAS:-0}" != 1 ]; then git -C "$CLON" remote set-url origin "$REPO_OFICIAL"; fi
   info "Listo"
   echo "LekSO ${nombre:-$tag} instalado. Reinicia el equipo (sudo reboot): al iniciar sesión en la primera consola arranca el escritorio."
 }
