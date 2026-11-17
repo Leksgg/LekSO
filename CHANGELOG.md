@@ -3,7 +3,7 @@
 Formato: `+` nuevo · `-` eliminado o retirado · `~` modificado · `*` otros.
 Lo más reciente, arriba.
 
-## Sin publicar
+## Alpha 0.1.14 · 2026-11-17
 
 ~ El sistema pasa a llamarse **LeksSO** (Leks + Sistema Operativo). Cambia el nombre que se ve; los comandos (`lekso-*`) y las carpetas siguen igual. El repositorio de GitHub también se llama ahora LeksSO, y el nombre antiguo sigue funcionando para los equipos ya instalados.
 ~ Colores nuevos, tema **Marea**: fondo petróleo oscuro con acento turquesa, y avisos de OK, aviso y error que ya no se confunden con el acento. Se aplica a barra, ventanas, menús, terminal, avisos, bloqueo y iconos. El tema **Pizarra** (grafito cálido y azul) queda preparado en `scripts/aplicar-tema.py`, sin selector en Ajustes todavía. Solo modo oscuro.
