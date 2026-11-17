@@ -5,6 +5,9 @@ Lo más reciente, arriba.
 
 ## Sin publicar
 
++ VLC viene con el sistema y es el reproductor predeterminado de vídeo y audio.
++ Word, Excel y PowerPoint aparecen en el menú en su versión web de Microsoft 365 (gratis con una cuenta de Microsoft; hace falta internet y los documentos se guardan en tu OneDrive).
++ LibreOffice (Writer, Calc e Impress) en el catálogo de aplicaciones, para trabajar sin conexión: al instalarlo abre .docx, .xlsx y .pptx con doble clic. Sin él, esos archivos explican cómo abrirlos.
 ~ El botón de modelos de IA de la barra ya no parece muerto: la ventana se queda abierta y dice, en lenguaje llano, si Ollama no está instalado, si no responde o si todavía no hay modelos. Antes se abría y se cerraba al instante.
 
 ## Alpha 0.1.15 · 2026-11-17
