@@ -3,6 +3,15 @@
 Formato: `+` nuevo · `-` eliminado o retirado · `~` modificado · `*` otros.
 Lo más reciente, arriba.
 
+## Sin publicar
+
+~ El sistema pasa a llamarse **LeksSO** (Leks + Sistema Operativo). Cambia el nombre que se ve; los comandos (`lekso-*`) y las carpetas siguen igual. El repositorio de GitHub también se llama ahora LeksSO, y el nombre antiguo sigue funcionando para los equipos ya instalados.
+~ Colores nuevos, tema **Marea**: fondo petróleo oscuro con acento turquesa, y avisos de OK, aviso y error que ya no se confunden con el acento. Se aplica a barra, ventanas, menús, terminal, avisos, bloqueo y iconos. El tema **Pizarra** (grafito cálido y azul) queda preparado en `scripts/aplicar-tema.py`, sin selector en Ajustes todavía. Solo modo oscuro.
++ Controladores y firmware: a los 3 minutos de arrancar y una vez al día, LeksSO actualiza solo el microcódigo y el firmware de Debian, y avisa si hay un controlador NVIDIA nuevo o una actualización de firmware de dispositivos. Esos dos se instalan con un clic en Ajustes → Actualizaciones, con confirmación y comprobando antes Secure Boot, el espacio libre y que el equipo esté enchufado. `lekso-actualizar hardware detectar` muestra lo que hay.
++ `lekso-actualizar hardware quitar-nvidia` vuelve al controlador libre si el de NVIDIA da problemas.
+~ Con el controlador de NVIDIA instalado, el escritorio arranca con `--unsupported-gpu`; sin eso, sway no arranca con ese controlador.
+* Con Secure Boot activo no se instala el controlador de NVIDIA: el módulo sin firmar no cargaría. Aún no se puede registrar la clave desde aquí.
+
 ## Alpha 0.1.13 · 2026-11-16
 
 ~ Docker arranca bajo demanda: ya no se inicia con el equipo (retrasaba el arranque unos 6 segundos y ocupaba unos 135 MB siempre). Se pone en marcha solo con la primera orden `docker`.
