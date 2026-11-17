@@ -12,7 +12,7 @@ param(
   [switch]$SinFirma   # solo para imágenes de pruebas propias
 )
 $ErrorActionPreference = 'Stop'
-$ClavePublica = 'lekso-release namespaces="file" ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOlE6yy0lZmsYsRBZSGDhu8VIWYVrjHbWNIrl20tAArL'
+$ClavePublica = 'lekso-release namespaces="file" ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIG8wCtKi9u4zuhJM7Qn13ZhyGhCLspTx2t6h72ERbeq1'
 
 if (-not ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
   throw 'Abre PowerShell como administrador (clic derecho > Ejecutar como administrador).'

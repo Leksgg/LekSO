@@ -12,7 +12,7 @@
 #   4. Ejecuta la instalación (escritorio, caja, permisor de IA, cortafuegos, actualizaciones firmadas...).
 #
 # Huella de la clave de LeksSO (compárala con la publicada por quien te dio este script):
-#   SHA256:rtOK+qmzbIgjUTGIb0KTjz9fzUq2+tF2ULf04uwAoRU
+#   SHA256:E5cacFQkhc7QCOXvlEa16/iiuqXTI4XFwuz22zbQg8I
 #
 # Opciones: --version vX.Y.Z-alpha   instala esa versión en vez de la última
 #           --origen RUTA_O_URL      de dónde sale el repositorio (por ejemplo un paquete .bundle del USB de
@@ -24,8 +24,8 @@ set -euo pipefail
 REPO="https://github.com/Leksgg/LeksSO.git"
 REPO_OFICIAL="$REPO"
 CLON="/var/lib/lekso/repo"
-CLAVE_PUBLICA='lekso-release namespaces="git" ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOlE6yy0lZmsYsRBZSGDhu8VIWYVrjHbWNIrl20tAArL'
-HUELLA_ESPERADA='SHA256:rtOK+qmzbIgjUTGIb0KTjz9fzUq2+tF2ULf04uwAoRU'
+CLAVE_PUBLICA='lekso-release namespaces="git" ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIG8wCtKi9u4zuhJM7Qn13ZhyGhCLspTx2t6h72ERbeq1'
+HUELLA_ESPERADA='SHA256:E5cacFQkhc7QCOXvlEa16/iiuqXTI4XFwuz22zbQg8I'
 RAMA="origin/main"
 OSRELEASE="/etc/os-release"
 # Solo para las pruebas del propio instalador (nunca llegan por sudo): sustituyen la clave y el origen.
