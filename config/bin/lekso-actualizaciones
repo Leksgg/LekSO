@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
 """Actualizaciones de LekSO: qué versión tienes, si hay una nueva y qué cambia.
 
-Instalar pide tu contraseña en una terminal, para que veas lo que pasa. Nada se instala solo.
+Instalar pide tu contraseña en una terminal, para que veas lo que pasa. LekSO solo se instala con tu permiso.
+Los controladores y el firmware: el microcódigo y el firmware de Debian se actualizan solos (a diario, a los
+3 minutos de arrancar); el controlador de NVIDIA y el firmware de dispositivos se instalan con un clic.
 Se cierra con la X o con Esc.
 """
 import json
@@ -21,6 +23,33 @@ def sal(*cmd, tiempo=40):
         return r.stdout.strip() or r.stderr.strip()
     except (OSError, subprocess.SubprocessError):
         return ""
+
+
+def estado_hw():
+    try:
+        return json.load(open("/var/lib/lekso/hardware.json", encoding="utf-8"))
+    except (OSError, ValueError):
+        return {}
+
+
+def resumen_hw(est):
+    """(texto en lenguaje llano, ¿hay algo que instalar con un clic?)"""
+    if not est:
+        return "Todavía no se ha comprobado. Se hace sola cada día, a los 3 minutos de arrancar.", False
+    lineas, pendiente = [], False
+    n = est.get("nvidia")
+    if n and n.get("accion") == "instalar":
+        lineas.append("Tu tarjeta NVIDIA puede usar el controlador oficial (software propietario). Da más rendimiento en juegos.")
+        pendiente = True
+    elif n and n.get("accion") == "actualizar":
+        lineas.append(f"Hay un controlador NVIDIA más nuevo ({n.get('candidato', '')}).")
+        pendiente = True
+    for f in est.get("firmware", []):
+        lineas.append(f"Actualización de firmware: {f.get('dispositivo', '')} {f.get('version', '')}.")
+        pendiente = True
+    if not lineas:
+        lineas.append("Controladores y firmware al día. El microcódigo y el firmware de Debian se actualizan solos.")
+    return "\n".join(lineas), pendiente
 
 
 def cache():
@@ -73,6 +102,16 @@ class Ventana(QtWidgets.QWidget):
         self.cambios.setReadOnly(True)
         self.cambios.setPlaceholderText("Aquí aparece lo que trae la versión nueva.")
         raiz.addWidget(self.cambios, 1)
+        t_hw = QtWidgets.QLabel("Controladores y firmware")
+        t_hw.setObjectName("titulo")
+        raiz.addWidget(t_hw)
+        self.hw = QtWidgets.QLabel()
+        self.hw.setWordWrap(True)
+        raiz.addWidget(self.hw)
+        self.b_hw = QtWidgets.QPushButton("Instalar controladores y firmware")
+        self.b_hw.setObjectName("accion")
+        self.b_hw.clicked.connect(self.instalar_hw)
+        raiz.addWidget(self.b_hw)
         fila = QtWidgets.QHBoxLayout()
         self.b_comprobar = QtWidgets.QPushButton("Buscar versión nueva")
         self.b_comprobar.setObjectName("accion")
@@ -86,7 +125,8 @@ class Ventana(QtWidgets.QWidget):
         for b in (self.b_comprobar, self.b_instalar, self.b_volver):
             fila.addWidget(b)
         raiz.addLayout(fila)
-        nota = QtWidgets.QLabel("Solo se instalan versiones firmadas por LekSO. Se te pide la contraseña en una terminal.")
+        nota = QtWidgets.QLabel("Solo se instalan versiones firmadas por LekSO. Se te pide la contraseña en una terminal. "
+                                "El microcódigo y el firmware de Debian se actualizan solos; el resto, con tu clic.")
         nota.setObjectName("nota")
         nota.setWordWrap(True)
         raiz.addWidget(nota)
@@ -101,6 +141,9 @@ class Ventana(QtWidgets.QWidget):
             self.huella.setText(f"Commit {d.get('commit', '')[:7]} · firma {d.get('firma', '')}" if d.get("commit") else "")
         except (OSError, ValueError):
             self.huella.setText("")
+        texto_hw, hay_hw = resumen_hw(estado_hw())
+        self.hw.setText(texto_hw)
+        self.b_hw.setEnabled(hay_hw)
         c = cache()
         disp = c.get("disponible")
         self.b_instalar.setEnabled(bool(disp))
@@ -143,6 +186,15 @@ class Ventana(QtWidgets.QWidget):
 
     def instalar(self):
         self.terminal("Actualizar LekSO", "sudo lekso-actualizar aplicar")
+
+    def instalar_hw(self):
+        r = QtWidgets.QMessageBox.question(
+            self, "Controladores y firmware",
+            "Se te pedirá confirmar cada paso en una terminal. El controlador de NVIDIA necesita reiniciar, y el firmware "
+            "de dispositivos no se puede deshacer: no apagues el equipo mientras se instala. ¿Continuar?",
+            QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No, QtWidgets.QMessageBox.No)
+        if r == QtWidgets.QMessageBox.Yes:
+            self.terminal("Controladores y firmware", "sudo lekso-actualizar hardware aplicar")
 
     def volver(self):
         r = QtWidgets.QMessageBox.question(self, "Volver", "¿Volver a la versión anterior de LekSO?",

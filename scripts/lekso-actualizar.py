@@ -7,6 +7,7 @@
   lekso-actualizar cambios [VERSIÓN]    qué trae la versión nueva
   sudo lekso-actualizar aplicar [VERSIÓN]   instala la versión nueva (solo si su firma es válida)
   sudo lekso-actualizar volver          vuelve a la versión anterior
+  lekso-actualizar hardware ...         controladores y firmware (detectar, comprobar, aplicar...): ver `hardware`
 
 Seguridad: solo se instalan versiones con etiqueta (vX.Y.Z-alpha) firmadas con la clave de LekSO que
 ya está instalada en /etc/lekso/allowed_signers. Sin firma válida no se toca nada. Una subida normal
@@ -280,6 +281,16 @@ def volver():
     return 0
 
 
+def modulo_hardware():
+    """Carga lekso_hardware.py, instalado junto a las bibliotecas de LekSO o al lado de este script."""
+    for carpeta in ("/usr/local/lib/lekso", os.path.dirname(os.path.abspath(__file__))):
+        if os.path.exists(os.path.join(carpeta, "lekso_hardware.py")):
+            sys.path.insert(0, carpeta)
+            break
+    import lekso_hardware
+    return lekso_hardware
+
+
 def main(a):
     if not a or a[0] in ("-h", "--help", "ayuda"):
         print(__doc__)
@@ -308,6 +319,8 @@ def main(a):
             return aplicar(a[1] if len(a) > 1 else None)
         if c == "volver":
             return volver()
+        if c == "hardware":
+            return modulo_hardware().main(a[1:])
     except RuntimeError as e:
         print(e, file=sys.stderr)
         return 1

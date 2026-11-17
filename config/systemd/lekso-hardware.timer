@@ -1,0 +1,10 @@
+[Unit]
+Description=Buscar controladores y firmware nuevos una vez al día
+
+[Timer]
+OnBootSec=3min
+OnUnitActiveSec=1d
+Persistent=true
+
+[Install]
+WantedBy=timers.target

@@ -1,0 +1,12 @@
+[Unit]
+Description=Buscar controladores y firmware nuevos (LekSO)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/lekso-actualizar hardware auto
+Nice=10
+IOSchedulingClass=idle
+PrivateTmp=true
+ProtectHome=true

@@ -6,7 +6,7 @@
 #   sudo ./scripts/provision-base.sh [usuario]
 #
 # Incluye escritorio por zonas, permisor de IA con su panel, caja, dispositivos, red e iconos.
-# No incluye: controlador de NVIDIA, Ollama ni las aplicaciones (Brave, Steam, Obsidian...):
+# No incluye: controlador de NVIDIA (se instala con confirmación desde Ajustes → Actualizaciones), Ollama ni las aplicaciones (Brave, Steam, Obsidian...):
 # esas se instalan después con `lekso-apps`.
 set -euo pipefail
 
@@ -27,7 +27,7 @@ RAIZ="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 ESCRITORIO=(labwc sway swaybg waybar foot kitty fuzzel grim pcmanfm-qt qt6-wayland qt6-svg-plugins qt6ct xwayland fonts-font-awesome seatd xdg-desktop-portal-wlr micro imv zathura zathura-pdf-poppler mpv xarchiver udisks2 udiskie gvfs gvfs-backends polkitd ntfs-3g exfatprogs usbutils v4l-utils bluez pavucontrol-qt swaylock wl-clipboard mako-notifier libnotify-bin swayidle brightnessctl slurp cliphist wdisplays blueman cups fonts-noto-color-emoji fonts-liberation ffmpegthumbnailer power-profiles-daemon playerctl wlr-randr network-manager streamdeck-ui python3-pyside6.qtwidgets python3-pyside6.qtgui python3-pyside6.qtcore python3-pyside6.qtsvg)
 AUDIO=(pipewire pipewire-pulse wireplumber)
 AISLAMIENTO=(bubblewrap firejail python3-seccomp)
-HERRAMIENTAS=(git curl btop lm-sensors python3 bc)
+HERRAMIENTAS=(git curl btop lm-sensors python3 bc pciutils mokutil fwupd)
 GRAFICA=(mesa-vulkan-drivers)
 HYPERV=(hyperv-daemons)       # solo útil dentro de una máquina virtual de Hyper-V
 COMPATIBILIDAD=(wine winetricks)
@@ -155,6 +155,15 @@ install -m 0644 "$RAIZ/VERSION" /etc/lekso-release
 echo "LekSO $(lekso-actualizar version | sed 's/^LekSO //')" > /etc/issue.d/20-lekso.issue
 install -m 0644 "$RAIZ"/config/systemd/lekso-actualizar.service "$RAIZ"/config/systemd/lekso-actualizar.timer /etc/systemd/user/
 systemctl --global enable lekso-actualizar.timer >/dev/null 2>&1 || true
+
+# Controladores y firmware: a los 3 minutos de arrancar y una vez al día, el sistema (como root) actualiza solo
+# el microcódigo y el firmware de Debian y avisa del resto (NVIDIA, firmware de dispositivos), que se instalan
+# con un clic en Ajustes → Actualizaciones. Ver scripts/lekso_hardware.py.
+install -d -m 0755 /usr/local/lib/lekso
+install -m 0644 "$RAIZ/scripts/lekso_hardware.py" /usr/local/lib/lekso/lekso_hardware.py
+install -m 0644 "$RAIZ"/config/systemd/lekso-hardware.service "$RAIZ"/config/systemd/lekso-hardware.timer /etc/systemd/system/
+systemctl daemon-reload >/dev/null 2>&1 || true
+systemctl enable lekso-hardware.timer >/dev/null 2>&1 || true
 
 # Stream Deck: se inicia al conectarlo (el acceso a USB lo da la regla del paquete).
 install -m 0644 "$RAIZ/config/systemd/lekso-streamdeck.service" "$RAIZ/config/systemd/lekso-permisor.service" /etc/systemd/user/
