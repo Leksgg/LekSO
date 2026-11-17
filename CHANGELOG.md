@@ -3,6 +3,10 @@
 Formato: `+` nuevo · `-` eliminado o retirado · `~` modificado · `*` otros.
 Lo más reciente, arriba.
 
+## Sin publicar
+
+~ El botón de modelos de IA de la barra ya no parece muerto: la ventana se queda abierta y dice, en lenguaje llano, si Ollama no está instalado, si no responde o si todavía no hay modelos. Antes se abría y se cerraba al instante.
+
 ## Alpha 0.1.15 · 2026-11-17
 
 + El instalador ofrece cuatro opciones en el menú de arranque: con o sin cifrado del disco, y con o sin contraseña de usuario. Ya no obliga a cifrar ni a tener contraseña. Sin contraseña, el equipo entra solo al escritorio al encender y `sudo` no la pide; es para uso propio, porque quien tenga el equipo delante tiene acceso a todo. Desde la red no se puede entrar sin contraseña.

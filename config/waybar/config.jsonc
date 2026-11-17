@@ -23,7 +23,7 @@
     "custom/modelos": {
       "format": "",
       "tooltip-format": "Modelos de IA",
-      "on-click": "lekso-term -T \"Modelos de IA\" -e python3 /usr/local/lib/lekso-ia/modelo.py lista"
+      "on-click": "lekso-term -T \"Modelos de IA\" -e python3 /usr/local/lib/lekso-ia/modelo.py ver"
     },
     "custom/juego": {
       "exec": "lekso-juego barra",

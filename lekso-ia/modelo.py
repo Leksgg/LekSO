@@ -119,6 +119,22 @@ def descargar():
     return len(c)
 
 
+def lista_de_modelos():
+    """Dice qué modelos hay, o por qué no hay ninguno, en lenguaje llano."""
+    if not ollama_instalado():
+        print("Ollama no está instalado, así que no hay modelos de IA.\n"
+              "Instálalo desde Ajustes → Aplicaciones.")
+    elif not ollama_responde():
+        print("Ollama está instalado pero no responde. Comprueba que esté arrancado (ollama serve).")
+    else:
+        modelos = instalados()
+        if not modelos:
+            print("Ollama funciona, pero todavía no hay ningún modelo instalado.\n"
+                  "Descarga uno con: ollama pull NOMBRE")
+        for m in modelos:
+            print(f"{m['name']}  {gb(m['size'])}")
+
+
 def main(a):
     c = a[0] if a else "estado"
     if c == "estado":
@@ -128,9 +144,13 @@ def main(a):
         print(f"RAM: {gb(total - libre)} usados de {gb(total)} ({gb(libre)} libres)")
         for m in cargados():
             print(f"Modelo cargado: {m['name']} ({gb(m.get('size', 0))})")
-    elif c == "lista":
-        for m in instalados():
-            print(f"{m['name']}  {gb(m['size'])}")
+    elif c in ("lista", "ver"):
+        lista_de_modelos()
+        if c == "ver":                       # el botón de la barra: deja la ventana abierta para poder leerla
+            try:
+                input("\nPulsa Intro para cerrar.")
+            except EOFError:
+                pass
     elif c == "cargar":
         ok, msg = cargar(a[1], "--forzar" in a)
         print(msg)
