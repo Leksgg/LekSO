@@ -25,7 +25,7 @@ def admite(metodo):
 
 # (texto, descripción, orden, método de logind o None, pide confirmación, peligro)
 ACCIONES = [
-    ("Bloquear", "Pide la contraseña para volver", ["swaylock", "-f", "-c", "10151b"], None, False, False),
+    ("Bloquear", "Pide la contraseña para volver", ["swaylock", "-f", "-c", "021012"], None, False, False),
     ("Suspender", "Pausa el equipo y gasta muy poco", ["systemctl", "suspend"], "CanSuspend", False, False),
     ("Hibernar", "Guarda todo en el disco y apaga", ["systemctl", "hibernate"], "CanHibernate", True, False),
     ("Cerrar sesión", "Cierra tus programas y vuelve al inicio", ["swaymsg", "exit"], None, True, False),
@@ -98,7 +98,7 @@ class Energia(QtWidgets.QWidget):
     def marcar_perfil(self, actual):
         for clave, b in self.perfiles.items():
             b.setChecked(clave == actual)
-            b.setStyleSheet("background: #16384a; color: #4cc3e0; border: 1px solid #4cc3e0;" if clave == actual else "")
+            b.setStyleSheet("background: #003635; color: #00c4bf; border: 1px solid #00c4bf;" if clave == actual else "")
         self.nota_perfil.setText(next((ayuda for clave, _, ayuda in PERFILES if clave == actual), ""))
 
     def poner_perfil(self, clave):

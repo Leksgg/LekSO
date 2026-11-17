@@ -19,12 +19,12 @@ workspace_layout default
 
 # Colores (misma paleta que la barra): una sola pestaña activa en cian, el resto apagado.
 #                         borde    fondo    texto    indicador  borde hijo
-client.focused            #4cc3e0  #16384a  #dfe6ee  #4cc3e0    #4cc3e0
-client.focused_inactive   #2a3644  #1c2530  #8a98a8  #2a3644    #2a3644
-client.unfocused          #2a3644  #171e27  #8a98a8  #2a3644    #2a3644
-client.urgent             #f0b24a  #3a2d12  #f0b24a  #f0b24a    #f0b24a
+client.focused            #00c4bf  #003635  #e3edef  #00c4bf    #00c4bf
+client.focused_inactive   #25393c  #112123  #94a1a3  #25393c    #25393c
+client.unfocused          #25393c  #09191b  #94a1a3  #25393c    #25393c
+client.urgent             #fdc357  #332305  #fdc357  #fdc357    #fdc357
 
-output * bg #10151b solid_color
+output * bg #021012 solid_color
 gaps inner 0
 
 exec waybar

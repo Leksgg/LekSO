@@ -9,10 +9,10 @@ import sys
 
 from PIL import Image, ImageDraw, ImageFont
 
-FONDO = (16, 21, 27)       # #10151b
-CIAN = (76, 195, 224)      # #4cc3e0
-TEXTO = (223, 230, 238)    # #dfe6ee
-APAGADO = (138, 152, 168)  # #8a98a8
+FONDO = (16, 21, 27)       # #021012
+CIAN = (76, 195, 224)      # #00c4bf
+TEXTO = (223, 230, 238)    # #e3edef
+APAGADO = (138, 152, 168)  # #94a1a3
 
 
 def fuente(tam, negrita=False):

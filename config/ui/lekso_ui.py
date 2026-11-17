@@ -2,23 +2,23 @@
 import os
 
 ESTILO = """
-QWidget { background: #10151b; color: #dfe6ee; font-size: 14px; }
-QLabel#titulo { font-size: 16px; font-weight: bold; color: #4cc3e0; }
-QLabel#nota { color: #8a98a8; font-size: 12px; }
-QLineEdit { background: #1c2530; border: 1px solid #2a3644; padding: 8px 10px; color: #dfe6ee; }
-QLineEdit:focus { border: 1px solid #4cc3e0; }
-QPushButton#cerrar { background: transparent; color: #8a98a8; border: none; font-size: 20px; padding: 2px 12px; }
-QPushButton#cerrar:hover { background: #3a1d1d; color: #f08a82; }
-QPushButton#accion { background: #1c2530; border: 1px solid #2a3644; padding: 12px 14px; text-align: left; }
-QPushButton#accion:hover { background: #16384a; border: 1px solid #4cc3e0; }
-QPushButton#accion:disabled { color: #5a6877; background: #141b23; }
-QPushButton#peligro { background: #1c2530; border: 1px solid #2a3644; padding: 12px 14px; text-align: left; }
-QPushButton#peligro:hover { background: #3a1d1d; border: 1px solid #f08a82; }
-QListWidget { background: #10151b; border: none; outline: none; }
+QWidget { background: #021012; color: #e3edef; font-size: 14px; }
+QLabel#titulo { font-size: 16px; font-weight: bold; color: #00c4bf; }
+QLabel#nota { color: #94a1a3; font-size: 12px; }
+QLineEdit { background: #112123; border: 1px solid #25393c; padding: 8px 10px; color: #e3edef; }
+QLineEdit:focus { border: 1px solid #00c4bf; }
+QPushButton#cerrar { background: transparent; color: #94a1a3; border: none; font-size: 20px; padding: 2px 12px; }
+QPushButton#cerrar:hover { background: #3f1a13; color: #ff735a; }
+QPushButton#accion { background: #112123; border: 1px solid #25393c; padding: 12px 14px; text-align: left; }
+QPushButton#accion:hover { background: #003635; border: 1px solid #00c4bf; }
+QPushButton#accion:disabled { color: #667576; background: #051416; }
+QPushButton#peligro { background: #112123; border: 1px solid #25393c; padding: 12px 14px; text-align: left; }
+QPushButton#peligro:hover { background: #3f1a13; border: 1px solid #ff735a; }
+QListWidget { background: #021012; border: none; outline: none; }
 QListWidget::item { padding: 8px 10px; border: none; }
-QListWidget::item:hover { background: #1c2530; }
-QListWidget::item:selected { background: #16384a; color: #dfe6ee; }
-QMessageBox { background: #10151b; }
+QListWidget::item:hover { background: #112123; }
+QListWidget::item:selected { background: #003635; color: #e3edef; }
+QMessageBox { background: #021012; }
 """
 
 

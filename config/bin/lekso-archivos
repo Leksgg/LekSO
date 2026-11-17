@@ -24,20 +24,20 @@ except ImportError:
 
 CASA = os.path.expanduser("~")
 EXTRA = """
-QWidget { background: #10151b; color: #dfe6ee; font-size: 13px; }
-QTreeView, QListView, QListWidget { background: #10151b; border: none; outline: none; }
+QWidget { background: #021012; color: #e3edef; font-size: 13px; }
+QTreeView, QListView, QListWidget { background: #021012; border: none; outline: none; }
 QTreeView::item, QListWidget::item { padding: 3px 2px; }
-QTreeView::item:selected, QListView::item:selected, QListWidget::item:selected { background: #16384a; color: #dfe6ee; }
-QTreeView::item:hover, QListView::item:hover, QListWidget::item:hover { background: #171e27; }
-QLabel#seccion { color: #5a6877; font-size: 11px; padding: 8px 8px 2px 8px; }
-QLabel#ruta { color: #8a98a8; padding: 6px 8px; }
-QLabel#pie { color: #5a6877; padding: 4px 8px; font-size: 12px; }
-QPushButton#plano { background: transparent; border: none; color: #8a98a8; padding: 4px 10px; }
-QPushButton#plano:hover { color: #4cc3e0; background: #16384a; }
-QMenu { background: #1c2530; border: 1px solid #2a3644; }
+QTreeView::item:selected, QListView::item:selected, QListWidget::item:selected { background: #003635; color: #e3edef; }
+QTreeView::item:hover, QListView::item:hover, QListWidget::item:hover { background: #09191b; }
+QLabel#seccion { color: #667576; font-size: 11px; padding: 8px 8px 2px 8px; }
+QLabel#ruta { color: #94a1a3; padding: 6px 8px; }
+QLabel#pie { color: #667576; padding: 4px 8px; font-size: 12px; }
+QPushButton#plano { background: transparent; border: none; color: #94a1a3; padding: 4px 10px; }
+QPushButton#plano:hover { color: #00c4bf; background: #003635; }
+QMenu { background: #112123; border: 1px solid #25393c; }
 QMenu::item { padding: 6px 22px; }
-QMenu::item:selected { background: #16384a; }
-QLineEdit { background: #171e27; border: 1px solid #4cc3e0; padding: 2px; }
+QMenu::item:selected { background: #003635; }
+QLineEdit { background: #09191b; border: 1px solid #00c4bf; padding: 2px; }
 """
 
 

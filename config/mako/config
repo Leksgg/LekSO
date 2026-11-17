@@ -1,11 +1,11 @@
 # Notificaciones de LekSO: paleta propia, esquina superior derecha.
 font=DejaVu Sans 11
-background-color=#1c2530f2
-text-color=#dfe6ee
-border-color=#4cc3e0
+background-color=#112123f2
+text-color=#e3edef
+border-color=#00c4bf
 border-size=1
 border-radius=0
-progress-color=over #16384a
+progress-color=over #003635
 padding=12
 margin=14
 width=360
@@ -17,18 +17,18 @@ icons=1
 max-icon-size=40
 
 [urgency=low]
-border-color=#2a3644
+border-color=#25393c
 default-timeout=3000
 
 [urgency=critical]
-border-color=#f08a82
+border-color=#ff735a
 default-timeout=0
 
 [app-name=lekso-actualizar]
-border-color=#f0b24a
+border-color=#fdc357
 on-button-left=exec lekso-actualizaciones
 
 [app-name=lekso-ia]
-border-color=#f0b24a
-background-color=#2a2210f2
+border-color=#fdc357
+background-color=#2d1f05f2
 on-button-left=exec lekso-panel-ia

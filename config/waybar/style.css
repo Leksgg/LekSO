@@ -8,60 +8,60 @@
 }
 
 window#waybar {
-  background: #10151b;
-  color: #dfe6ee;
-  border-top: 1px solid #2a3644;
+  background: #021012;
+  color: #e3edef;
+  border-top: 1px solid #25393c;
 }
 
 #taskbar button {
   padding: 0 12px;
   margin: 0 2px;
-  color: #8a98a8;
-  background: #171e27;
+  color: #94a1a3;
+  background: #09191b;
 }
 #taskbar button:hover {
-  background: #1c2530;
-  color: #dfe6ee;
+  background: #112123;
+  color: #e3edef;
 }
 #taskbar button.active {
-  color: #4cc3e0;
-  background: #16384a;
-  box-shadow: inset 0 -2px #4cc3e0;
+  color: #00c4bf;
+  background: #003635;
+  box-shadow: inset 0 -2px #00c4bf;
 }
 
 #custom-ia {
   padding: 0 12px;
   margin-left: 6px;
-  color: #8a98a8;
+  color: #94a1a3;
 }
-#custom-ia.activa { color: #58c987; }
-#custom-ia.sin-instalar { color: #5a6877; }
-#custom-ia.asistente { color: #4cc3e0; }
-#custom-ia.admin { color: #f0b24a; font-weight: bold; }
-#custom-version { padding: 0 12px; color: #5a6877; }
-#custom-version:hover { color: #dfe6ee; }
+#custom-ia.activa { color: #85ce6c; }
+#custom-ia.sin-instalar { color: #667576; }
+#custom-ia.asistente { color: #00c4bf; }
+#custom-ia.admin { color: #fdc357; font-weight: bold; }
+#custom-version { padding: 0 12px; color: #667576; }
+#custom-version:hover { color: #e3edef; }
 
 #cpu, #memory, #pulseaudio, #network, #battery, #clock {
   font-family: "DejaVu Sans", "Font Awesome 5 Free", "FontAwesome";
   padding: 0 12px;
-  color: #dfe6ee;
+  color: #e3edef;
 }
 #clock { font-weight: bold; }
-#cpu.warning, #memory.warning { color: #f0b24a; }
-#cpu.critical, #memory.critical { color: #f08a82; }
-#pulseaudio.muted, #network.disconnected { color: #8a98a8; }
+#cpu.warning, #memory.warning { color: #fdc357; }
+#cpu.critical, #memory.critical { color: #ff735a; }
+#pulseaudio.muted, #network.disconnected { color: #94a1a3; }
 
 tooltip {
-  background: #1c2530;
-  border: 1px solid #2a3644;
-  color: #dfe6ee;
+  background: #112123;
+  border: 1px solid #25393c;
+  color: #e3edef;
 }
-tooltip label { color: #dfe6ee; }
+tooltip label { color: #e3edef; }
 
 /* Raíl de iconos (izquierda) */
 window#waybar.raiz {
-  background: #10151b;
-  border-right: 1px solid #2a3644;
+  background: #021012;
+  border-right: 1px solid #25393c;
   border-top: none;
 }
 #custom-juego, #custom-portapapeles, #custom-apps, #custom-asistente, #custom-archivos, #custom-modelos, #custom-config, #custom-vista, #custom-flotantes, #custom-energia, #custom-streamdeck {
@@ -69,21 +69,21 @@ window#waybar.raiz {
   font-size: 20px;
   padding: 14px 0;
   margin: 2px 6px;
-  color: #8a98a8;
+  color: #94a1a3;
   background: transparent;
 }
 #custom-juego:hover, #custom-portapapeles:hover, #custom-apps:hover, #custom-asistente:hover, #custom-archivos:hover, #custom-modelos:hover, #custom-config:hover, #custom-vista:hover, #custom-flotantes:hover, #custom-streamdeck:hover {
-  color: #4cc3e0;
-  background: #16384a;
+  color: #00c4bf;
+  background: #003635;
 }
 
-#custom-energia:hover { color: #f08a82; background: #3a1d1d; }
+#custom-energia:hover { color: #ff735a; background: #3f1a13; }
 
-#battery.warning { color: #f0b24a; }
-#battery.critical { color: #f08a82; }
-#battery.charging { color: #58c987; }
+#battery.warning { color: #fdc357; }
+#battery.critical { color: #ff735a; }
+#battery.charging { color: #85ce6c; }
 
-#custom-actualizacion { padding: 0 12px; color: #f0b24a; font-weight: bold; }
-#custom-actualizacion:hover { background: #3a2d12; }
+#custom-actualizacion { padding: 0 12px; color: #fdc357; font-weight: bold; }
+#custom-actualizacion:hover { background: #332305; }
 
-#custom-juego.encendido { color: #58c987; background: #173a26; box-shadow: inset 2px 0 #58c987; }
+#custom-juego.encendido { color: #85ce6c; background: #1a2c13; box-shadow: inset 2px 0 #85ce6c; }

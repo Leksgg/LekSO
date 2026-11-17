@@ -1,0 +1,31 @@
+{
+  "tema": "pizarra",
+  "modo": "oscuro",
+  "colores": {
+    "bg": "#100d09",
+    "s1": "#191511",
+    "s2": "#211d19",
+    "line": "#39352f",
+    "off": "#14110d",
+    "alt": "#15120e",
+    "base2": "#181410",
+    "mid": "#282520",
+    "dark": "#070503",
+    "text": "#edebe7",
+    "faint": "#74716c",
+    "soft": "#00324c",
+    "muted": "#a19e9a",
+    "acc": "#2bb7ff",
+    "acc_hi": "#82ceff",
+    "acc_dim": "#3879a0",
+    "sec": "#47c7c7",
+    "magenta": "#d398e0",
+    "ok": "#85ce6c",
+    "warn": "#fdc357",
+    "bad": "#ff735a",
+    "ok_soft": "#1a2c13",
+    "warn_soft": "#332305",
+    "warn_soft2": "#2d1f05",
+    "bad_soft": "#3f1a13"
+  }
+}
