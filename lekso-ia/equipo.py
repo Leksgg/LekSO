@@ -123,7 +123,7 @@ def estado():
         encendido = round(float(_leer("/proc/uptime").split()[0]) / 3600, 1)
     except (ValueError, IndexError):
         encendido = None
-    return {"ok": True, "sistema": "LekSO " + _leer("/etc/lekso-release").strip(), "nucleo": os.uname().release,
+    return {"ok": True, "sistema": "LeksSO " + _leer("/etc/lekso-release").strip(), "nucleo": os.uname().release,
             "encendido_horas": encendido, "memoria": _memoria(), "cpu": _cpu(), "discos": _discos(),
             "procesos": _procesos(), "bateria": _bateria(), "temperaturas": _temperaturas()}
 

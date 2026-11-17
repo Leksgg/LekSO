@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Da un programa predeterminado a cada tipo de archivo que LekSO sabe abrir.
+"""Da un programa predeterminado a cada tipo de archivo que LeksSO sabe abrir.
 
 Recorre los tipos MIME del sistema y rellena ~/.config/mimeapps.list solo donde
 falta. Lo que el usuario ya haya elegido no se toca, así que un programa nuevo

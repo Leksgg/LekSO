@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-"""Actualizaciones de LekSO: qué versión tienes, si hay una nueva y qué cambia.
+"""Actualizaciones de LeksSO: qué versión tienes, si hay una nueva y qué cambia.
 
-Instalar pide tu contraseña en una terminal, para que veas lo que pasa. LekSO solo se instala con tu permiso.
+Instalar pide tu contraseña en una terminal, para que veas lo que pasa. LeksSO solo se instala con tu permiso.
 Los controladores y el firmware: el microcódigo y el firmware de Debian se actualizan solos (a diario, a los
 3 minutos de arrancar); el controlador de NVIDIA y el firmware de dispositivos se instalan con un clic.
 Se cierra con la X o con Esc.
@@ -125,7 +125,7 @@ class Ventana(QtWidgets.QWidget):
         for b in (self.b_comprobar, self.b_instalar, self.b_volver):
             fila.addWidget(b)
         raiz.addLayout(fila)
-        nota = QtWidgets.QLabel("Solo se instalan versiones firmadas por LekSO. Se te pide la contraseña en una terminal. "
+        nota = QtWidgets.QLabel("Solo se instalan versiones firmadas por LeksSO. Se te pide la contraseña en una terminal. "
                                 "El microcódigo y el firmware de Debian se actualizan solos; el resto, con tu clic.")
         nota.setObjectName("nota")
         nota.setWordWrap(True)
@@ -185,7 +185,7 @@ class Ventana(QtWidgets.QWidget):
         self.close()
 
     def instalar(self):
-        self.terminal("Actualizar LekSO", "sudo lekso-actualizar aplicar")
+        self.terminal("Actualizar LeksSO", "sudo lekso-actualizar aplicar")
 
     def instalar_hw(self):
         r = QtWidgets.QMessageBox.question(
@@ -197,7 +197,7 @@ class Ventana(QtWidgets.QWidget):
             self.terminal("Controladores y firmware", "sudo lekso-actualizar hardware aplicar")
 
     def volver(self):
-        r = QtWidgets.QMessageBox.question(self, "Volver", "¿Volver a la versión anterior de LekSO?",
+        r = QtWidgets.QMessageBox.question(self, "Volver", "¿Volver a la versión anterior de LeksSO?",
                                            QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No, QtWidgets.QMessageBox.No)
         if r == QtWidgets.QMessageBox.Yes:
             self.terminal("Volver a la versión anterior", "sudo lekso-actualizar volver")

@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<!-- LekSO sobre labwc: ventanas con título y botones (minimizar, maximizar, cerrar), como en Windows. -->
+<!-- LeksSO sobre labwc: ventanas con título y botones (minimizar, maximizar, cerrar), como en Windows. -->
 <labwc_config>
   <theme>
     <name>LekSO</name>

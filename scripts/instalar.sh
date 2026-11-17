@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Instala LekSO sobre un Debian 13 recién instalado (sin escritorio).
+# Instala LeksSO sobre un Debian 13 recién instalado (sin escritorio).
 #
 #   wget https://raw.githubusercontent.com/Leksgg/LekSO/v0.1.4-alpha/scripts/instalar.sh
 #   sudo bash instalar.sh
@@ -7,11 +7,11 @@
 # Qué hace, en orden:
 #   1. Comprueba que es Debian 13 (amd64), que tienes conexión y que lo lanzas con sudo desde tu usuario.
 #   2. Descarga la versión más reciente (o la que indiques con --version) y COMPRUEBA SU FIRMA con la clave
-#      de LekSO incluida en este script. Sin firma válida, o si el commit no está en la rama principal, para.
+#      de LeksSO incluida en este script. Sin firma válida, o si el commit no está en la rama principal, para.
 #   3. Te enseña qué va a instalar y pide confirmación.
 #   4. Ejecuta la instalación (escritorio, caja, permisor de IA, cortafuegos, actualizaciones firmadas...).
 #
-# Huella de la clave de LekSO (compárala con la publicada por quien te dio este script):
+# Huella de la clave de LeksSO (compárala con la publicada por quien te dio este script):
 #   SHA256:rtOK+qmzbIgjUTGIb0KTjz9fzUq2+tF2ULf04uwAoRU
 #
 # Opciones: --version vX.Y.Z-alpha   instala esa versión en vez de la última
@@ -96,7 +96,7 @@ verificar_version() {
   huella="$(printf '%s\n' "${CLAVE_PUBLICA#* ssh-}" | sed 's/^/ssh-/' | ssh-keygen -lf - 2>/dev/null | awk '{print $2}' || true)"
   [ "$huella" = "$HUELLA_ESPERADA" ] || die "La clave de este script no coincide con la huella esperada ($HUELLA_ESPERADA). No sigo."
   salida="$(git -C "$CLON" -c gpg.ssh.allowedSignersFile="$tmp/allowed_signers" verify-tag "$tag" 2>&1)" \
-    || die "La versión $tag NO tiene una firma válida de LekSO. No se instala nada.
+    || die "La versión $tag NO tiene una firma válida de LeksSO. No se instala nada.
 $salida"
   case "$salida" in *'Good "git" signature for '*) ;; *) die "La firma de $tag no es de un firmante autorizado. No se instala nada." ;; esac
   COMMIT="$(git -C "$CLON" rev-list -n 1 "$tag")"
@@ -128,7 +128,7 @@ main() {
   verificar_version "$tag"
   local nombre; nombre="$(git -C "$CLON" show "$tag:VERSION" 2>/dev/null | tr -d '[:space:]' || true)"
   echo
-  echo "Se va a instalar LekSO ${nombre:-$tag} para el usuario «$USUARIO»."
+  echo "Se va a instalar LeksSO ${nombre:-$tag} para el usuario «$USUARIO»."
   echo "Cambiará la configuración del sistema (escritorio, cortafuegos, red, actualizaciones)."
   if [ "$simular" -eq 1 ]; then
     echo; echo "Simulación: todo comprobado, no se ha instalado nada."; return 0
@@ -146,7 +146,7 @@ main() {
   # instalado desde un paquete local (USB): las actualizaciones vendrán del repositorio oficial
   if [ "$REPO" != "$REPO_OFICIAL" ] && [ "${LEKSO_INSTALAR_PRUEBAS:-0}" != 1 ]; then git -C "$CLON" remote set-url origin "$REPO_OFICIAL"; fi
   info "Listo"
-  echo "LekSO ${nombre:-$tag} instalado. Reinicia el equipo (sudo reboot): al iniciar sesión en la primera consola arranca el escritorio."
+  echo "LeksSO ${nombre:-$tag} instalado. Reinicia el equipo (sudo reboot): al iniciar sesión en la primera consola arranca el escritorio."
 }
 
 # Para las pruebas se puede cargar el script sin ejecutarlo.

@@ -1,5 +1,5 @@
 #!/bin/sh
-# Codex CLI dentro de la caja de IA en la nube, conectado al permisor de LekSO.
+# Codex CLI dentro de la caja de IA en la nube, conectado al permisor de LeksSO.
 #
 # - Corre en `caja --ia-nube --red`: no ve tus archivos; su único camino a ellos es el permisor.
 # - Sus herramientas propias (shell, editar) actúan solo dentro de la caja, sobre una carpeta vacía y suya:
@@ -12,7 +12,7 @@ if ! command -v codex >/dev/null 2>&1; then
 fi
 CASA="${LEKSO_CODEX_CASA:-$HOME/.lekso/codex}"
 mkdir -p "$CASA" && chmod 700 "$CASA"
-NOTA='Estás en LekSO, dentro de una caja: tu carpeta (/home/caja) NO es la del usuario. Para tocar sus archivos usa solo las herramientas del servidor MCP «lekso», con rutas del equipo real. Cada acción pasa por el permisor, que pide permiso al usuario.'
+NOTA='Estás en LeksSO, dentro de una caja: tu carpeta (/home/caja) NO es la del usuario. Para tocar sus archivos usa solo las herramientas del servidor MCP «lekso», con rutas del equipo real. Cada acción pasa por el permisor, que pide permiso al usuario.'
 exec caja --ia-asistente codex --red --rw "$CASA" \
   --env CODEX_HOME=/home/caja/codex \
   --env LEKSO_HOME_REAL="$HOME" \

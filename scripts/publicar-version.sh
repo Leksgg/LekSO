@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Publica una versión de LekSO: etiqueta firmada y subida. Solo para quien mantiene el repositorio.
+# Publica una versión de LeksSO: etiqueta firmada y subida. Solo para quien mantiene el repositorio.
 #
 # Uso: scripts/publicar-version.sh 0.1.2-alpha     una versión concreta (VERSION y CHANGELOG ya preparados)
 #      añade --sin-subir para preparar y firmar en local sin publicar (por ejemplo, para probar el instalador)
@@ -70,16 +70,16 @@ grep -qE "^## .*(${V}|${BONITA})" CHANGELOG.md || { echo "CHANGELOG.md no tiene 
 git rev-parse "v$V" >/dev/null 2>&1 && { echo "La etiqueta v$V ya existe." >&2; exit 1; }
 
 if [ "$FIRMAR" = 1 ]; then
-  git -c gpg.format=ssh -c user.signingkey="$FIRMA" tag -s "v$V" -m "LekSO $BONITA"
+  git -c gpg.format=ssh -c user.signingkey="$FIRMA" tag -s "v$V" -m "LeksSO $BONITA"
   git -c gpg.ssh.allowedSignersFile=config/allowed_signers tag -v "v$V"
 else
-  git tag -a "v$V" -m "LekSO $BONITA (sin firmar: fase de pruebas)"
+  git tag -a "v$V" -m "LeksSO $BONITA (sin firmar: fase de pruebas)"
   echo "AVISO: v$V va SIN FIRMA. Solo la aceptan los equipos en fase de pruebas (/etc/lekso/sin-firma)."
 fi
 if [ "$SUBIR" = 1 ]; then
   git push origin HEAD:main "v$V"
   PREPARADA=0
-  echo "Publicada: LekSO $BONITA (v$V)"
+  echo "Publicada: LeksSO $BONITA (v$V)"
 else
   PREPARADA=0
   echo "Etiqueta v$V creada y firmada EN LOCAL (no se ha subido). Para publicarla: git push origin HEAD:main v$V"

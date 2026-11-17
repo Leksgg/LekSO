@@ -1,5 +1,5 @@
 #!/bin/sh
-# Muestra qué es un archivo cuando LekSO no tiene un programa para abrirlo.
+# Muestra qué es un archivo cuando LeksSO no tiene un programa para abrirlo.
 f="$1"
 clear
 printf '%s\n\n' "$f"

@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
-# Construye el repositorio local de paquetes que lleva el USB de instalación, para instalar LekSO SIN internet.
+# Construye el repositorio local de paquetes que lleva el USB de instalación, para instalar LeksSO SIN internet.
 #
-# Qué hace: crea un Debian 13 mínimo en una carpeta (debootstrap), calcula todo lo que necesita LekSO encima
+# Qué hace: crea un Debian 13 mínimo en una carpeta (debootstrap), calcula todo lo que necesita LeksSO encima
 # de ese sistema base y descarga solo esos paquetes (los de Debian, con las firmas de Debian comprobadas por apt).
 # Deja una carpeta con los .deb y un índice (Packages.gz) que el instalador usa como fuente de apt local.
 #
 # Uso (en un Debian 13 con internet, como root): construir-repo-offline.sh SALIDA [RAIZ_REPO_LEKSO]
 #   SALIDA            carpeta donde quedará el repositorio (por ejemplo /var/tmp/lekso-offline)
-#   RAIZ_REPO_LEKSO   copia del repositorio de LekSO de la que leer las listas de paquetes (por defecto, la de este script)
+#   RAIZ_REPO_LEKSO   copia del repositorio de LeksSO de la que leer las listas de paquetes (por defecto, la de este script)
 set -euo pipefail
 
 [ "$(id -u)" -eq 0 ] || { echo "Ejecuta como root." >&2; exit 1; }

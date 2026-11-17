@@ -1,4 +1,4 @@
-"""Núcleo del permisor de IA de LekSO. Solo biblioteca estándar, solo Linux.
+"""Núcleo del permisor de IA de LeksSO. Solo biblioteca estándar, solo Linux.
 
 La IA nunca toca el disco: pide acciones y este módulo las ejecuta dentro del
 alcance concedido. Cada ruta se recorre con openat y O_NOFOLLOW desde un
@@ -190,7 +190,7 @@ class Nucleo:
                 raise Denegado(f"carpeta demasiado amplia: {ruta}")
             if self.datos == Path(real) or str(self.datos).startswith(real + "/") \
                     or real.startswith(str(self.datos) + "/"):
-                raise Denegado("la carpeta incluye datos internos de LekSO")
+                raise Denegado("la carpeta incluye datos internos de LeksSO")
             if not nueva and not os.path.isdir(real):
                 raise Denegado(f"no es una carpeta: {ruta}")
             if not set(perms) <= set("rwd") or not perms:

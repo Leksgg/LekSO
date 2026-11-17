@@ -1,4 +1,4 @@
-"""Demonio del permisor de LekSO.
+"""Demonio del permisor de LeksSO.
 
 Dos sockets Unix, ambos 0600 y solo del usuario:
   ia.sock       lo usa la IA: pedir una tarea y ejecutar acciones dentro de lo aprobado.

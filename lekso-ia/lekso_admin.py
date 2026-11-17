@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Servicio de administración de LekSO: ejecuta como administrador las órdenes que le pasa el permisor.
+"""Servicio de administración de LeksSO: ejecuta como administrador las órdenes que le pasa el permisor.
 
 Corre como root. Solo atiende si se cumplen las tres cosas:
   1. quien llama es el servicio del permisor de ese usuario (se comprueba el grupo de control y el programa);
@@ -65,7 +65,7 @@ class H(socketserver.StreamRequestHandler):
 
     def _atender(self, pid, uid):
         if uid < 1000 or not _es_el_permisor(pid):
-            return {"ok": False, "error": "solo atiende al permisor de LekSO"}
+            return {"ok": False, "error": "solo atiende al permisor de LeksSO"}
         usuario = pwd.getpwuid(uid)
         if not asistentes.alguno_administra(usuario.pw_name):
             return {"ok": False, "error": "ningún asistente tiene permiso de administración"}

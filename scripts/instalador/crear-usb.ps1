@@ -1,11 +1,11 @@
-﻿# Crea la memoria USB de instalación de LekSO desde Windows (PowerShell como administrador).
+﻿# Crea la memoria USB de instalación de LeksSO desde Windows (PowerShell como administrador).
 #
 #   .\crear-usb.ps1 -Iso C:\ruta\lekso-instalador.iso            con una imagen que ya tienes
 #   .\crear-usb.ps1 -Url https://.../lekso-instalador.iso        la descarga y comprueba su firma antes de grabar
 #
 # Seguridad: solo ofrece discos USB, te enseña modelo y tamaño, y no toca nada hasta que escribes BORRAR.
 # La imagen se comprueba con su suma SHA-256 y, si hay archivos .sha256 y .sha256.sig a su lado, con la
-# firma de LekSO (clave incluida aquí, la misma que firma las versiones).
+# firma de LeksSO (clave incluida aquí, la misma que firma las versiones).
 param(
   [string]$Iso,
   [string]$Url,
@@ -44,7 +44,7 @@ if (Test-Path $archivoSuma) {
     $perm = Join-Path $env:TEMP 'lekso_allowed_signers'; Set-Content -Path $perm -Value $ClavePublica -Encoding ascii
     Get-Content $archivoSuma -Raw | & $ssh -Y verify -f $perm -I lekso-release -n file -s "$archivoSuma.sig" | Out-Null
     if ($LASTEXITCODE -ne 0) { throw 'La FIRMA de la imagen no es válida. No grabo nada.' }
-    Write-Host 'Firma de LekSO: válida.'
+    Write-Host 'Firma de LeksSO: válida.'
   } elseif (-not $SinFirma) { throw 'La imagen no trae firma (.sha256.sig). Si es una imagen de pruebas tuya, usa -SinFirma.' }
 } elseif (-not $SinFirma) { throw 'No hay archivo .sha256 junto a la imagen. Si es una imagen de pruebas tuya, usa -SinFirma.' }
 else { Write-Host "AVISO: imagen sin comprobar (SHA-256 $hash)." -ForegroundColor Yellow }
@@ -89,14 +89,14 @@ public static class RawDisk {
 }
 '@
 Write-Host "`nGrabando... (unos minutos, no desconectes la memoria)"
-[RawDisk]::Write("\\.\PhysicalDrive$($disco.Number)", $Iso, [Action[long,long]]{ param($h,$t) Write-Progress -Activity 'Grabando LekSO en la USB' -PercentComplete ([int](100 * $h / $t)) })
+[RawDisk]::Write("\\.\PhysicalDrive$($disco.Number)", $Iso, [Action[long,long]]{ param($h,$t) Write-Progress -Activity 'Grabando LeksSO en la USB' -PercentComplete ([int](100 * $h / $t)) })
 Set-Disk -Number $disco.Number -IsOffline $false -ErrorAction SilentlyContinue
-Write-Progress -Activity 'Grabando LekSO en la USB' -Completed
+Write-Progress -Activity 'Grabando LeksSO en la USB' -Completed
 Write-Host @'
 
 Listo. Para instalar:
   1. Deja la USB conectada y reinicia el portátil.
   2. Entra en el menú de arranque (suele ser F12, F9, Esc o F2 al encender) y elige la USB.
-  3. En el menú elige «Instalar LekSO». Te preguntará qué disco borrar, tu usuario, tu contraseña y la del cifrado.
+  3. En el menú elige «Instalar LeksSO». Te preguntará qué disco borrar, tu usuario, tu contraseña y la del cifrado.
 Windows desaparece de ese disco: copia antes lo que quieras conservar.
 '@ -ForegroundColor Green

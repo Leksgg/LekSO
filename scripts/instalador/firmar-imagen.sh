@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Firma una imagen de instalación de LekSO: crea IMAGEN.sha256 e IMAGEN.sha256.sig con la clave de versiones.
+# Firma una imagen de instalación de LeksSO: crea IMAGEN.sha256 e IMAGEN.sha256.sig con la clave de versiones.
 # Uso: firmar-imagen.sh IMAGEN.iso      (con el agente de firma desbloqueado: scripts/desbloquear-firma.sh)
 set -euo pipefail
 ISO="${1:?Uso: $0 IMAGEN.iso}"

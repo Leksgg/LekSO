@@ -1,6 +1,6 @@
-"""Archivos de LekSO: navegación y operaciones con archivos, sin pantalla (Qt en modo «offscreen»).
+"""Archivos de LeksSO: navegación y operaciones con archivos, sin pantalla (Qt en modo «offscreen»).
 Incluye las barreras contra copiar o mover la raíz del disco y una carpeta dentro de sí misma.
-Uso: python3 scripts/test_archivos.py   (en un equipo LekSO: necesita PySide6 y gio)
+Uso: python3 scripts/test_archivos.py   (en un equipo LeksSO: necesita PySide6 y gio)
 """
 import importlib.machinery, importlib.util, os, sys, tempfile, shutil
 os.environ["QT_QPA_PLATFORM"] = "offscreen"

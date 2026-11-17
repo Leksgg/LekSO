@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Panel de IA de LekSO: una pantalla, pocas teclas. Se abre con Mod+a.
+"""Panel de IA de LeksSO: una pantalla, pocas teclas. Se abre con Mod+a.
 
   a aprobar    r aprobar y recordar carpetas    x rechazar
   ↑ ↓ elegir una acción      u deshacer la acción      t deshacer toda su tarea
@@ -59,7 +59,7 @@ def dibujar(p, s, sel, mensaje):
     h, w = p.getmaxyx()
     p.addstr(0, 1, f"{s['ia']}    RAM {s['ram']}"[: w - 2], curses.A_BOLD)
     if s.get("version") and w > 60:
-        v = f"LekSO {s['version']}"
+        v = f"LeksSO {s['version']}"
         p.addstr(0, w - len(v) - 2, v, curses.color_pair(4))
     y = 2
     if s["error"]:

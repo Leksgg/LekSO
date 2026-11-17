@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Ajustes de LekSO: un solo sitio para las cosas del sistema (sonido, red, pantallas...).
+"""Ajustes de LeksSO: un solo sitio para las cosas del sistema (sonido, red, pantallas...).
 
 Cada botón abre la herramienta que ya existe para eso; aquí solo se reúnen.
 Se cierra con la X o con Esc.

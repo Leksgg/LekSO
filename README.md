@@ -1,4 +1,4 @@
-# LekSO
+# LeksSO
 
 Escritorio ligero sobre Debian, con una capa de aislamiento para programas y un permisor para que una IA solo toque lo que se le concede, cuando se le pide.
 
@@ -21,7 +21,7 @@ Escritorio ligero sobre Debian, con una capa de aislamiento para programas y un 
 
 ## Versiones y actualizaciones
 
-La versión instalada se ve en Ajustes → Actualizaciones, con `lekso-actualizar version` y en la pantalla de inicio de sesión. Cuando se publica una versión nueva aparece un aviso en la barra y una notificación; se instala desde Ajustes, con tu permiso y solo si está firmada por LekSO. Se puede volver a la anterior.
+La versión instalada se ve en Ajustes → Actualizaciones, con `lekso-actualizar version` y en la pantalla de inicio de sesión. Cuando se publica una versión nueva aparece un aviso en la barra y una notificación; se instala desde Ajustes, con tu permiso y solo si está firmada por LeksSO. Se puede volver a la anterior.
 
 ## Pruebas
 

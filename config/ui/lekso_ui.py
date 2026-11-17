@@ -1,4 +1,4 @@
-"""Piezas comunes de las ventanas propias de LekSO (menú de aplicaciones, energía...)."""
+"""Piezas comunes de las ventanas propias de LeksSO (menú de aplicaciones, energía...)."""
 import os
 
 ESTILO = """

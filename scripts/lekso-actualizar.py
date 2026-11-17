@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""lekso-actualizar: versión de LekSO y actualizaciones desde GitHub, con firma y con tu permiso.
+"""lekso-actualizar: versión de LeksSO y actualizaciones desde GitHub, con firma y con tu permiso.
 
   lekso-actualizar version [--detalle]  muestra la versión instalada (con --detalle, su commit y firma)
   lekso-actualizar comprobar [--avisar] mira si hay una versión nueva (y avisa con una notificación)
@@ -9,7 +9,7 @@
   sudo lekso-actualizar volver          vuelve a la versión anterior
   lekso-actualizar hardware ...         controladores y firmware (detectar, comprobar, aplicar...): ver `hardware`
 
-Seguridad: solo se instalan versiones con etiqueta (vX.Y.Z-alpha) firmadas con la clave de LekSO que
+Seguridad: solo se instalan versiones con etiqueta (vX.Y.Z-alpha) firmadas con la clave de LeksSO que
 ya está instalada en /etc/lekso/allowed_signers. Sin firma válida no se toca nada. Una subida normal
 al repositorio nunca llega a un equipo: solo las versiones publicadas.
 """
@@ -109,9 +109,9 @@ def comprobar(avisar=False):
     with open(CACHE, "w", encoding="utf-8") as f:
         json.dump({"actual": actual, "disponible": disponible, "comprobado": int(time.time())}, f)
     if not disponible:
-        print(f"Estás al día: LekSO {bonita(actual)}.")
+        print(f"Estás al día: LeksSO {bonita(actual)}.")
         return 0
-    print(f"Hay una versión nueva: LekSO {bonita(disponible)} (instalada: {bonita(actual)}).")
+    print(f"Hay una versión nueva: LeksSO {bonita(disponible)} (instalada: {bonita(actual)}).")
     if avisar:
         ya = ""
         try:
@@ -119,8 +119,8 @@ def comprobar(avisar=False):
         except OSError:
             pass
         if ya != disponible:        # un solo aviso por versión
-            notificar("Hay una versión nueva de LekSO",
-                      f"LekSO {bonita(disponible)} está disponible (tienes {bonita(actual)}). "
+            notificar("Hay una versión nueva de LeksSO",
+                      f"LeksSO {bonita(disponible)} está disponible (tienes {bonita(actual)}). "
                       "Pulsa el aviso de la barra de abajo o abre Ajustes para ver qué cambia.")
             with open(AVISADO, "w", encoding="utf-8") as f:
                 f.write(disponible)
@@ -132,7 +132,7 @@ def barra():
     if c.get("disponible") and clave(c["disponible"]) and c.get("actual") and clave(c["actual"]) \
             and clave(c["disponible"]) > clave(c["actual"]):
         print(json.dumps({"text": f"↑ {bonita(c['disponible'])}", "class": "hay",
-                          "tooltip": f"Versión nueva: LekSO {bonita(c['disponible'])}\nInstalada: {bonita(c['actual'])}\nClic para ver qué cambia."}))
+                          "tooltip": f"Versión nueva: LeksSO {bonita(c['disponible'])}\nInstalada: {bonita(c['actual'])}\nClic para ver qué cambia."}))
     else:
         print(json.dumps({"text": "", "class": "al-dia"}))
     return 0
@@ -221,7 +221,7 @@ def instalar_version(tag, usuario, commit="", huella=""):
         sys.exit("No se pudo preparar la versión: " + r.stderr.strip()[:200])
     git("clean", "-fdx", cwd=CLON)
     script = os.path.join(CLON, "scripts", "provision-base.sh")
-    print(f"Instalando LekSO {bonita(tag.lstrip('v'))} (puede tardar unos minutos)…")
+    print(f"Instalando LeksSO {bonita(tag.lstrip('v'))} (puede tardar unos minutos)…")
     p = subprocess.run(["bash", script, usuario])
     if p.returncode != 0:
         sys.exit("La instalación terminó con errores. Puedes volver con: sudo lekso-actualizar volver")
@@ -258,7 +258,7 @@ def aplicar(tag=None):
     with open(ANTERIOR, "w", encoding="utf-8") as f:
         f.write((actual or "") + "\n")
     instalar_version(etiqueta, usuario, commit, huella)
-    print(f"\nListo: LekSO {bonita(destino)}. Cierra la sesión y vuelve a entrar para estrenar todo.")
+    print(f"\nListo: LeksSO {bonita(destino)}. Cierra la sesión y vuelve a entrar para estrenar todo.")
     return 0
 
 
@@ -277,12 +277,12 @@ def volver():
     instalar_version("v" + previa, usuario, commit, huella)
     with open(ANTERIOR, "w", encoding="utf-8") as f:
         f.write((actual or "") + "\n")
-    print(f"\nVuelves a LekSO {bonita(previa)}. Cierra la sesión y vuelve a entrar.")
+    print(f"\nVuelves a LeksSO {bonita(previa)}. Cierra la sesión y vuelve a entrar.")
     return 0
 
 
 def modulo_hardware():
-    """Carga lekso_hardware.py, instalado junto a las bibliotecas de LekSO o al lado de este script."""
+    """Carga lekso_hardware.py, instalado junto a las bibliotecas de LeksSO o al lado de este script."""
     for carpeta in ("/usr/local/lib/lekso", os.path.dirname(os.path.abspath(__file__))):
         if os.path.exists(os.path.join(carpeta, "lekso_hardware.py")):
             sys.path.insert(0, carpeta)
@@ -299,7 +299,7 @@ def main(a):
     try:
         if c == "version":
             v = a[1] if len(a) > 1 and clave(a[1]) else version_actual()   # con un argumento, solo le da nombre
-            texto = f"LekSO {bonita(v)}" if v else "LekSO (versión desconocida)"
+            texto = f"LeksSO {bonita(v)}" if v else "LeksSO (versión desconocida)"
             if "--detalle" in a:
                 try:
                     d = json.load(open(INSTALADA, encoding="utf-8"))

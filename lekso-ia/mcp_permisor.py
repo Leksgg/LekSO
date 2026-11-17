@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Adaptador MCP del permisor de LekSO (stdio). Solo biblioteca estándar.
+"""Adaptador MCP del permisor de LeksSO (stdio). Solo biblioteca estándar.
 
 Pone el permisor delante de cualquier cliente de IA que hable MCP (por ejemplo Claude Code)
 corriendo dentro de `caja --ia` o `caja --ia-nube`. El cliente no tiene otro camino a tus archivos:
@@ -250,14 +250,14 @@ def instrucciones():
               + (" (también como administrador, con admin=true)" if p.get("admin") not in (None, "no") else
                  " (sin administración: si algo la necesita, dile al usuario que te la dé en Ajustes de asistentes)")
               + ". Haz tú las cosas y cuenta el resultado; no le pidas al usuario que teclee. "
-              "Usa los comandos PROPIOS de LekSO antes que recetas genéricas de Linux: ")
+              "Usa los comandos PROPIOS de LeksSO antes que recetas genéricas de Linux: ")
     else:
         t += (" No tienes permiso para ejecutar órdenes en el equipo: el usuario puede dártelo en Ajustes de asistentes "
-              "(lekso-asistentes). Mientras tanto, si pide algo de administración, dile el comando PROPIO de LekSO: ")
+              "(lekso-asistentes). Mientras tanto, si pide algo de administración, dile el comando PROPIO de LeksSO: ")
     t += (""
           "acceso por SSH en la red local: `sudo lekso-acceso-remoto on|off`; instalar aplicaciones: `lekso-apps instalar NOMBRE` "
-          "(`lekso-apps` las lista); actualizar LekSO: `sudo lekso-actualizar aplicar`; elegir asistente: `lekso-asistente`; "
-          "redes: `lekso-redes`. El cortafuegos es nftables (no ufw) y lo gestiona LekSO.")
+          "(`lekso-apps` las lista); actualizar LeksSO: `sudo lekso-actualizar aplicar`; elegir asistente: `lekso-asistente`; "
+          "redes: `lekso-redes`. El cortafuegos es nftables (no ufw) y lo gestiona LeksSO.")
     if casa:
         t += (f" Las rutas son las del equipo real, no las de tu caja: la carpeta personal es {casa} "
               f"(puedes escribir ~/…); tu HOME dentro de la caja ({CASA_CAJA}) no es esa.")

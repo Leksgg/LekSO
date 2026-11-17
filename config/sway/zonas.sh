@@ -1,5 +1,5 @@
 #!/bin/sh
-# Monta las zonas de LekSO: explorador | centro (pestañas) + terminal | panel de IA.
+# Monta las zonas de LeksSO: explorador | centro (pestañas) + terminal | panel de IA.
 # Las apps que abra el usuario van siempre a la zona central.
 # Uso: lekso-zonas              monta las zonas al iniciar la sesión
 #      lekso-zonas --restaurar  vuelve a la vista por defecto sin cerrar las apps del usuario
@@ -34,7 +34,7 @@ restaurar_previo() {
 montar() {
   swaymsg 'workspace number 1; layout splith' >/dev/null
   rm -f "$PLEGADO"
-  # Archivos de LekSO: «Carpetas» a la izquierda y el contenido de la carpeta en el centro (lo que se ve
+  # Archivos de LeksSO: «Carpetas» a la izquierda y el contenido de la carpeta en el centro (lo que se ve
   # cuando no hay ninguna app abierta). Si no arrancara, se vuelve al explorador clásico y a un centro vacío.
   swaymsg exec lekso-archivos >/dev/null
   if marcar 'app_id="lekso-archivos" title="^Carpetas$"' explorador && marcar 'app_id="lekso-archivos" title="^Archivos"' centro; then

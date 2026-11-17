@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Archivos de LekSO: el explorador en dos piezas que van juntas.
+"""Archivos de LeksSO: el explorador en dos piezas que van juntas.
 
   «Carpetas»  lugares y árbol de carpetas (zona izquierda; se puede plegar)
   «Archivos»  el contenido de la carpeta elegida (zona central: es lo que se ve cuando no hay una app abierta)

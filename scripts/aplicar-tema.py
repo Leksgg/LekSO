@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Aplica un tema de color de LekSO a los archivos de configuración del repo.
+"""Aplica un tema de color de LeksSO a los archivos de configuración del repo.
 
 Los colores se definen una sola vez, por papel (fondo, panel, acento, aviso...), y se
 calculan en OKLCH para que acentos y estados tengan el mismo peso visual en todos los

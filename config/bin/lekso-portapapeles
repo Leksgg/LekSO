@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Historial del portapapeles de LekSO: lo último que copiaste, para volver a pegarlo.
+"""Historial del portapapeles de LeksSO: lo último que copiaste, para volver a pegarlo.
 
 Usa cliphist (que guarda el historial) y wl-copy. Un clic en una entrada la deja en el
 portapapeles y cierra; con la X o Esc se cierra sin cambiar nada.

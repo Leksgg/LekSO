@@ -1,7 +1,7 @@
-# Servicio de administración de LekSO: ejecuta como root lo que le pasa el permisor, y solo si el usuario ha dado
+# Servicio de administración de LeksSO: ejecuta como root lo que le pasa el permisor, y solo si el usuario ha dado
 # permiso de administración a algún asistente en /etc/lekso/asistentes.json. Ver lekso_admin.py.
 [Unit]
-Description=Servicio de administración de LekSO (para los asistentes de IA)
+Description=Servicio de administración de LeksSO (para los asistentes de IA)
 
 [Service]
 Type=simple

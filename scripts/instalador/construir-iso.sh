@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
-# Construye la imagen de instalación de LekSO (ISO): el Debian oficial con firmware, más el paquete de LekSO.
+# Construye la imagen de instalación de LeksSO (ISO): el Debian oficial con firmware, más el paquete de LeksSO.
 #
 # Uso: construir-iso.sh --iso DEBIAN.iso --offline CARPETA_REPO --version vX.Y.Z-alpha --salida LEKSO.iso [--prueba CLAVE_PUBLICA_SSH]
 #   --iso      imagen oficial «netinst con firmware» de Debian 13 (ya comprobada con su suma de Debian)
 #   --offline  repositorio local de paquetes (lo crea construir-repo-offline.sh)
-#   --version  versión de LekSO que lleva, con su etiqueta firmada (v0.1.4-alpha)
+#   --version  versión de LeksSO que lleva, con su etiqueta firmada (v0.1.4-alpha)
 #   --fase-pruebas  equipo real en pruebas: actualiza sin exigir firma y arranca con SSH en red local
 #   --prueba   imagen de PRUEBAS: respuestas fijas (disco /dev/sda, claves de prueba) y acceso por SSH. NUNCA para uso real.
-# Requiere: xorriso, git. Se ejecuta desde la raíz del repositorio de LekSO (que debe tener la etiqueta).
+# Requiere: xorriso, git. Se ejecuta desde la raíz del repositorio de LeksSO (que debe tener la etiqueta).
 set -euo pipefail
 
 ISO=""; OFFLINE=""; VERSION=""; SALIDA=""; PRUEBA=""; FASE=0
@@ -28,7 +28,7 @@ git rev-parse -q --verify "refs/tags/$VERSION" >/dev/null || { echo "La etiqueta
 TMP="$(mktemp -d)"; trap 'rm -rf "$TMP"' EXIT
 PAQ="$TMP/lekso"; mkdir -p "$PAQ"
 
-# 1. El paquete de LekSO: el repositorio con sus etiquetas (se verifica al instalar), el instalador de ESA versión
+# 1. El paquete de LeksSO: el repositorio con sus etiquetas (se verifica al instalar), el instalador de ESA versión
 #    y los archivos de instalación automática.
 git bundle create "$PAQ/lekso.bundle" --all >/dev/null 2>&1
 git show "$VERSION:scripts/instalar.sh" > "$PAQ/instalar.sh"
@@ -58,7 +58,7 @@ d-i partman-crypto/weak_passphrase boolean true
 d-i partman/confirm boolean true
 d-i partman/confirm_nooverwrite boolean true
 d-i partman/choose_partition select finish
-d-i passwd/user-fullname string LekSO
+d-i passwd/user-fullname string LeksSO
 d-i passwd/username string lekso
 d-i passwd/user-password password Lks15
 d-i passwd/user-password-again password Lks15
@@ -66,10 +66,10 @@ d-i user-setup/allow-password-weak boolean true
 EOF
 fi
 
-# 3. Menú de arranque: una entrada nueva (la primera) que lanza la instalación de LekSO.
+# 3. Menú de arranque: una entrada nueva (la primera) que lanza la instalación de LeksSO.
 ORIGEN_GRUB="$TMP/grub.orig"
 xorriso -osirrox on -indev "$ISO" -extract /boot/grub/grub.cfg "$ORIGEN_GRUB" >/dev/null 2>&1
-ENTRADA="menuentry --hotkey=l 'Instalar LekSO (borra el disco que elijas)' {
+ENTRADA="menuentry --hotkey=l 'Instalar LeksSO (borra el disco que elijas)' {
     set background_color=black
     linux    /install.amd/vmlinuz auto=true priority=high file=/cdrom/lekso/preseed.cfg vga=788 --- quiet
     initrd   /install.amd/initrd.gz

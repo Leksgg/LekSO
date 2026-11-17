@@ -171,7 +171,7 @@
     "custom/version": {
       "exec": "lekso-actualizar version",
       "interval": 60,
-      "tooltip-format": "Versión instalada de LekSO (clic: actualizaciones)",
+      "tooltip-format": "Versión instalada de LeksSO (clic: actualizaciones)",
       "on-click": "lekso-actualizaciones"
     },
     "custom/actualizacion": {

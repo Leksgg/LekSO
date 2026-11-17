@@ -1,5 +1,5 @@
 [Unit]
-Description=Comprobar si hay una versión nueva de LekSO
+Description=Comprobar si hay una versión nueva de LeksSO
 
 [Service]
 Type=oneshot

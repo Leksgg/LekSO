@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Menú de aplicaciones de LekSO: lista con iconos, buscador y botón de cerrar.
+"""Menú de aplicaciones de LeksSO: lista con iconos, buscador y botón de cerrar.
 
 No se cierra solo al mover el ratón. Se cierra con la X, con Esc o al abrir una app.
 Uso: lekso-menu

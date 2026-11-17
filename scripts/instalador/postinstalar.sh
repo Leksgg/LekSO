@@ -1,6 +1,6 @@
 #!/bin/sh
 # Se ejecuta DENTRO del sistema recién instalado (en el instalador, con chroot), sin necesidad de red.
-# Instala LekSO con el instalador firmado: la versión sale del paquete del USB y se comprueba su firma.
+# Instala LeksSO con el instalador firmado: la versión sale del paquete del USB y se comprueba su firma.
 set -e
 PAQ=/opt/lekso-instalacion
 # Todo lo que pase queda en un registro del sistema instalado, para poder revisar un fallo después.
@@ -8,7 +8,7 @@ exec >> /var/log/lekso-postinstalar.log 2>&1
 set -x
 export DEBIAN_FRONTEND=noninteractive
 
-# 1. Los paquetes de Debian que necesita LekSO están en el USB: se usan como fuente de apt local.
+# 1. Los paquetes de Debian que necesita LeksSO están en el USB: se usan como fuente de apt local.
 sed -i 's/^deb cdrom:/# deb cdrom:/' /etc/apt/sources.list      # el DVD del instalador ya no es fuente: solo el repositorio local
 echo "deb [trusted=yes] file:$PAQ/offline ./" > /etc/apt/sources.list.d/lekso-offline.list
 echo 'APT::Install-Recommends "false";' > /etc/apt/apt.conf.d/99lekso-sin-recomendados
@@ -32,14 +32,14 @@ if [ -f "$PAQ/FASE_PRUEBAS" ]; then
   apt-get install -y -qq openssh-server >/dev/null
   install -d /etc/lekso /etc/ssh/sshd_config.d
   touch /etc/lekso/sin-firma /etc/lekso/acceso-remoto
-  printf '# LekSO: acceso remoto
+  printf '# LeksSO: acceso remoto
 PermitRootLogin no
 MaxAuthTries 4
 X11Forwarding no
 ' > /etc/ssh/sshd_config.d/lekso.conf
 fi
 
-# 4. LekSO, con la comprobación de firma del instalador.
+# 4. LeksSO, con la comprobación de firma del instalador.
 VERSION="$(cat "$PAQ/VERSION_TAG")"
 SUDO_USER="$USUARIO" bash "$PAQ/instalar.sh" --origen "$PAQ/lekso.bundle" --version "$VERSION" --si
 
@@ -51,4 +51,4 @@ deb http://deb.debian.org/debian trixie-updates main contrib non-free-firmware
 deb http://security.debian.org/debian-security trixie-security main contrib non-free-firmware
 EOF
 rm -rf "$PAQ/offline"
-echo "LekSO instalado."
+echo "LeksSO instalado."

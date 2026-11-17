@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Oculta o muestra las ventanas flotantes (menús, avisos, asistentes) para ver lo que hay debajo.
 
-Una pulsación las oculta todas; otra las devuelve. Es el «minimizar» de LekSO.
+Una pulsación las oculta todas; otra las devuelve. Es el «minimizar» de LeksSO.
 """
 import glob
 import json

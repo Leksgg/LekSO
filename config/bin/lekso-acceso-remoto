@@ -28,7 +28,7 @@ case "${1:-estado}" in
       DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends openssh-server
     fi
     install -d /etc/ssh/sshd_config.d /etc/lekso
-    printf '# LekSO: acceso remoto\nPermitRootLogin no\nMaxAuthTries 4\nX11Forwarding no\n' > /etc/ssh/sshd_config.d/lekso.conf
+    printf '# LeksSO: acceso remoto\nPermitRootLogin no\nMaxAuthTries 4\nX11Forwarding no\n' > /etc/ssh/sshd_config.d/lekso.conf
     quitar_regla
     nft add rule inet lekso entrada $REGLA
     # que sobreviva al reinicio: la misma regla en el archivo del cortafuegos, dentro de la cadena de entrada

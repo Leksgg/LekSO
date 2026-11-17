@@ -1,5 +1,5 @@
 #!/bin/sh
-# Gestor de redes (nmtui) con los colores de LekSO en vez del azul de fábrica.
+# Gestor de redes (nmtui) con los colores de LeksSO en vez del azul de fábrica.
 export NEWT_COLORS='root=white,black
 window=white,black
 border=cyan,black

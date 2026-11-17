@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Terminal de LekSO (kitty). Acepta los argumentos de estilo foot que usa el resto del sistema:
+# Terminal de LeksSO (kitty). Acepta los argumentos de estilo foot que usa el resto del sistema:
 #   lekso-term [-T TÍTULO] [--app-id ID] [-e PROGRAMA ARGUMENTOS...]
 # Todas las ventanas comparten un único proceso de kitty (menos memoria).
 titulo=(); clase=()

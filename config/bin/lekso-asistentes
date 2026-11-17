@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Asistentes de IA de LekSO: cuáles usas y qué puede hacer cada uno en tu equipo.
+"""Asistentes de IA de LeksSO: cuáles usas y qué puede hacer cada uno en tu equipo.
 
   lekso-asistentes              abre la ventana de ajustes
   lekso-asistentes abrir [NOMBRE]   abre ese asistente; sin nombre, el único activo (o la ventana si hay varios o ninguno)

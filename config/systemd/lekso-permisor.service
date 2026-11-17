@@ -1,5 +1,5 @@
 [Unit]
-Description=Permisor de IA de LekSO
+Description=Permisor de IA de LeksSO
 
 [Service]
 Type=simple

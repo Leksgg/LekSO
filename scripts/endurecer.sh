@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Endurece un equipo LekSO: cortafuegos, actualizaciones de seguridad y ajustes del núcleo.
+# Endurece un equipo LeksSO: cortafuegos, actualizaciones de seguridad y ajustes del núcleo.
 # Se puede ejecutar varias veces. Debe correr como root.
 #
 # Uso: sudo ./scripts/endurecer.sh [--ssh]
@@ -23,7 +23,7 @@ REGLA_SSH=""
 [ "$SSH" -eq 0 ] && [ -f /etc/lekso/acceso-remoto ] &&   REGLA_SSH='ip saddr { 10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16 } tcp dport 22 accept comment "lekso-acceso-remoto"'
 cat > /etc/nftables.conf <<NFT
 #!/usr/sbin/nft -f
-# LekSO: entrante bloqueado por defecto. Saliente libre.
+# LeksSO: entrante bloqueado por defecto. Saliente libre.
 flush ruleset
 
 table inet lekso {

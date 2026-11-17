@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Gestor de modelos de LekSO sobre Ollama. Sin dependencias.
+"""Gestor de modelos de LeksSO sobre Ollama. Sin dependencias.
 
 Estado normal: ningún modelo cargado, cero RAM. Se carga al pedirlo y se descarga
 al terminar o tras la inactividad (OLLAMA_KEEP_ALIVE, 5 minutos por defecto).

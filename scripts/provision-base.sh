@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Convierte un Debian 13 mínimo en la base de LekSO: escritorio, audio y aislamiento.
+# Convierte un Debian 13 mínimo en la base de LeksSO: escritorio, audio y aislamiento.
 # Se puede ejecutar varias veces sin romper nada. Debe correr como root.
 #
 # Uso:
@@ -134,12 +134,12 @@ if [ -f /etc/network/interfaces ] && grep -qE '^(allow-hotplug|auto|iface) (e|w)
   systemctl restart NetworkManager || true
 fi
 
-# Lanzador de aplicaciones con la paleta de LekSO y sin entradas técnicas.
+# Lanzador de aplicaciones con la paleta de LeksSO y sin entradas técnicas.
 install -d -o "$USUARIO" -g "$USUARIO" "$HOME_USR/.config/fuzzel" "$HOME_USR/.local/share/applications"
 install -o "$USUARIO" -g "$USUARIO" -m 0644 "$RAIZ/config/fuzzel/fuzzel.ini" "$HOME_USR/.config/fuzzel/fuzzel.ini"
 install -o "$USUARIO" -g "$USUARIO" -m 0644 "$RAIZ"/config/applications-ocultas/*.desktop "$HOME_USR/.local/share/applications/"
 
-# Notificaciones y pantalla de bloqueo con la paleta de LekSO.
+# Notificaciones y pantalla de bloqueo con la paleta de LeksSO.
 install -d /usr/share/lekso
 python3 "$RAIZ/scripts/generar-pantalla-bloqueo.py" /usr/share/lekso/bloqueo.png || true
 install -d -o "$USUARIO" -g "$USUARIO" "$HOME_USR/.config/mako" "$HOME_USR/.config/swaylock"
@@ -152,7 +152,7 @@ install -m 0755 "$RAIZ/scripts/lekso-actualizar.py" /usr/local/bin/lekso-actuali
 install -d -m 0755 /etc/lekso /var/lib/lekso /etc/issue.d
 install -m 0644 "$RAIZ/config/allowed_signers" /etc/lekso/allowed_signers
 install -m 0644 "$RAIZ/VERSION" /etc/lekso-release
-echo "LekSO $(lekso-actualizar version | sed 's/^LekSO //')" > /etc/issue.d/20-lekso.issue
+echo "LeksSO $(lekso-actualizar version | sed 's/^LeksSO //')" > /etc/issue.d/20-lekso.issue
 install -m 0644 "$RAIZ"/config/systemd/lekso-actualizar.service "$RAIZ"/config/systemd/lekso-actualizar.timer /etc/systemd/user/
 systemctl --global enable lekso-actualizar.timer >/dev/null 2>&1 || true
 
@@ -247,4 +247,4 @@ fi
 # Libera la caché de paquetes descargados (cientos de MB que no hacen falta).
 apt-get clean
 
-echo "Listo. Reinicia: al iniciar sesión en la primera consola arranca el escritorio de LekSO."
+echo "Listo. Reinicia: al iniciar sesión en la primera consola arranca el escritorio de LeksSO."

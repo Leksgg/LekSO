@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Genera la imagen de la pantalla de bloqueo de LekSO: un mensaje claro de que está bloqueada y qué hacer.
+"""Genera la imagen de la pantalla de bloqueo de LeksSO: un mensaje claro de que está bloqueada y qué hacer.
 
 Se coloca centrada sobre el color de fondo; el anillo de la contraseña de swaylock queda justo debajo.
 Uso: python3 generar-pantalla-bloqueo.py [destino]   (por defecto /usr/share/lekso/bloqueo.png)
@@ -33,7 +33,7 @@ def main(destino):
     ancho, alto = 1000, 720
     img = Image.new("RGB", (ancho, alto), FONDO)
     d = ImageDraw.Draw(img)
-    centrado(d, 30, "LekSO", fuente(64, True), CIAN, ancho)
+    centrado(d, 30, "LeksSO", fuente(64, True), CIAN, ancho)
     centrado(d, 118, "Pantalla bloqueada", fuente(30), TEXTO, ancho)
     centrado(d, 164, "Escribe tu contraseña y pulsa Intro", fuente(22), APAGADO, ancho)
     os.makedirs(os.path.dirname(destino), exist_ok=True)

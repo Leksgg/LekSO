@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""lekso-apps: instala en LekSO los equivalentes de las aplicaciones habituales de Windows.
+"""lekso-apps: instala en LeksSO los equivalentes de las aplicaciones habituales de Windows.
 
   lekso-apps                       lista por grupos, con lo que ya está instalado
   lekso-apps instalar NOMBRE...    instala por nombre (de Linux o de Windows) o por grupo
@@ -53,7 +53,7 @@ CATALOGO = [
     ("Multimedia", "obs", "OBS Studio", "apt", "obs-studio", "obs-studio", "El plugin move-transition se instala dentro de OBS."),
     ("Multimedia", "audacity", "Audacity", "apt", "audacity", "audacity", ""),
     ("Multimedia", "vlc", "VLC media player", "apt", "vlc", "vlc", ""),
-    ("Multimedia", "streamdeck", "Elgato Stream Deck", "apt", "streamdeck-ui", "streamdeck-ui", "Ya viene con LekSO."),
+    ("Multimedia", "streamdeck", "Elgato Stream Deck", "apt", "streamdeck-ui", "streamdeck-ui", "Ya viene con LeksSO."),
     ("Multimedia", "pdf", "Wondershare PDFelement", "apt", "okular", "okular", "Leer y anotar. Edición avanzada de PDF: sin equivalente directo."),
     # Utilidades
     ("Utilidades", "compresores", "WinRAR", "apt", "p7zip-full unrar-free", "p7zip-full", "Zip, 7z, rar y tar."),

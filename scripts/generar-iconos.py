@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Genera el tema de iconos LekSO (SVG pequeños, uno por tipo de archivo).
+"""Genera el tema de iconos LeksSO (SVG pequeños, uno por tipo de archivo).
 
 Cada icono es una hoja con la esquina doblada y una banda de color por familia
 (código, datos, imagen, vídeo...) con unas letras. El color es lo que distingue

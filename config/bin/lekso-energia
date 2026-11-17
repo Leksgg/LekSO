@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Energía de LekSO: bloquear, suspender, hibernar, cerrar sesión, reiniciar y apagar.
+"""Energía de LeksSO: bloquear, suspender, hibernar, cerrar sesión, reiniciar y apagar.
 
 Solo muestra activas las opciones que el equipo admite (por ejemplo, hibernar necesita
 espacio de intercambio). Las que cierran lo que estás haciendo piden confirmación.

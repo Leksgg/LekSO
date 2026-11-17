@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Desbloquea la clave de firma de LekSO durante unas horas, para poder publicar versiones sin escribir la
+# Desbloquea la clave de firma de LeksSO durante unas horas, para poder publicar versiones sin escribir la
 # contraseña cada vez. La contraseña se escribe aquí, una vez, y no se guarda en ningún archivo:
 # la clave queda cargada en un agente propio que se cierra solo al pasar el tiempo (o al reiniciar).
 #

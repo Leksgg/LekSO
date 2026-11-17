@@ -1,4 +1,4 @@
-# LekSO sobre sway: escritorio por zonas.
+# LeksSO sobre sway: escritorio por zonas.
 # Raíl de iconos a la izquierda | explorador | centro (la app activa, a pantalla completa de su zona,
 # con terminal debajo) | panel de la IA a la derecha. Barra de tareas abajo.
 # Las zonas las monta lekso-zonas al iniciar.

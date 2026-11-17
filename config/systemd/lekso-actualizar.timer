@@ -1,5 +1,5 @@
 [Unit]
-Description=Comprobar actualizaciones de LekSO una vez al día
+Description=Comprobar actualizaciones de LeksSO una vez al día
 
 [Timer]
 OnStartupSec=2min

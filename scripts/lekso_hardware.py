@@ -1,4 +1,4 @@
-"""Controladores y firmware de LekSO: detecta el hardware, avisa de novedades y las instala.
+"""Controladores y firmware de LeksSO: detecta el hardware, avisa de novedades y las instala.
 
 Se usa desde `lekso-actualizar hardware ...` (no hay otra herramienta que aprender):
 
@@ -241,7 +241,7 @@ def textos_aviso(est, aplicados=()):
         av.append((f"fw:{f['dispositivo']}:{f['version']}", "Hay una actualización de firmware",
                    f"{f['dispositivo']} {f['version']}. Instálala desde Ajustes → Actualizaciones, con el equipo enchufado."))
     if aplicados:
-        av.append(("auto:" + ",".join(sorted(aplicados)), "LekSO actualizó el firmware del equipo",
+        av.append(("auto:" + ",".join(sorted(aplicados)), "LeksSO actualizó el firmware del equipo",
                    f"Se actualizaron {len(aplicados)} paquetes de microcódigo y firmware. Se aplican del todo al reiniciar."))
     return av
 
@@ -388,7 +388,7 @@ def instalar_nvidia(est, si=False, ignorar_sb=False):
     if rc != 0:
         print("✕ La instalación falló. No reinicies hasta revisar: sudo apt-get -f install")
         return 1
-    escribir_atomico(MODPROBE, "# LekSO: sway necesita el modo DRM del controlador de NVIDIA\noptions nvidia-drm modeset=1\n")
+    escribir_atomico(MODPROBE, "# LeksSO: sway necesita el modo DRM del controlador de NVIDIA\noptions nvidia-drm modeset=1\n")
     dk = ejecutar(["dkms", "status"])[1]
     if "nvidia" not in dk or "installed" not in dk:
         print("⚠ El módulo no aparece compilado en «dkms status». No reinicies hasta revisarlo.")
