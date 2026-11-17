@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Instala LeksSO sobre un Debian 13 recién instalado (sin escritorio).
 #
-#   wget https://raw.githubusercontent.com/Leksgg/LekSO/v0.1.4-alpha/scripts/instalar.sh
+#   wget https://raw.githubusercontent.com/Leksgg/LeksSO/v0.1.4-alpha/scripts/instalar.sh
 #   sudo bash instalar.sh
 #
 # Qué hace, en orden:
@@ -21,7 +21,7 @@
 #           --si                     no pregunta antes de instalar
 set -euo pipefail
 
-REPO="https://github.com/Leksgg/LekSO.git"
+REPO="https://github.com/Leksgg/LeksSO.git"
 REPO_OFICIAL="$REPO"
 CLON="/var/lib/lekso/repo"
 CLAVE_PUBLICA='lekso-release namespaces="git" ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOlE6yy0lZmsYsRBZSGDhu8VIWYVrjHbWNIrl20tAArL'

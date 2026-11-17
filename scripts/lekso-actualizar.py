@@ -21,8 +21,8 @@ import sys
 import time
 import urllib.request
 
-REPO_URL = "https://github.com/Leksgg/LekSO.git"
-RAW_URL = "https://raw.githubusercontent.com/Leksgg/LekSO/{tag}/CHANGELOG.md"
+REPO_URL = "https://github.com/Leksgg/LeksSO.git"
+RAW_URL = "https://raw.githubusercontent.com/Leksgg/LeksSO/{tag}/CHANGELOG.md"
 FICHERO_VERSION = "/etc/lekso-release"
 FIRMANTES = "/etc/lekso/allowed_signers"
 CLON = "/var/lib/lekso/repo"
