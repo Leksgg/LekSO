@@ -32,6 +32,14 @@ def estado_hw():
         return {}
 
 
+def clave_secure_boot():
+    """Estado de la clave de firma de controladores: registrada, pendiente, sin-registrar, sin-clave o no-necesaria."""
+    try:
+        return json.loads(sal("lekso-actualizar", "hardware", "mok")).get("clave", "")
+    except ValueError:
+        return ""
+
+
 def resumen_hw(est):
     """(texto en lenguaje llano, ¿hay algo que instalar con un clic?)"""
     if not est:
@@ -190,6 +198,19 @@ class Ventana(QtWidgets.QWidget):
         self.terminal("Actualizar LeksSO", "sudo lekso-actualizar aplicar")
 
     def instalar_hw(self):
+        est = estado_hw()
+        n = est.get("nvidia") or {}
+        if est.get("secure_boot") and n.get("accion") == "instalar" and clave_secure_boot() != "registrada":
+            r = QtWidgets.QMessageBox.question(
+                self, "Secure Boot",
+                "Tu equipo tiene Secure Boot. Para usar el controlador de NVIDIA hay que registrar una clave de firma "
+                "en este equipo, una sola vez. Se crea sola, con una contraseña corta que verás en pantalla: la "
+                "escribirás en una pantalla azul al reiniciar, y después quedará guardada (oculta) en Ajustes → "
+                "Secure Boot. Nada se instala hasta que termines ese paso.\n\n¿Continuar?",
+                QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No, QtWidgets.QMessageBox.No)
+            if r == QtWidgets.QMessageBox.Yes:
+                self.terminal("Controladores y firmware", "sudo lekso-actualizar hardware aplicar --si-mok")
+            return
         r = QtWidgets.QMessageBox.question(
             self, "Controladores y firmware",
             "Se te pedirá confirmar cada paso en una terminal. El controlador de NVIDIA necesita reiniciar, y el firmware "

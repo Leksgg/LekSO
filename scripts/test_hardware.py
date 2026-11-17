@@ -109,5 +109,16 @@ class ClaveMok(unittest.TestCase):
         self.assertEqual(hw.interpretar_mok(True, "", ""), "sin-registrar")
 
 
+class ContrasenaMok(unittest.TestCase):
+    def test_contrasena_corta_y_tecleable_en_teclado_ingles(self):
+        for _ in range(200):
+            c = hw.generar_contrasena()
+            self.assertEqual(len(c), 8)
+            self.assertTrue(all(ch in hw.ALFABETO_MOK for ch in c))
+        self.assertNotEqual(hw.generar_contrasena(), hw.generar_contrasena())    # no es fija
+        for raro in "ilo01" "ñ" "_-.":
+            self.assertNotIn(raro, hw.ALFABETO_MOK)
+
+
 if __name__ == "__main__":
     unittest.main()

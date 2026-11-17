@@ -378,6 +378,39 @@ def interpretar_mok(existe, test_salida, nuevas_salida):
     return "sin-registrar"
 
 
+MOK_CONTRASENA = "/var/lib/lekso/mok-contrasena"       # contraseña de un solo uso (0600, solo root); se consulta en Ajustes
+ALFABETO_MOK = "abcdefghjkmnpqrstuvwxyz23456789"        # sin letras que se confundan; el teclado de la pantalla azul es inglés
+
+
+def generar_contrasena(n=8):
+    import secrets
+    return "".join(secrets.choice(ALFABETO_MOK) for _ in range(n))
+
+
+def guardar_secreto(ruta, texto):
+    os.makedirs(os.path.dirname(ruta), exist_ok=True)
+    fd = os.open(ruta, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+    with os.fdopen(fd, "w", encoding="utf-8") as f:
+        f.write(texto)
+
+
+def mok_contrasena():
+    """Para Ajustes → Secure Boot (root): imprime la contraseña de un solo uso guardada, si la hay."""
+    raiz_o_salir()
+    try:
+        print(open(MOK_CONTRASENA, encoding="utf-8").read().strip())
+        return 0
+    except OSError:
+        print("No hay ninguna contraseña guardada: este equipo no ha necesitado registrar una clave.")
+        return 1
+
+
+def mok_resumen():
+    """Estado para el panel de Ajustes (sin secretos), en JSON."""
+    sb = secure_boot()
+    return {"secure_boot": sb, "clave": mok_estado() if sb else "no-necesaria", "hay_contrasena": os.path.exists(MOK_CONTRASENA)}
+
+
 def mok_estado():
     existe = os.path.exists(MOK_PUB)
     if not existe:
@@ -397,8 +430,9 @@ def preparar_mok(si=False):
         print("«Yes», escribe la contraseña que elegiste y «Reboot». Después vuelve a ejecutar esta instalación.")
         return 2
     print("Tu equipo tiene Secure Boot activo. Para que el controlador de NVIDIA cargue, hay que registrar una clave")
-    print("de firma de LeksSO (una sola vez por equipo). Te pedirá una contraseña, que eliges tú, y se escribe dos")
-    print("veces: ahora y en la pantalla azul del próximo arranque. Apúntala. Nada se instala hasta que lo hayas hecho.")
+    print("de firma en este equipo (una sola vez). La clave y la contraseña de un solo uso se crean solas: tú no")
+    print("inventas nada. Solo tendrás que escribir esa contraseña, corta, en una pantalla azul al reiniciar.")
+    print("Nada se instala hasta que la clave esté registrada.")
     if not preguntar("¿Registrar la clave ahora?", si):
         return 1
     ejecutar(["apt-get", "install", "-y", "-qq", "dkms", "openssl", "mokutil"], 600)
@@ -407,12 +441,28 @@ def preparar_mok(si=False):
     if not os.path.exists(MOK_PUB):
         print("✕ No se pudo crear la clave de firma. Revisa que dkms esté instalado.")
         return 1
-    if subprocess.run(["mokutil", "--import", MOK_PUB]).returncode != 0:      # pide la contraseña en la terminal
+    clave = generar_contrasena()
+    hash_pw = ejecutar(["mokutil", f"--generate-hash={clave}"])[1].strip()
+    if not hash_pw:
+        print("✕ No se pudo preparar la contraseña de un solo uso.")
+        return 1
+    ruta_hash = MOK_CONTRASENA + ".hash"
+    guardar_secreto(ruta_hash, hash_pw + "\n")
+    rc = subprocess.run(["mokutil", "--import", MOK_PUB, "--hash-file", ruta_hash]).returncode
+    os.remove(ruta_hash)
+    if rc != 0:
         print("✕ No se pudo pedir el registro de la clave.")
         return 1
-    print("\nListo. Reinicia el equipo. En la pantalla azul («MOK Manager») elige «Enroll MOK», «Continue», «Yes»,")
-    print("escribe la contraseña que acabas de elegir y «Reboot». Cuando el equipo arranque, vuelve a ejecutar la")
-    print("instalación de controladores: esta vez instalará el de NVIDIA.")
+    guardar_secreto(MOK_CONTRASENA, clave + "\n")     # para poder consultarla luego en Ajustes → Secure Boot
+    print("\n" + "=" * 46)
+    print(f"  CONTRASEÑA DE UN SOLO USO:   {clave}")
+    print("=" * 46)
+    print("Apúntala o hazle una foto: la necesitarás en la pantalla azul. Más tarde también estará en")
+    print("Ajustes → Secure Boot (oculta hasta que pulses «Ver»).\n")
+    print("Reinicia el equipo. En la pantalla azul («MOK Manager») elige «Enroll MOK», «Continue», «Yes»,")
+    print("escribe la contraseña y «Reboot». (El teclado de esa pantalla es el inglés: la contraseña solo")
+    print("lleva letras y números.) Cuando el equipo arranque, vuelve a pulsar «Instalar controladores y")
+    print("firmware»: esta vez instalará el de NVIDIA.")
     return 2
 
 
@@ -426,7 +476,7 @@ def problemas_antes_de_nvidia(est, ignorar_sb=False):
     return p
 
 
-def instalar_nvidia(est, si=False, ignorar_sb=False):
+def instalar_nvidia(est, si=False, ignorar_sb=False, si_mok=False):
     n = est["nvidia"]
     problemas = problemas_antes_de_nvidia(est, ignorar_sb)
     for linea in problemas:
@@ -434,7 +484,7 @@ def instalar_nvidia(est, si=False, ignorar_sb=False):
     if problemas:
         return 1
     if est["secure_boot"] and not ignorar_sb:
-        r = preparar_mok(si)
+        r = preparar_mok(si or si_mok)
         if r:
             return r                # 1: falló o no se aceptó; 2: hay que reiniciar y volver a ejecutar
     if not n["non_free"]:
@@ -476,7 +526,7 @@ def aplicar(args):
     hecho = False
     if est["nvidia"] and est["nvidia"]["accion"] in ("instalar", "actualizar"):
         hecho = True
-        r = instalar_nvidia(est, si, ignorar_sb)
+        r = instalar_nvidia(est, si, ignorar_sb, "--si-mok" in args)
         if r == 2:
             return 0                # clave pedida: se reinicia y se vuelve a ejecutar; nada más que hacer ahora
         if r:
@@ -534,5 +584,10 @@ def main(a):
         return aplicar(a[1:])
     if c == "quitar-nvidia":
         return quitar_nvidia(a[1:])
+    if c == "mok":
+        print(json.dumps(mok_resumen(), ensure_ascii=False))
+        return 0
+    if c == "mok-contrasena":
+        return mok_contrasena()
     print(__doc__)
     return 2

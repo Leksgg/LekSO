@@ -20,6 +20,7 @@ AJUSTES = [
     ("Pantallas", "Resolución y escala", ["wdisplays"], "wdisplays"),
     ("Bluetooth", "Auriculares y mandos", ["blueman-manager"], "blueman-manager"),
     ("Apariencia", "Colores, letra, iconos", ["qt6ct"], "qt6ct"),
+    ("Secure Boot", "Clave de firma de controladores", ["lekso-secureboot"], "lekso-secureboot"),
     ("Impresoras", "Añadir impresoras", ["brave-browser", "http://localhost:631"], "cupsd"),
     ("Aplicaciones", "Instalar programas",
      ["lekso-term", "-T", "Aplicaciones", "-e", "sh", "-c", "lekso-apps; printf '\\nPulsa Intro para cerrar.'; read -r _"],
