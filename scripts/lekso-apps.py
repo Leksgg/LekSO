@@ -54,6 +54,9 @@ CATALOGO = [
     ("Multimedia", "audacity", "Audacity", "apt", "audacity", "audacity", ""),
     ("Multimedia", "vlc", "VLC media player", "apt", "vlc", "vlc", ""),
     ("Multimedia", "streamdeck", "Elgato Stream Deck", "apt", "streamdeck-ui", "streamdeck-ui", "Ya viene con LeksSO."),
+    ("Ofimática", "libreoffice", "Microsoft Office (Word, Excel, PowerPoint)", "apt",
+     "libreoffice-writer libreoffice-calc libreoffice-impress libreoffice-l10n-es libreoffice-help-es", "libreoffice-writer",
+     "Funciona sin conexión. En el menú también tienes Word, Excel y PowerPoint en su versión web (gratis, con cuenta de Microsoft)."),
     ("Multimedia", "pdf", "Wondershare PDFelement", "apt", "okular", "okular", "Leer y anotar. Edición avanzada de PDF: sin equivalente directo."),
     # Utilidades
     ("Utilidades", "compresores", "WinRAR", "apt", "p7zip-full unrar-free", "p7zip-full", "Zip, 7z, rar y tar."),
@@ -77,6 +80,7 @@ CATALOGO = [
 # parecida (o que da acceso a tu cuenta desde fuera). La lista lo dice siempre: nadie instala una alternativa
 # creyendo que es la versión oficial.
 ALTERNATIVAS = {
+    "libreoffice": "No hay Microsoft Office de escritorio para Linux; LibreOffice abre y guarda .docx, .xlsx y .pptx (algunas macros y animaciones pueden verse distintas).",
     "streamdeck": "Elgato no publica su programa para Linux; este es de terceros.",
     "pdf": "No hay PDFelement para Linux; es otro lector, solo leer y anotar.",
     "compresores": "No hay WinRAR con ventana para Linux; son compresores libres.",

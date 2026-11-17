@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=Excel (web)
+Comment=Hojas de cálculo de Microsoft 365 en el navegador (gratis, con cuenta de Microsoft)
+Exec=lekso-office-web excel
+Icon=applications-office
+Terminal=false
+Categories=Office;

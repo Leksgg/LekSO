@@ -24,7 +24,7 @@ HOME_USR="$(getent passwd "$USUARIO" | cut -d: -f6)"
 RAIZ="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
 # Paquetes por capa. Todos existen en Debian 13 (trixie); winetricks necesita la sección contrib.
-ESCRITORIO=(labwc sway swaybg waybar foot kitty fuzzel grim pcmanfm-qt qt6-wayland qt6-svg-plugins qt6ct xwayland fonts-font-awesome seatd xdg-desktop-portal-wlr micro imv zathura zathura-pdf-poppler mpv xarchiver udisks2 udiskie gvfs gvfs-backends polkitd ntfs-3g exfatprogs usbutils v4l-utils bluez pavucontrol-qt swaylock wl-clipboard mako-notifier libnotify-bin swayidle brightnessctl slurp cliphist wdisplays blueman cups fonts-noto-color-emoji fonts-liberation ffmpegthumbnailer power-profiles-daemon playerctl wlr-randr network-manager streamdeck-ui python3-pyside6.qtwidgets python3-pyside6.qtgui python3-pyside6.qtcore python3-pyside6.qtsvg)
+ESCRITORIO=(labwc sway swaybg waybar foot kitty fuzzel grim pcmanfm-qt qt6-wayland qt6-svg-plugins qt6ct xwayland fonts-font-awesome seatd xdg-desktop-portal-wlr micro imv zathura zathura-pdf-poppler mpv vlc xarchiver udisks2 udiskie gvfs gvfs-backends polkitd ntfs-3g exfatprogs usbutils v4l-utils bluez pavucontrol-qt swaylock wl-clipboard mako-notifier libnotify-bin swayidle brightnessctl slurp cliphist wdisplays blueman cups fonts-noto-color-emoji fonts-liberation ffmpegthumbnailer power-profiles-daemon playerctl wlr-randr network-manager streamdeck-ui python3-pyside6.qtwidgets python3-pyside6.qtgui python3-pyside6.qtcore python3-pyside6.qtsvg)
 AUDIO=(pipewire pipewire-pulse wireplumber)
 AISLAMIENTO=(bubblewrap firejail python3-seccomp)
 HERRAMIENTAS=(git curl btop lm-sensors python3 bc pciutils mokutil fwupd)
@@ -197,7 +197,7 @@ install -d -o "$USUARIO" -g "$USUARIO" "$HOME_USR/Escritorio"
 install -o "$USUARIO" -g "$USUARIO" -m 0755 "$RAIZ"/config/escritorio/*.desktop "$HOME_USR/Escritorio/"
 
 # Programas predeterminados por tipo de archivo (no pisa lo que el usuario ya haya elegido).
-install -m 0755 "$RAIZ/config/bin/lekso-info" "$RAIZ/config/bin/lekso-wine" "$RAIZ/config/bin/lekso-menu" "$RAIZ/config/bin/lekso-energia" "$RAIZ/config/bin/lekso-flotantes" "$RAIZ/config/bin/lekso-term" "$RAIZ/config/bin/lekso-medios" "$RAIZ/config/bin/lekso-captura" "$RAIZ/config/bin/lekso-reposo" "$RAIZ/config/bin/lekso-portapapeles" "$RAIZ/config/bin/lekso-ajustes" "$RAIZ/config/bin/lekso-redes" "$RAIZ/config/bin/lekso-actualizaciones" "$RAIZ/config/bin/lekso-panel-ia" "$RAIZ/config/bin/lekso-acceso-remoto" "$RAIZ/config/bin/lekso-archivos" "$RAIZ/config/bin/lekso-juego" /usr/local/bin/
+install -m 0755 "$RAIZ/config/bin/lekso-info" "$RAIZ/config/bin/lekso-wine" "$RAIZ/config/bin/lekso-menu" "$RAIZ/config/bin/lekso-energia" "$RAIZ/config/bin/lekso-flotantes" "$RAIZ/config/bin/lekso-term" "$RAIZ/config/bin/lekso-medios" "$RAIZ/config/bin/lekso-captura" "$RAIZ/config/bin/lekso-reposo" "$RAIZ/config/bin/lekso-portapapeles" "$RAIZ/config/bin/lekso-ajustes" "$RAIZ/config/bin/lekso-redes" "$RAIZ/config/bin/lekso-actualizaciones" "$RAIZ/config/bin/lekso-panel-ia" "$RAIZ/config/bin/lekso-acceso-remoto" "$RAIZ/config/bin/lekso-archivos" "$RAIZ/config/bin/lekso-juego" "$RAIZ/config/bin/lekso-office-web" /usr/local/bin/
 # Apagar y reiniciar no se quedan esperando a un servicio que no responde (por defecto serían hasta 2 minutos).
 install -d /etc/systemd/system.conf.d /etc/systemd/user.conf.d /etc/systemd/system/user@.service.d /etc/systemd/user/mpris-proxy.service.d
 printf '[Manager]

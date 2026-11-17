@@ -13,7 +13,7 @@ import sys
 APPS = ["/usr/share/applications", "/usr/local/share/applications",
         os.path.expanduser("~/.local/share/applications")]
 EDITOR, IMAGEN, PDF, REPRODUCTOR = ("lekso-editor.desktop", "imv.desktop",
-                                    "org.pwmt.zathura.desktop", "mpv.desktop")
+                                    "org.pwmt.zathura.desktop", "vlc.desktop")
 ARCHIVADOR, WINE, INFO = "xarchiver.desktop", "lekso-wine.desktop", "lekso-info.desktop"
 
 TEXTO_APP = re.compile(r"^application/(json|.*\+json|.*\+xml|xml|x-yaml|yaml|toml|x-toml|javascript|"
@@ -31,6 +31,16 @@ EXE = re.compile(r"^application/(x-ms-dos-executable|x-msdownload|vnd\.microsoft
 # Binarios de Linux: no se ejecutan con doble clic, a propósito. Se muestra su información.
 
 
+# Ofimática: si LibreOffice está instalado, abre los formatos de Office; si no, se muestra la información del archivo.
+_WRITER, _CALC, _IMPRESS = "libreoffice-writer.desktop", "libreoffice-calc.desktop", "libreoffice-impress.desktop"
+OFICINA = {
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document": _WRITER,
+    "application/msword": _WRITER, "application/vnd.oasis.opendocument.text": _WRITER, "application/rtf": _WRITER,
+    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": _CALC,
+    "application/vnd.ms-excel": _CALC, "application/vnd.oasis.opendocument.spreadsheet": _CALC,
+    "application/vnd.openxmlformats-officedocument.presentationml.presentation": _IMPRESS,
+    "application/vnd.ms-powerpoint": _IMPRESS, "application/vnd.oasis.opendocument.presentation": _IMPRESS,
+}
 NAVEGADORES = ["brave-browser.desktop", "google-chrome.desktop"]
 WEB = ("text/html", "application/xhtml+xml", "x-scheme-handler/http", "x-scheme-handler/https")
 
@@ -49,6 +59,8 @@ def elegir(tipo):
         return REPRODUCTOR
     if tipo == "application/pdf":
         return PDF
+    if tipo in OFICINA:
+        return OFICINA[tipo] if instalada(OFICINA[tipo]) else INFO
     if EXE.match(tipo):
         return WINE
     if ARCHIVOS.match(tipo):
@@ -77,7 +89,9 @@ def main():
     for t in tipos:
         if t in d and d[t].strip():
             # Los tipos web pasan al navegador cuando se instala uno, si aún tenían el valor automático.
-            if not (t in WEB and d[t] in (EDITOR, INFO) and elegir(t) in NAVEGADORES):
+            web_nuevo = t in WEB and d[t] in (EDITOR, INFO) and elegir(t) in NAVEGADORES
+            oficina_nueva = t in OFICINA and d[t] == INFO and elegir(t) != INFO     # se instaló LibreOffice después
+            if not (web_nuevo or oficina_nueva):
                 continue
         app = elegir(t)
         if instalada(app):

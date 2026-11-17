@@ -5,6 +5,10 @@ clear
 printf '%s\n\n' "$f"
 file -b -- "$f"
 ls -lh -- "$f"
+case "$(file -b --mime-type -- "$f")" in
+  application/vnd.openxmlformats-officedocument.*|application/msword|application/vnd.ms-*|application/vnd.oasis.opendocument.*)
+    printf '\nEs un documento de Office. Para abrirlo: Word, Excel o PowerPoint (web) en el menú, o instala LibreOffice en Ajustes → Aplicaciones.\n' ;;
+esac
 printf '\n'
 od -A x -t x1z -N 512 -- "$f"
 printf '\nPulsa Intro para cerrar. Para abrirlo con otro programa: clic derecho > Abrir con.\n'

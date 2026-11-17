@@ -1,0 +1,14 @@
+#!/bin/sh
+# Abre Word, Excel o PowerPoint en su versión web (Microsoft 365, gratis con una cuenta de Microsoft) como ventana
+# de aplicación. Hace falta internet y la cuenta; los documentos se guardan en tu OneDrive.
+# Sin conexión o sin cuenta: LibreOffice (Ajustes → Aplicaciones) abre y guarda los mismos formatos.
+case "${1:-}" in
+  word)       URL="https://www.office.com/launch/word" ;;
+  excel)      URL="https://www.office.com/launch/excel" ;;
+  powerpoint) URL="https://www.office.com/launch/powerpoint" ;;
+  *)          URL="https://www.office.com" ;;
+esac
+for b in brave-browser google-chrome chromium; do
+  if command -v "$b" >/dev/null 2>&1; then exec "$b" --app="$URL"; fi
+done
+exec xdg-open "$URL"
