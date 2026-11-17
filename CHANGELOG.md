@@ -3,7 +3,7 @@
 Formato: `+` nuevo · `-` eliminado o retirado · `~` modificado · `*` otros.
 Lo más reciente, arriba.
 
-## Sin publicar
+## Alpha 0.1.16 · 2026-11-17
 
 + VLC viene con el sistema y es el reproductor predeterminado de vídeo y audio.
 + Word, Excel y PowerPoint aparecen en el menú en su versión web de Microsoft 365 (gratis con una cuenta de Microsoft; hace falta internet y los documentos se guardan en tu OneDrive).
