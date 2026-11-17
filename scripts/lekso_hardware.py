@@ -156,6 +156,19 @@ def en_bateria():
     return hay_bat and not enchufado
 
 
+def datos_bios():
+    """Fabricante, placa y versión de BIOS tal como las da el equipo (/sys/class/dmi/id). Vacío si no hay."""
+    def lee(n):
+        try:
+            return open(f"/sys/class/dmi/id/{n}", encoding="utf-8").read().strip()
+        except OSError:
+            return ""
+    placa = " ".join(x for x in (lee("board_vendor"), lee("board_name")) if x) or " ".join(x for x in (lee("sys_vendor"), lee("product_name")) if x)
+    bios = " ".join(x for x in (lee("bios_vendor"), lee("bios_version")) if x)
+    fecha = lee("bios_date")
+    return f"{placa} · BIOS {bios}" + (f" ({fecha})" if fecha else "") if (placa or bios) else ""
+
+
 def estado_actual():
     """Foto de lo que hay y lo que está pendiente. Solo lectura."""
     g = gpus()
@@ -316,6 +329,11 @@ def detectar():
     for g in est["gpus"] or [{"vendedor": "?", "nombre": "ninguna detectada"}]:
         print(f"  · {g['nombre']} ({g['vendedor']})")
     print("Máquina virtual:", "sí" if est["virtual"] else "no")
+    b = datos_bios()
+    if b:
+        print(f"Placa y BIOS: {b}")
+        print("  (La BIOS solo se actualiza desde aquí si el fabricante la publica en fwupd; si no sale en la lista de")
+        print("   firmware, hay que mirar su web de soporte.)")
     sb = est["secure_boot"]
     print("Secure Boot:", "activo" if sb else "no activo" if sb is False else "no se pudo comprobar")
     n = est["nvidia"]
@@ -345,11 +363,61 @@ def preguntar(texto, si=False):
         return False
 
 
+MOK_PUB = "/var/lib/dkms/mok.pub"      # certificado con el que DKMS firma los módulos (lo crea `dkms generate_mok`)
+
+
+def interpretar_mok(existe, test_salida, nuevas_salida):
+    """Estado de la clave de firma de módulos: sin-clave, registrada, pendiente (pedida, falta reiniciar) o sin-registrar."""
+    if not existe:
+        return "sin-clave"
+    if "already enrolled" in test_salida.lower():
+        return "registrada"
+    nuevas = nuevas_salida.lower()
+    if "[key" in nuevas and "empty" not in nuevas:
+        return "pendiente"
+    return "sin-registrar"
+
+
+def mok_estado():
+    existe = os.path.exists(MOK_PUB)
+    if not existe:
+        return "sin-clave"
+    return interpretar_mok(True, ejecutar(["mokutil", "--test-key", MOK_PUB])[1], ejecutar(["mokutil", "--list-new"])[1])
+
+
+def preparar_mok(si=False):
+    """Con Secure Boot, el módulo de NVIDIA solo carga si está firmado con una clave registrada en el equipo.
+    Se hace ANTES de instalar el controlador, para no quedarse sin imagen. Devuelve 0 si ya se puede instalar,
+    1 si algo falló o no se aceptó, 2 si hay que reiniciar para terminar el registro."""
+    estado = mok_estado()
+    if estado == "registrada":
+        return 0
+    if estado == "pendiente":
+        print("La clave ya está pedida. Reinicia el equipo: en la pantalla azul elige «Enroll MOK», «Continue»,")
+        print("«Yes», escribe la contraseña que elegiste y «Reboot». Después vuelve a ejecutar esta instalación.")
+        return 2
+    print("Tu equipo tiene Secure Boot activo. Para que el controlador de NVIDIA cargue, hay que registrar una clave")
+    print("de firma de LeksSO (una sola vez por equipo). Te pedirá una contraseña, que eliges tú, y se escribe dos")
+    print("veces: ahora y en la pantalla azul del próximo arranque. Apúntala. Nada se instala hasta que lo hayas hecho.")
+    if not preguntar("¿Registrar la clave ahora?", si):
+        return 1
+    ejecutar(["apt-get", "install", "-y", "-qq", "dkms", "openssl", "mokutil"], 600)
+    if not os.path.exists(MOK_PUB):
+        ejecutar(["dkms", "generate_mok"], 120)
+    if not os.path.exists(MOK_PUB):
+        print("✕ No se pudo crear la clave de firma. Revisa que dkms esté instalado.")
+        return 1
+    if subprocess.run(["mokutil", "--import", MOK_PUB]).returncode != 0:      # pide la contraseña en la terminal
+        print("✕ No se pudo pedir el registro de la clave.")
+        return 1
+    print("\nListo. Reinicia el equipo. En la pantalla azul («MOK Manager») elige «Enroll MOK», «Continue», «Yes»,")
+    print("escribe la contraseña que acabas de elegir y «Reboot». Cuando el equipo arranque, vuelve a ejecutar la")
+    print("instalación de controladores: esta vez instalará el de NVIDIA.")
+    return 2
+
+
 def problemas_antes_de_nvidia(est, ignorar_sb=False):
     p = []
-    if est["secure_boot"] and not ignorar_sb:
-        p.append("Secure Boot está activo: el controlador de NVIDIA no cargaría sin firmarlo y te quedarías sin imagen. "
-                 "Desactiva Secure Boot en la BIOS o pide ayuda para firmar el módulo.")
     libre = shutil.disk_usage("/").free
     if libre < ESPACIO_MINIMO:
         p.append(f"Hay poco espacio libre ({libre // 1024 ** 2} MB); hacen falta unos {ESPACIO_MINIMO // 1024 ** 3} GB.")
@@ -365,6 +433,10 @@ def instalar_nvidia(est, si=False, ignorar_sb=False):
         print("✕", linea)
     if problemas:
         return 1
+    if est["secure_boot"] and not ignorar_sb:
+        r = preparar_mok(si)
+        if r:
+            return r                # 1: falló o no se aceptó; 2: hay que reiniciar y volver a ejecutar
     if not n["non_free"]:
         print("El controlador de NVIDIA es software propietario (no libre) y está en la sección «non-free» de Debian.")
         if not preguntar("¿Activar esa sección en este equipo?", si):
@@ -404,7 +476,10 @@ def aplicar(args):
     hecho = False
     if est["nvidia"] and est["nvidia"]["accion"] in ("instalar", "actualizar"):
         hecho = True
-        if instalar_nvidia(est, si, ignorar_sb):
+        r = instalar_nvidia(est, si, ignorar_sb)
+        if r == 2:
+            return 0                # clave pedida: se reinicia y se vuelve a ejecutar; nada más que hacer ahora
+        if r:
             return 1
     if est["seguro"]:
         hecho = True

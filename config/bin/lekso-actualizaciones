@@ -40,6 +40,8 @@ def resumen_hw(est):
     n = est.get("nvidia")
     if n and n.get("accion") == "instalar":
         lineas.append("Tu tarjeta NVIDIA puede usar el controlador oficial (software propietario). Da más rendimiento en juegos.")
+        if est.get("secure_boot"):
+            lineas.append("Tu equipo tiene Secure Boot: primero se registra una clave de firma (una sola vez, con una contraseña que eliges tú) y se reinicia; después se instala el controlador.")
         pendiente = True
     elif n and n.get("accion") == "actualizar":
         lineas.append(f"Hay un controlador NVIDIA más nuevo ({n.get('candidato', '')}).")

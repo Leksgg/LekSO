@@ -95,11 +95,18 @@ class Avisos(unittest.TestCase):
 
 
 class Problemas(unittest.TestCase):
-    def test_secure_boot_bloquea_nvidia(self):
-        est = {"secure_boot": True}
-        self.assertTrue(any("Secure Boot" in p for p in hw.problemas_antes_de_nvidia(est)))
-        self.assertFalse(any("Secure Boot" in p for p in hw.problemas_antes_de_nvidia(est, ignorar_sb=True)))
-        self.assertFalse(any("Secure Boot" in p for p in hw.problemas_antes_de_nvidia({"secure_boot": False})))
+    def test_secure_boot_ya_no_es_un_bloqueo_sino_un_paso_previo(self):
+        # Con Secure Boot se registra primero la clave (preparar_mok); problemas_antes_de_nvidia solo mira espacio y batería.
+        self.assertFalse(any("Secure Boot" in p for p in hw.problemas_antes_de_nvidia({"secure_boot": True})))
+
+
+class ClaveMok(unittest.TestCase):
+    def test_estados(self):
+        self.assertEqual(hw.interpretar_mok(False, "", ""), "sin-clave")
+        self.assertEqual(hw.interpretar_mok(True, "/var/lib/dkms/mok.pub is already enrolled", ""), "registrada")
+        self.assertEqual(hw.interpretar_mok(True, "/var/lib/dkms/mok.pub is not enrolled", "MokNew is empty"), "sin-registrar")
+        self.assertEqual(hw.interpretar_mok(True, "/var/lib/dkms/mok.pub is not enrolled", "[key 1] SHA1 Fingerprint: 00"), "pendiente")
+        self.assertEqual(hw.interpretar_mok(True, "", ""), "sin-registrar")
 
 
 if __name__ == "__main__":
