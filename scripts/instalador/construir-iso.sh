@@ -42,6 +42,16 @@ CLAVE_EN_SCRIPT="$(sed -n "s/^CLAVE_PUBLICA='\(.*\)'\$/\1/p" "$PAQ/instalar.sh")
 [ -n "$CLAVE_EN_SCRIPT" ] && [ "$CLAVE_EN_SCRIPT" = "$(git show "$VERSION:config/allowed_signers" | head -n1)" ] \
   || { echo "La clave incrustada en instalar.sh no coincide con config/allowed_signers." >&2; exit 1; }
 
+# 1a. Variantes de instalación, una entrada del menú cada una: el disco se cifra o no, y el usuario tiene contraseña o no.
+#     La base (preseed.cfg) es «disco cifrado, con contraseña». Sin contraseña: el instalador no la pregunta (se deja
+#     bloqueada) y postinstalar.sh quita la contraseña, activa la entrada automática y sudo sin clave.
+sed 's#^d-i partman-auto/method string crypto#d-i partman-auto/method string lvm#' "$PAQ/preseed.cfg" > "$PAQ/preseed-sin-cifrado.cfg"
+for par in "preseed:preseed-sin-contrasena" "preseed-sin-cifrado:preseed-sin-cifrado-sin-contrasena"; do
+  origen="${par%%:*}"; destino="${par##*:}"
+  sed 's#^\(  in-target sh /opt/lekso-instalacion/postinstalar.sh\)$#\1 --sin-contrasena#' "$PAQ/$origen.cfg" > "$PAQ/$destino.cfg"
+  printf '\n# --- Sin contraseña de usuario: la deja bloqueada y postinstalar.sh la quita ---\nd-i passwd/user-password-crypted password !\n' >> "$PAQ/$destino.cfg"
+done
+
 # 1b. Fase de pruebas en equipos reales: sin exigir firma en las actualizaciones y con acceso remoto en red local.
 if [ "$FASE" = 1 ]; then echo "fase de pruebas" > "$PAQ/FASE_PRUEBAS"; fi
 
@@ -69,11 +79,21 @@ fi
 # 3. Menú de arranque: una entrada nueva (la primera) que lanza la instalación de LeksSO.
 ORIGEN_GRUB="$TMP/grub.orig"
 xorriso -osirrox on -indev "$ISO" -extract /boot/grub/grub.cfg "$ORIGEN_GRUB" >/dev/null 2>&1
-ENTRADA="menuentry --hotkey=l 'Instalar LeksSO (borra el disco que elijas)' {
+ENTRADA="menuentry --hotkey=l 'Instalar LeksSO (disco cifrado y contraseña; borra el disco que elijas)' {
     set background_color=black
     linux    /install.amd/vmlinuz auto=true priority=high file=/cdrom/lekso/preseed.cfg vga=788 --- quiet
     initrd   /install.amd/initrd.gz
 }"
+# Variantes (no en las imágenes de pruebas, que llevan respuestas fijas solo en la primera): cifrado sí/no, contraseña sí/no.
+if [ -z "$PRUEBA" ]; then
+  variante() {  # título, preseed
+    printf "menuentry '%s' {\n    set background_color=black\n    linux    /install.amd/vmlinuz auto=true priority=high file=/cdrom/lekso/%s vga=788 --- quiet\n    initrd   /install.amd/initrd.gz\n}\n" "$1" "$2"
+  }
+  ENTRADA="$ENTRADA
+$(variante 'Instalar LeksSO sin cifrar el disco (borra el disco que elijas)' preseed-sin-cifrado.cfg)
+$(variante 'Instalar LeksSO sin contraseña de usuario, disco cifrado (entra solo al escritorio)' preseed-sin-contrasena.cfg)
+$(variante 'Instalar LeksSO sin cifrar y sin contraseña (el más simple; borra el disco que elijas)' preseed-sin-cifrado-sin-contrasena.cfg)"
+fi
 python3 - "$ORIGEN_GRUB" "$TMP/grub.cfg" "$ENTRADA" <<'PY'
 import sys
 orig = open(sys.argv[1], encoding="utf-8").read()

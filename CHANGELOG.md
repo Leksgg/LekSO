@@ -3,6 +3,10 @@
 Formato: `+` nuevo · `-` eliminado o retirado · `~` modificado · `*` otros.
 Lo más reciente, arriba.
 
+## Sin publicar
+
++ El instalador ofrece cuatro opciones en el menú de arranque: con o sin cifrado del disco, y con o sin contraseña de usuario. Ya no obliga a cifrar ni a tener contraseña. Sin contraseña, el equipo entra solo al escritorio al encender y `sudo` no la pide; es para uso propio, porque quien tenga el equipo delante tiene acceso a todo. Desde la red no se puede entrar sin contraseña.
+
 ## Alpha 0.1.14 · 2026-11-17
 
 ~ El sistema pasa a llamarse **LeksSO** (Leks + Sistema Operativo). Cambia el nombre que se ve; los comandos (`lekso-*`) y las carpetas siguen igual. El repositorio de GitHub también se llama ahora LeksSO, y el nombre antiguo sigue funcionando para los equipos ya instalados.

@@ -39,6 +39,23 @@ X11Forwarding no
 ' > /etc/ssh/sshd_config.d/lekso.conf
 fi
 
+# 3c. Instalación SIN contraseña de usuario (entrada del menú «sin contraseña»): el usuario no tiene contraseña, el
+#     equipo entra solo al escritorio al encender y sudo no la pide. Quien tenga el equipo delante tiene acceso a todo:
+#     es para uso propio. El acceso remoto (SSH) no admite contraseñas vacías, así que desde la red no se puede entrar.
+if [ "${1:-}" = "--sin-contrasena" ]; then
+  passwd -d "$USUARIO"
+  echo "$USUARIO ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/lekso-sin-contrasena
+  chmod 440 /etc/sudoers.d/lekso-sin-contrasena
+  install -d /etc/systemd/system/getty@tty1.service.d /etc/lekso
+  cat > /etc/systemd/system/getty@tty1.service.d/autologin.conf <<'EOF'
+[Service]
+ExecStart=
+ExecStart=-/sbin/agetty -o '-p -f -- \\u' --noclear --autologin @USUARIO@ %I $TERM
+EOF
+  sed -i "s/@USUARIO@/$USUARIO/" /etc/systemd/system/getty@tty1.service.d/autologin.conf
+  touch /etc/lekso/sin-contrasena
+fi
+
 # 4. LeksSO, con la comprobación de firma del instalador.
 VERSION="$(cat "$PAQ/VERSION_TAG")"
 SUDO_USER="$USUARIO" bash "$PAQ/instalar.sh" --origen "$PAQ/lekso.bundle" --version "$VERSION" --si
