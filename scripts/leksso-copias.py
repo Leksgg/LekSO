@@ -182,8 +182,9 @@ def guardar_estado(resultado, mensaje, inicio=None, **extra):
     escribir_json(ESTADO, e)
 
 
-def notificar(titulo, texto):
-    """Avisa en la pantalla de quien tenga sesión abierta; si no se puede, no pasa nada (queda el estado y la barra)."""
+def notificar(titulo, texto, critico=True):
+    """Avisa en la pantalla de quien tenga sesión abierta; si no se puede, no pasa nada (queda el estado y la barra).
+    Todos los avisos llevan la misma etiqueta: uno nuevo sustituye al anterior, así «ha vuelto a funcionar» quita el de «ha fallado»."""
     if SIN_SYSTEMD or os.geteuid() != 0:
         return
     try:
@@ -191,7 +192,8 @@ def notificar(titulo, texto):
             if d.isdigit() and os.path.exists(f"/run/user/{d}/bus"):
                 u = pwd.getpwuid(int(d)).pw_name
                 subprocess.run(["runuser", "-u", u, "--", "env", f"DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/{d}/bus",
-                                "notify-send", "-a", "leksso-copias", "-u", "critical", "-t", "0", titulo, texto],
+                                "notify-send", "-a", "leksso-copias", "-u", "critical" if critico else "normal",
+                                "-t", "0" if critico else "8000", "--hint=string:x-canonical-private-synchronous:leksso-copias", titulo, texto],
                                capture_output=True, timeout=10)
     except (OSError, subprocess.SubprocessError, KeyError):
         pass
@@ -319,7 +321,10 @@ def ejecutar(ahora=False):
         restic("forget", "--group-by", "", "--keep-last", str(MAX_COPIAS), "--prune")
         lista = copias()
         espacio = sum(os.path.getsize(os.path.join(d, f)) for d, _, fs in os.walk(REPO) for f in fs)
+        habia_fallado = (e.get("ultima") or {}).get("resultado") == "fallo"
         guardar_estado("aviso" if aviso else "ok", aviso or "Copia hecha y comprobada.", inicio, snapshots=lista, espacio_repo=espacio)
+        if habia_fallado:
+            notificar("Las copias de seguridad vuelven a funcionar", "La última copia se hizo y se comprobó bien.", critico=False)
         print("Copia hecha." + (" " + aviso if aviso else ""))
         return 0
     except Error as err:

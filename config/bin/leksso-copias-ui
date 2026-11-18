@@ -8,6 +8,7 @@ Se cierra con la X o con Esc.
 """
 import datetime as dt
 import json
+import re
 import subprocess
 import sys
 
@@ -26,6 +27,7 @@ QListWidget { background: #09191b; border: 1px solid #25393c; }
 """
 FRECUENCIAS = [("diaria", "Cada día"), ("semanal", "Cada semana (los lunes)"), ("mensual", "Cada mes (el día 1)")]
 MESES = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"]
+DIAS = ["lun", "mar", "mié", "jue", "vie", "sáb", "dom"]
 
 
 def bonita(iso):
@@ -37,6 +39,17 @@ def bonita(iso):
     dias = (dt.datetime.now().astimezone().date() - f.date()).days
     cuando = "hoy" if dias == 0 else "ayer" if dias == 1 else f"{f.day} {MESES[f.month - 1]}"
     return f"{cuando} a las {f:%H:%M}"
+
+
+def proxima_bonita(texto):
+    """'Wed 2026-11-18 22:30:00 CET' (como lo da systemd) → 'hoy a las 22:30', 'mañana a las 03:00' o 'lun 23 nov a las 04:15'."""
+    m = re.search(r"(\d{4})-(\d{2})-(\d{2}) (\d{2}:\d{2})", texto or "")
+    if not m:
+        return texto or "—"
+    f = dt.date(int(m[1]), int(m[2]), int(m[3]))
+    dias = (f - dt.date.today()).days
+    cuando = "hoy" if dias == 0 else "mañana" if dias == 1 else f"{DIAS[f.weekday()]} {f.day} {MESES[f.month - 1]}"
+    return f"{cuando} a las {m[4]}"
 
 
 def tamano(n):
@@ -330,7 +343,7 @@ class Copias(QtWidgets.QWidget):
         self.hora.setTime(QtCore.QTime.fromString(d["hora"], "HH:mm"))
         resultado = {"ok": "correcta", "aviso": "correcta, con avisos", "fallo": "con error", "pospuesta": "pospuesta (batería)"}.get(u.get("resultado"), "")
         self.e["ultima"].setText(f"{bonita(u['fecha'])} ({resultado})" if u.get("fecha") else "Ninguna todavía")
-        self.e["proxima"].setText(d["proxima"] or ("—" if not d["activa"] else "pendiente"))
+        self.e["proxima"].setText(proxima_bonita(d["proxima"]) if d["proxima"] else ("—" if not d["activa"] else "pendiente"))
         n = len(d.get("copias", []))
         self.e["copias"].setText(f"{n} de {d['maximo']}" + (f". Puedes volver hasta {bonita(d['volver_hasta'])}." if d.get("volver_hasta") else ""))
         self.e["espacio"].setText(tamano(d.get("espacio_repo", 0)) if d.get("espacio_repo") else "—")
