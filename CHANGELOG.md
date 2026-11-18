@@ -3,6 +3,12 @@
 Formato: `+` nuevo · `-` eliminado o retirado · `~` modificado · `*` otros.
 Lo más reciente, arriba.
 
+## Sin publicar
+
+~ Apariencia ya cambia todo el escritorio de verdad: además de barra, avisos y bordes, ahora también el terminal (se recarga sin cerrarlo), el panel de la IA, Archivos (incluidos «Lugares» y el árbol de carpetas) y el resto de ventanas de LeksSO, que se repintan solas con el tema nuevo sin cerrarlas ni abrirlas de nuevo. La pantalla de bloqueo estrena también el color del tema.
+~ «Lugares» en Archivos ahora muestra Descargas, Documentos, Imágenes, Vídeos y Música además de Inicio y Escritorio: se crean al instalar, porque solo salían las que existían.
+- Se quita la configuración del terminal foot, que no usaba nadie (el terminal es kitty).
+
 ## Alpha 0.1.18 · 2026-11-18
 
 ~ Corrige la actualización a 0.1.17: tras actualizar, la barra y los atajos de la sesión abierta seguían llamando a los comandos con el nombre antiguo y dejaban de funcionar hasta volver a entrar. Ahora los comandos antiguos reenvían a los nuevos durante esa sesión y la barra y el compositor releen su configuración al terminar de actualizar.
