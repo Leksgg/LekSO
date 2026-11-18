@@ -77,6 +77,8 @@ class H(socketserver.StreamRequestHandler):
         orden, espera = m.get("orden"), m.get("espera", 120)
         if not isinstance(orden, str) or not 0 < len(orden) <= 8000 or "\0" in orden:
             return {"ok": False, "error": "orden no válida"}
+        if asistentes.toca_auditoria(orden) and not asistentes.lee_auditoria(orden):      # última puerta, ya como root
+            return {"ok": False, "error": "el registro de seguridad no se puede tocar desde la IA"}
         if asistentes.toca_copias(orden):      # última puerta, ya como root
             return {"ok": False, "error": "las copias de seguridad no se pueden tocar desde la IA"}
         if isinstance(espera, bool) or not isinstance(espera, int):

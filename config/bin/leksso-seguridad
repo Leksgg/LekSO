@@ -1,0 +1,249 @@
+#!/usr/bin/env python3
+"""Seguridad de LeksSO (Ajustes → Seguridad): qué se ha instalado en este equipo, cómo y de dónde.
+
+Pestaña «Instalaciones»: el registro que anotan los ganchos de apt y el catálogo de LeksSO, más lo que aparece fuera de apt.
+Cada línea dice qué pasó, cómo se hizo y de dónde vino, con su certeza:
+  confirmado   lo prueba quien lo hizo (catálogo, actualizaciones, la IA, una sesión SSH)
+  inferido     se deduce del contexto (p. ej. «desde un terminal local»); un script podría haberlo lanzado
+  desconocido  nadie lo anotó: revísalo
+El registro lo escribe el sistema y es de solo añadir; quien tenga permisos de administrador podría borrarlo (el sello lo delata).
+Se cierra con la X o con Esc.
+"""
+import datetime as dt
+import json
+import subprocess
+import sys
+
+from PySide6 import QtCore, QtGui, QtWidgets
+
+sys.path.insert(0, "/usr/local/lib/leksso-ui")
+from leksso_ui import ESTILO_BASE, alternar, estilo, pintar  # noqa: E402
+
+EXTRA = """
+QLabel#ok { color: #85ce6c; } QLabel#aviso { color: #fdc357; } QLabel#mal { color: #ff735a; }
+QLabel#dato { color: #94a1a3; }
+QTreeWidget { background: #09191b; border: 1px solid #25393c; alternate-background-color: #0a1b1d; }
+QHeaderView::section { background: #112123; color: #94a1a3; border: 0; padding: 6px 8px; }
+QTabWidget::pane { border: 1px solid #25393c; }
+QTabBar::tab { background: #112123; color: #94a1a3; padding: 8px 16px; border: 1px solid #25393c; }
+QTabBar::tab:selected { background: #003635; color: #e3edef; }
+QCheckBox { spacing: 8px; }
+QLineEdit { background: #112123; border: 1px solid #25393c; padding: 6px 8px; color: #e3edef; }
+"""
+MESES = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"]
+COLOR_CERTEZA = {"confirmado": "#85ce6c", "inferido": "#fdc357", "desconocido": "#ff735a"}
+ACCION = {"instalado": "Instalado", "eliminado": "Eliminado", "actualizado": "Actualizados", "apareció": "Apareció fuera de apt",
+          "desapareció": "Desapareció", "línea base": "Primera foto"}
+
+
+def bonita(iso):
+    try:
+        f = dt.datetime.fromisoformat(iso).astimezone()
+    except (TypeError, ValueError):
+        return "—"
+    dias = (dt.datetime.now().astimezone().date() - f.date()).days
+    cuando = "hoy" if dias == 0 else "ayer" if dias == 1 else f"{f.day} {MESES[f.month - 1]}"
+    return f"{cuando} {f:%H:%M}"
+
+
+def orden(*args, root=True, espera=60):
+    cmd = (["sudo", "-n"] if root else []) + ["leksso-auditoria", *args]
+    try:
+        r = subprocess.run(cmd, capture_output=True, text=True, timeout=espera)
+    except (OSError, subprocess.SubprocessError) as e:
+        return 1, "", str(e)
+    return r.returncode, r.stdout, r.stderr
+
+
+def pide_contrasena(err):
+    return "password is required" in err or "a terminal is required" in err or "contraseña" in err.lower()
+
+
+class Instalaciones(QtWidgets.QWidget):
+    def __init__(self, aviso):
+        super().__init__()
+        self.aviso = aviso
+        self.registros = []
+        v = QtWidgets.QVBoxLayout(self)
+        v.setContentsMargins(10, 10, 10, 10)
+        fila = QtWidgets.QHBoxLayout()
+        self.buscar = QtWidgets.QLineEdit()
+        self.buscar.setPlaceholderText("Buscar un programa…")
+        self.buscar.textChanged.connect(self.pintar)
+        self.solo = QtWidgets.QCheckBox("Solo lo que no está confirmado")
+        self.solo.toggled.connect(self.pintar)
+        self.actualizar = QtWidgets.QPushButton("Actualizar")
+        self.actualizar.setObjectName("accion")
+        self.actualizar.clicked.connect(self.cargar)
+        fila.addWidget(self.buscar, 1)
+        fila.addWidget(self.solo)
+        fila.addWidget(self.actualizar)
+        v.addLayout(fila)
+        self.arbol = QtWidgets.QTreeWidget()
+        self.arbol.setColumnCount(5)
+        self.arbol.setHeaderLabels(["Cuándo", "Programa", "Qué pasó", "Cómo", "Certeza"])
+        self.arbol.setRootIsDecorated(False)
+        self.arbol.setAlternatingRowColors(True)
+        self.arbol.setUniformRowHeights(True)
+        self.arbol.header().setStretchLastSection(False)
+        self.arbol.header().setSectionResizeMode(3, QtWidgets.QHeaderView.Stretch)
+        self.arbol.itemSelectionChanged.connect(self.detalle)
+        v.addWidget(self.arbol, 1)
+        self.det = QtWidgets.QLabel("")
+        self.det.setObjectName("dato")
+        self.det.setWordWrap(True)
+        self.det.setTextInteractionFlags(QtCore.Qt.TextSelectableByMouse)
+        v.addWidget(self.det)
+        botones = QtWidgets.QHBoxLayout()
+        self.revisar = QtWidgets.QPushButton("Marcar como revisada")
+        self.revisar.setObjectName("accion")
+        self.revisar.clicked.connect(self.marcar)
+        self.carpeta = QtWidgets.QPushButton("Abrir su carpeta")
+        self.carpeta.setObjectName("accion")
+        self.carpeta.clicked.connect(self.abrir_carpeta)
+        self.comprobar = QtWidgets.QPushButton("Comprobar el registro")
+        self.comprobar.setObjectName("accion")
+        self.comprobar.clicked.connect(self.verificar)
+        for b in (self.revisar, self.carpeta, self.comprobar):
+            botones.addWidget(b)
+        v.addLayout(botones)
+        self.msg = QtWidgets.QLabel("")
+        self.msg.setWordWrap(True)
+        v.addWidget(self.msg)
+        nota = QtWidgets.QLabel("El registro lo escribe el sistema y es de solo añadir. «Desconocido» no significa que sea malo: significa que "
+                                "nadie anotó cómo llegó. Quien tenga permisos de administrador podría borrarlo; el sello de abajo lo delata.")
+        nota.setObjectName("dato")
+        nota.setWordWrap(True)
+        v.addWidget(nota)
+        self.sello = QtWidgets.QLabel("")
+        self.sello.setObjectName("dato")
+        v.addWidget(self.sello)
+        self.cargar()
+
+    def cargar(self):
+        rc, out, err = orden("listar", "--ultimos", "500")
+        if rc != 0:
+            self.registros = []
+            self.arbol.clear()
+            self.msg.setObjectName("aviso")
+            self.msg.setText("No se pudo leer el registro: " + ("tu usuario necesita la contraseña de administrador; abre un terminal y usa "
+                             "«sudo leksso-auditoria listar»." if pide_contrasena(err) else (err.strip()[-200:] or "sin respuesta")))
+            return
+        self.registros = json.loads(out)
+        self.msg.setText("")
+        self.pintar()
+        rc, out, _ = orden("estado", root=False, espera=15)
+        if rc == 0:
+            s = json.loads(out).get("sello", {})
+            self.sello.setText(f"Sello del registro: línea {s.get('n', 0)} · {s.get('h', '—')}")
+
+    def pintar(self, *_):
+        q = self.buscar.text().strip().lower()
+        self.arbol.clear()
+        for r in self.registros:
+            if self.solo.isChecked() and r.get("nivel") == "confirmado":
+                continue
+            if q and q not in (r.get("nombre", "") + " " + r.get("modo", "") + " " + r.get("origen", "")).lower():
+                continue
+            nombre = r.get("nombre", "") + (f" {r['version']}" if r.get("version") else "")
+            it = QtWidgets.QTreeWidgetItem([bonita(r.get("t")), nombre, ACCION.get(r.get("accion"), r.get("accion", "")),
+                                            f"{r.get('modo', '')} · {r.get('origen', '')}", r.get("nivel", "") + (" ✓" if r.get("revisada") else "")])
+            it.setForeground(4, QtGui.QBrush(QtGui.QColor(pintar(COLOR_CERTEZA.get(r.get("nivel"), "#94a1a3")))))
+            it.setData(0, QtCore.Qt.UserRole, r)
+            self.arbol.addTopLevelItem(it)
+        for c, ancho in ((0, 110), (1, 190), (2, 150), (4, 110)):
+            self.arbol.setColumnWidth(c, ancho)
+        self.detalle()
+
+    def elegido(self):
+        sel = self.arbol.selectedItems()
+        return sel[0].data(0, QtCore.Qt.UserRole) if sel else None
+
+    def detalle(self):
+        r = self.elegido()
+        self.revisar.setEnabled(bool(r) and not r.get("revisada") and r.get("nivel") != "confirmado")
+        self.carpeta.setEnabled(bool(r) and bool((r.get("detalle") or {}).get("ruta")))
+        if not r:
+            self.det.setText("Elige una línea para ver el detalle.")
+            return
+        d = r.get("detalle") or {}
+        partes = [f"Línea {r['n']} · {r.get('t', '')}"]
+        for clave, rotulo in (("comando", "Orden"), ("usuario", "Usuario"), ("ip_remota", "Desde"), ("ruta", "Ruta"),
+                              ("propietario", "Propietario"), ("hash", "Huella")):
+            if d.get(clave):
+                partes.append(f"{rotulo}: {d[clave]}")
+        if d.get("paquetes"):
+            partes.append("Paquetes: " + ", ".join(d["paquetes"][:12]) + ("…" if len(d["paquetes"]) > 12 else ""))
+        self.det.setText("\n".join(partes))
+
+    def marcar(self):
+        r = self.elegido()
+        if not r:
+            return
+        rc, out, err = orden("revisar", str(r["n"]))
+        if rc != 0:
+            self.msg.setText("No se pudo marcar: " + (err.strip()[-160:] or out[-160:]))
+            return
+        self.cargar()
+        self.aviso()
+
+    def abrir_carpeta(self):
+        r = self.elegido()
+        ruta = (r.get("detalle") or {}).get("ruta") if r else None
+        if ruta:
+            subprocess.Popen(["xdg-open", ruta.rsplit("/", 1)[0] or "/"], start_new_session=True, stdin=subprocess.DEVNULL,
+                             stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+
+    def verificar(self):
+        rc, out, err = orden("verificar")
+        if rc != 0:
+            self.msg.setObjectName("aviso")
+            self.msg.setText("No se pudo comprobar: " + (err.strip()[-160:] or "sin respuesta"))
+            return
+        v = json.loads(out)
+        self.msg.setObjectName("ok" if v["ok"] else "mal")
+        self.msg.setText(f"Registro íntegro: {v['n']} líneas encadenadas, sello {v.get('sello', '')}." if v["ok"] else "¡Atención! " + v["error"])
+        self.msg.style().unpolish(self.msg), self.msg.style().polish(self.msg)
+
+
+class Seguridad(QtWidgets.QWidget):
+    def __init__(self):
+        super().__init__()
+        self.setWindowTitle("Seguridad")
+        estilo(self, ESTILO_BASE + EXTRA)
+        raiz = QtWidgets.QVBoxLayout(self)
+        raiz.setContentsMargins(14, 10, 14, 14)
+        cab = QtWidgets.QHBoxLayout()
+        t = QtWidgets.QLabel("Seguridad")
+        t.setObjectName("titulo")
+        cab.addWidget(t)
+        cab.addStretch()
+        x = QtWidgets.QPushButton("✕")
+        x.setObjectName("cerrar")
+        x.clicked.connect(self.close)
+        cab.addWidget(x)
+        raiz.addLayout(cab)
+        self.pestanas = QtWidgets.QTabWidget()
+        self.pestanas.addTab(Instalaciones(lambda: None), "Instalaciones")
+        raiz.addWidget(self.pestanas, 1)
+
+    def keyPressEvent(self, ev):
+        if ev.key() == QtCore.Qt.Key_Escape:
+            self.close()
+        else:
+            super().keyPressEvent(ev)
+
+
+def main():
+    if alternar("leksso-seguridad"):
+        return 0
+    app = QtWidgets.QApplication(sys.argv)
+    app.setDesktopFileName("leksso-seguridad")
+    w = Seguridad()
+    w.resize(860, 620)
+    w.show()
+    return app.exec()
+
+
+if __name__ == "__main__":
+    sys.exit(main())

@@ -197,6 +197,17 @@ def configurar_code():
             f.write("\n")
 
 
+def anotar(nombre, modo, rc, simular):
+    """Lo que no pasa por apt no lo ve el gancho de apt: se anota en el registro de instalaciones (sin impedir nada si falla)."""
+    if rc == 0 and not simular:
+        try:
+            subprocess.run(["sudo", "-n", "leksso-auditoria", "anotar", "--nombre", nombre, "--modo", modo, "--origen", "catalogo"],
+                           capture_output=True, timeout=30)
+        except (OSError, subprocess.SubprocessError):
+            pass
+    return rc
+
+
 def hacer(item, simular, si):
     grupo, ident, win, tipo, objetivo, comprobar, nota = item
     print(c(f"\n▶ {ident}", "1;36") + f"  ({win})")
@@ -246,12 +257,14 @@ def hacer(item, simular, si):
         repo, patron = objetivo.split("|")
         return instalar_deb(url_github(repo, patron) if not simular else f"(último .deb de github.com/{repo})", simular)
     if tipo == "npm":
-        return sudo(["npm", "install", "-g", objetivo], simular)
+        rc = sudo(["npm", "install", "-g", objetivo], simular)
+        return anotar(item[2], "npm install -g " + objetivo, rc, simular)
     if tipo == "script":
         if not si and not simular:
             print(c("  Este paso ejecuta un script del proveedor con permisos de administrador. Repite con --si.", "33"))
             return 1
-        return correr(f"curl -fsSL {objetivo} | sudo sh", simular, shell=True)
+        rc = correr(f"curl -fsSL {objetivo} | sudo sh", simular, shell=True)
+        return anotar(item[2], "script del proveedor (curl | sh): " + objetivo, rc, simular)
     return 1
 
 

@@ -1,0 +1,10 @@
+[Unit]
+Description=Foto periódica de los programas que aparecen fuera de apt
+
+[Timer]
+OnBootSec=3min
+OnUnitActiveSec=6h
+Persistent=true
+
+[Install]
+WantedBy=timers.target

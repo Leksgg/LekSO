@@ -27,6 +27,7 @@ AJUSTES = [
      "leksso-apps"),
     ("Actualizaciones", "Versión y novedades", ["leksso-actualizaciones"], "leksso-actualizaciones"),
     ("Copias", "Copias de seguridad de tus archivos", ["leksso-copias-ui"], "leksso-copias-ui"),
+    ("Seguridad", "Qué se ha instalado y de dónde viene", ["leksso-seguridad"], "leksso-seguridad"),
     ("Archivos y papelera", "Recuperar lo borrado", ["pcmanfm-qt", "trash:///"], "pcmanfm-qt"),
 ]
 PERFILES = [("Ahorro", "power-saver"), ("Equilibrado", "balanced"), ("Rendimiento", "performance")]

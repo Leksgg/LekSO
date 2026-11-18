@@ -87,5 +87,7 @@ window#waybar.raiz {
 #custom-actualizacion:hover { background: #332305; }
 #custom-copias { padding: 0 12px; color: #fdc357; font-weight: bold; }
 #custom-copias:hover { background: #332305; }
+#custom-seguridad { padding: 0 12px; color: #fdc357; font-weight: bold; }
+#custom-seguridad:hover { background: #332305; }
 
 #custom-juego.encendido { color: #85ce6c; background: #1a2c13; box-shadow: inset 2px 0 #85ce6c; }

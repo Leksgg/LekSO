@@ -1,0 +1,8 @@
+[Unit]
+Description=Busca programas nuevos fuera de apt (registro de instalaciones de LeksSO)
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/leksso-auditoria foto
+Nice=19
+IOSchedulingClass=idle

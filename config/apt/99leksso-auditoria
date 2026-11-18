@@ -1,0 +1,4 @@
+// Registro de instalaciones de LeksSO: anota qué se instala, cómo y desde dónde (leksso-auditoria).
+// Nunca debe impedir una instalación: si el programa falta o falla, apt sigue como si nada.
+DPkg::Pre-Invoke  { "[ -x /usr/local/bin/leksso-auditoria ] && /usr/local/bin/leksso-auditoria gancho pre >/dev/null 2>&1 || true"; };
+DPkg::Post-Invoke { "[ -x /usr/local/bin/leksso-auditoria ] && /usr/local/bin/leksso-auditoria gancho post >/dev/null 2>&1 || true"; };

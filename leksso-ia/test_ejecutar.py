@@ -60,6 +60,23 @@ class Ordenes(unittest.TestCase):
         self.assertEqual(self.hechas, [])
         self.assertEqual(self.ia("claude", op="ejecutar", orden="ls")["codigo"], 0)     # lo demás sigue como siempre
 
+    def test_registro_de_seguridad_leer_pide_permiso_y_tocar_nunca(self):
+        fijar(claude={"activo": True, "comandos": True, "admin": "libre"})
+        for orden in ("leksso-auditoria listar", "sudo -n leksso-auditoria listar --ultimos 50", "sudo leksso-auditoria verificar"):
+            for admin in (False, True):
+                r = self.ia("claude", op="ejecutar", orden=orden, admin=admin)
+                self.assertEqual(r["estado"], "pendiente", orden)          # no se ejecuta: espera al usuario
+                self.assertEqual(r["motivo"], "registro de seguridad")
+        self.assertEqual(self.hechas, [])
+        for orden in ("sudo leksso-auditoria revisar 3", "leksso-auditoria anotar --nombre x --modo y",
+                      "cat /var/lib/leksso-auditoria/instalaciones.jsonl", "rm /var/lib/leksso-auditoria/instalaciones.jsonl",
+                      "chattr -a /var/lib/leksso-auditoria/instalaciones.jsonl", "echo x > /etc/leksso/auditoria.ancla",
+                      "leksso-auditoria listar; rm -rf /var/lib/leksso-auditoria", "cat /etc/apt/apt.conf.d/99leksso-auditoria"):
+            for admin in (False, True):
+                with self.assertRaises(Denegado, msg=orden):
+                    self.ia("claude", op="ejecutar", orden=orden, admin=admin)
+        self.assertEqual(self.hechas, [])
+
     def test_regla_de_copias_sin_falsos_positivos(self):
         for ok in ("ls ~/Documentos", "apt update", "git status", "echo hola"):
             self.assertFalse(asistentes.toca_copias(ok), ok)

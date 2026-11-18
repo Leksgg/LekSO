@@ -24,6 +24,13 @@ fi
 # Equipos instalados con el nombre antiguo («lekso»): mover sus datos antes de instalar
 bash "$(dirname "${BASH_SOURCE[0]}")/migrar-nombre.sh" "$USUARIO" || true
 HOME_USR="$(getent passwd "$USUARIO" | cut -d: -f6)"
+
+# Registro de instalaciones (leksso-auditoria): se instala lo primero, para anotar también lo que instala esta misma
+# ejecución. El gancho de apt nunca impide instalar. Los datos (registro, sellos) los crea el propio programa y esta
+# instalación no los toca.
+install -m 0755 "$RAIZ/scripts/leksso-auditoria.py" /usr/local/bin/leksso-auditoria
+install -d /etc/apt/apt.conf.d
+install -m 0644 "$RAIZ/config/apt/99leksso-auditoria" /etc/apt/apt.conf.d/99leksso-auditoria
 RAIZ="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
 # Paquetes por capa. Todos existen en Debian 13 (trixie); winetricks necesita la sección contrib.
@@ -270,6 +277,13 @@ updatedb >/dev/null 2>&1 || true   # primer índice de la búsqueda de archivos 
 apt-get clean
 
 echo "Listo. Reinicia: al iniciar sesión en la primera consola arranca el escritorio de LeksSO."
+
+# Registro de instalaciones: temporizador de lo que aparece fuera de apt y primera foto (la línea base).
+install -m 0644 "$RAIZ/config/systemd/leksso-auditoria-foto.service" "$RAIZ/config/systemd/leksso-auditoria-foto.timer" /etc/systemd/system/
+install -m 0755 "$RAIZ/config/bin/leksso-seguridad" /usr/local/bin/leksso-seguridad
+systemctl daemon-reload >/dev/null 2>&1 || true
+systemctl enable --now leksso-auditoria-foto.timer >/dev/null 2>&1 || true
+/usr/local/bin/leksso-auditoria foto >/dev/null 2>&1 || true
 
 # Ya instalado lo nuevo: borrar lo que quedó con el nombre antiguo
 bash "$(dirname "${BASH_SOURCE[0]}")/migrar-nombre.sh" "$USUARIO" limpiar || true

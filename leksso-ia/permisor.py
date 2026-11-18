@@ -160,6 +160,8 @@ class Permisor:
         orden, admin = m.get("orden"), m.get("admin") is True
         if not isinstance(orden, str) or not 0 < len(orden) <= MAX_ORDEN or "\0" in orden:
             raise Denegado("orden no válida")
+        if asistentes.toca_auditoria(orden) and not asistentes.lee_auditoria(orden):
+            raise Denegado("el registro de seguridad no se puede tocar desde la IA: solo se puede leer si el usuario lo aprueba")
         if asistentes.toca_copias(orden):
             raise Denegado("las copias de seguridad no se pueden tocar desde la IA: las gestiona el usuario en Ajustes, Copias")
         p = self.permisos(asistente)
@@ -172,7 +174,8 @@ class Permisor:
             raise Denegado("este asistente no tiene permiso para ejecutar órdenes en el equipo. El usuario puede "
                            "dárselo en Ajustes de asistentes (leksso-asistentes).")
         motivo = "destructiva" if asistentes.destructivo(orden) else \
-                 ("administración" if admin and p["admin"] == "preguntar" else "")
+                 ("administración" if admin and p["admin"] == "preguntar" else
+                  ("registro de seguridad" if asistentes.lee_auditoria(orden) else ""))
         if not motivo:
             return self._correr(asistente, orden, admin, espera)
         if len(self.pendientes) >= MAX_PENDIENTES:

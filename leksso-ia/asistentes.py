@@ -117,5 +117,22 @@ def toca_copias(orden):
     return bool(_COPIAS.search(orden))
 
 
+# El registro de instalaciones y de conexiones: la IA puede LEERLO solo si el usuario lo aprueba en el panel, y no puede
+# tocarlo nunca (ni el programa, ni los datos, ni los sellos). Igual que las copias, es una barrera de texto en el
+# permisor y en el servicio de administración; la real es que los datos son de root, con permisos 0600 y de solo añadir.
+_AUDITORIA = re.compile(r"leksso[-_]auditoria|/var/lib/leksso-auditoria|/etc/leksso/auditoria|/var/lib/leksso/seguridad|/run/leksso-auditoria|99leksso-auditoria", re.I)
+_AUDITORIA_LEER = re.compile(r"^\s*(?:sudo\s+(?:-n\s+)?)?leksso-auditoria\s+(?:listar|estado|verificar)(?:\s+--[a-z-]+(?:\s+\d+)?)*\s*$")
+
+
+def toca_auditoria(orden):
+    """True si la orden nombra el programa, los datos o los sellos del registro de seguridad."""
+    return bool(_AUDITORIA.search(orden))
+
+
+def lee_auditoria(orden):
+    """True si la orden es solo una LECTURA del registro (listar, estado o verificar): esa pide permiso al usuario."""
+    return bool(_AUDITORIA_LEER.match(orden))
+
+
 def destructivo(orden):
     return any(p.search(orden) for p in _DESTRUCTIVO)

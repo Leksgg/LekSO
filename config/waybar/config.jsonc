@@ -87,6 +87,7 @@
       "custom/version",
       "custom/actualizacion",
       "custom/copias",
+      "custom/seguridad",
       "custom/ia",
       "cpu",
       "memory",
@@ -168,6 +169,13 @@
       "interval": 60,
       "tooltip-format": "Versión instalada de LeksSO (clic: actualizaciones)",
       "on-click": "leksso-actualizaciones"
+    },
+    "custom/seguridad": {
+      "exec": "leksso-auditoria barra",
+      "return-type": "json",
+      "interval": 300,
+      "hide-empty-text": true,
+      "on-click": "leksso-seguridad"
     },
     "custom/copias": {
       "exec": "leksso-copias barra",
