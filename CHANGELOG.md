@@ -3,7 +3,7 @@
 Formato: `+` nuevo · `-` eliminado o retirado · `~` modificado · `*` otros.
 Lo más reciente, arriba.
 
-## Sin publicar
+## Alpha 0.1.18 · 2026-11-18
 
 ~ Corrige la actualización a 0.1.17: tras actualizar, la barra y los atajos de la sesión abierta seguían llamando a los comandos con el nombre antiguo y dejaban de funcionar hasta volver a entrar. Ahora los comandos antiguos reenvían a los nuevos durante esa sesión y la barra y el compositor releen su configuración al terminar de actualizar.
 
