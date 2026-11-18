@@ -106,5 +106,16 @@ _DESTRUCTIVO = [re.compile(x, re.I) for x in (
 )]
 
 
+# Las copias de seguridad quedan fuera del alcance de la IA: ni el programa, ni el repositorio, ni la clave, ni su horario.
+# Esto se comprueba en el permisor y otra vez en el servicio de administración (que corre como root). Es una barrera de
+# texto: la real es que el repositorio y la clave son de root (0700/0400) y que administrar exige que el usuario lo permita.
+_COPIAS = re.compile(r"leksso[-_]copias|/var/lib/leksso-copias|/etc/leksso/copias|/var/lib/leksso/copias|leksso-copias\.(?:service|timer)|\brestic\b", re.I)
+
+
+def toca_copias(orden):
+    """True si la orden nombra el programa, el repositorio, la clave o el horario de las copias de seguridad."""
+    return bool(_COPIAS.search(orden))
+
+
 def destructivo(orden):
     return any(p.search(orden) for p in _DESTRUCTIVO)

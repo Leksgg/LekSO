@@ -1,0 +1,416 @@
+#!/usr/bin/env python3
+"""Copias de seguridad de LeksSO (Ajustes → Copias).
+
+Muestra siempre el estado en palabras (desactivadas, última copia, próxima, hasta cuándo se puede volver) y deja activar o
+desactivar las copias, elegir frecuencia y hora, hacer una copia ahora y recuperar archivos de una copia anterior.
+El trabajo lo hace `leksso-copias` (como administrador, con sudo): esta ventana solo lo maneja.
+Se cierra con la X o con Esc.
+"""
+import datetime as dt
+import json
+import subprocess
+import sys
+
+from PySide6 import QtCore, QtWidgets
+
+sys.path.insert(0, "/usr/local/lib/leksso-ui")
+from leksso_ui import ESTILO_BASE, alternar, estilo  # noqa: E402
+
+EXTRA = """
+QLabel#estado { font-size: 17px; font-weight: bold; }
+QLabel#ok { color: #85ce6c; } QLabel#aviso { color: #fdc357; } QLabel#mal { color: #ff735a; }
+QLabel#dato { color: #94a1a3; }
+QComboBox, QTimeEdit { background: #112123; border: 1px solid #25393c; padding: 6px 8px; color: #e3edef; }
+QPushButton#principal { background: #003635; border: 1px solid #00c4bf; padding: 12px 14px; text-align: left; }
+QListWidget { background: #09191b; border: 1px solid #25393c; }
+"""
+FRECUENCIAS = [("diaria", "Cada día"), ("semanal", "Cada semana (los lunes)"), ("mensual", "Cada mes (el día 1)")]
+MESES = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"]
+
+
+def bonita(iso):
+    """'2026-11-18T03:00:07+01:00' → 'hoy a las 03:00', 'ayer a las 03:00' o '12 nov a las 03:00'."""
+    try:
+        f = dt.datetime.fromisoformat(iso).astimezone()
+    except (TypeError, ValueError):
+        return "—"
+    dias = (dt.datetime.now().astimezone().date() - f.date()).days
+    cuando = "hoy" if dias == 0 else "ayer" if dias == 1 else f"{f.day} {MESES[f.month - 1]}"
+    return f"{cuando} a las {f:%H:%M}"
+
+
+def tamano(n):
+    for u in ("B", "KB", "MB", "GB"):
+        if n < 1024 or u == "GB":
+            return f"{n:.0f} {u}" if u == "B" else f"{n:.1f} {u}".replace(".", ",")
+        n /= 1024
+
+
+def orden(*args, entrada=None, root=False, espera=3600):
+    """Ejecuta leksso-copias (con sudo -n si hace falta ser administrador). Devuelve (código, salida, error)."""
+    cmd = (["sudo", "-n"] if root else []) + ["leksso-copias", *args]
+    try:
+        r = subprocess.run(cmd, input=entrada, capture_output=True, text=True, timeout=espera)
+    except (OSError, subprocess.SubprocessError) as e:
+        return 1, "", str(e)
+    return r.returncode, r.stdout, r.stderr
+
+
+def pide_contrasena(err):
+    return "password is required" in err or "contraseña" in err.lower() or "a terminal is required" in err
+
+
+def error_de(salida, err):
+    try:
+        return json.loads(salida).get("error", "") or err.strip()
+    except ValueError:
+        return (err or salida).strip()[-300:]
+
+
+class Trabajo(QtCore.QThread):
+    """Lanza una orden larga sin congelar la ventana."""
+    terminado = QtCore.Signal(int, str, str)
+
+    def __init__(self, args, entrada=None, root=True):
+        super().__init__()
+        self.args, self.entrada, self.root = args, entrada, root
+
+    def run(self):
+        self.terminado.emit(*orden(*self.args, entrada=self.entrada, root=self.root))
+
+
+class PedirClave(QtWidgets.QDialog):
+    def __init__(self, padre):
+        super().__init__(padre)
+        self.setWindowTitle("Activar las copias")
+        estilo(self, ESTILO_BASE + EXTRA)
+        v = QtWidgets.QVBoxLayout(self)
+        t = QtWidgets.QLabel("Elige la clave de tus copias.\n\nLas copias van cifradas: sin esta clave no se pueden recuperar, "
+                             "y no hay forma de saberla si se olvida. Guárdala en un sitio seguro.")
+        t.setWordWrap(True)
+        v.addWidget(t)
+        self.a, self.b = QtWidgets.QLineEdit(), QtWidgets.QLineEdit()
+        for campo, ph in ((self.a, "Clave (mínimo 4 caracteres)"), (self.b, "Repite la clave")):
+            campo.setEchoMode(QtWidgets.QLineEdit.Password)
+            campo.setPlaceholderText(ph)
+            v.addWidget(campo)
+        self.msg = QtWidgets.QLabel("")
+        self.msg.setObjectName("mal")
+        v.addWidget(self.msg)
+        bs = QtWidgets.QDialogButtonBox(QtWidgets.QDialogButtonBox.Ok | QtWidgets.QDialogButtonBox.Cancel)
+        bs.accepted.connect(self.validar)
+        bs.rejected.connect(self.reject)
+        v.addWidget(bs)
+        self.setMinimumWidth(420)
+
+    def validar(self):
+        if len(self.a.text()) < 4:
+            self.msg.setText("La clave debe tener al menos 4 caracteres.")
+        elif self.a.text() != self.b.text():
+            self.msg.setText("Las dos claves no coinciden.")
+        else:
+            self.accept()
+
+
+class Recuperar(QtWidgets.QDialog):
+    """Elegir una copia, entrar en sus carpetas y recuperar lo que se necesite en ~/Recuperado (nunca encima de lo actual)."""
+
+    def __init__(self, padre, copias):
+        super().__init__(padre)
+        self.setWindowTitle("Recuperar archivos")
+        estilo(self, ESTILO_BASE + EXTRA)
+        self.copia, self.ruta = None, "/"
+        v = QtWidgets.QVBoxLayout(self)
+        self.ayuda = QtWidgets.QLabel("Elige de qué día quieres recuperar.")
+        self.ayuda.setWordWrap(True)
+        v.addWidget(self.ayuda)
+        self.lista = QtWidgets.QListWidget()
+        v.addWidget(self.lista, 1)
+        self.msg = QtWidgets.QLabel("")
+        self.msg.setWordWrap(True)
+        v.addWidget(self.msg)
+        fila = QtWidgets.QHBoxLayout()
+        self.volver = QtWidgets.QPushButton("← Otra copia")
+        self.volver.setObjectName("accion")
+        self.volver.clicked.connect(self.ver_copias)
+        self.rec = QtWidgets.QPushButton("Recuperar lo seleccionado")
+        self.rec.setObjectName("principal")
+        self.rec.clicked.connect(self.recuperar)
+        self.abrir = QtWidgets.QPushButton("Abrir Recuperado")
+        self.abrir.setObjectName("accion")
+        self.abrir.clicked.connect(lambda: subprocess.Popen(["xdg-open", QtCore.QDir.homePath() + "/Recuperado"], start_new_session=True))
+        for b in (self.volver, self.rec, self.abrir):
+            fila.addWidget(b)
+        v.addLayout(fila)
+        self.lista.itemDoubleClicked.connect(self.entrar)
+        self.lista.setSelectionMode(QtWidgets.QAbstractItemView.ExtendedSelection)
+        self.copias = copias
+        self.resize(520, 480)
+        self.ver_copias()
+
+    def ver_copias(self):
+        self.copia, self.ruta = None, "/"
+        self.lista.clear()
+        self.lista.setSelectionMode(QtWidgets.QAbstractItemView.SingleSelection)
+        for c in self.copias:
+            it = QtWidgets.QListWidgetItem("Copia de " + bonita(c["fecha"]))
+            it.setData(QtCore.Qt.UserRole, c["id"])
+            self.lista.addItem(it)
+        self.ayuda.setText("Elige de qué día quieres recuperar (doble clic).")
+        self.volver.hide(), self.rec.hide()
+        self.msg.setText("")
+
+    def entrar(self, item):
+        dato = item.data(QtCore.Qt.UserRole)
+        if self.copia is None:
+            self.copia = dato
+            self.ruta = QtCore.QDir.homePath()
+            self.listar()
+        elif dato == "..":
+            self.ruta = self.ruta.rsplit("/", 1)[0] or "/"
+            self.listar()
+        elif item.data(QtCore.Qt.UserRole + 1) == "dir":
+            self.ruta = dato
+            self.listar()
+
+    def listar(self):
+        rc, out, err = orden("listar", self.copia, self.ruta, root=True, espera=60)
+        if rc != 0:
+            self.msg.setText("No se pudo leer la copia: " + error_de(out, err) +
+                             ("\nTu usuario necesita la contraseña de administrador; abre un terminal y usa: sudo leksso-copias listar"
+                              if pide_contrasena(err) else ""))
+            return
+        self.lista.clear()
+        self.lista.setSelectionMode(QtWidgets.QAbstractItemView.ExtendedSelection)
+        if self.ruta != QtCore.QDir.homePath():
+            sube = QtWidgets.QListWidgetItem("↑ Carpeta de arriba")
+            sube.setData(QtCore.Qt.UserRole, "..")
+            self.lista.addItem(sube)
+        for h in json.loads(out):
+            it = QtWidgets.QListWidgetItem(("📁 " if h["tipo"] == "dir" else "") + h["nombre"] + ("" if h["tipo"] == "dir" else f"   ({tamano(h['tamano'])})"))
+            it.setData(QtCore.Qt.UserRole, h["ruta"])
+            it.setData(QtCore.Qt.UserRole + 1, h["tipo"])
+            self.lista.addItem(it)
+        self.ayuda.setText("Copia de " + bonita(next(c["fecha"] for c in self.copias if c["id"] == self.copia)) + " · " +
+                           self.ruta.replace(QtCore.QDir.homePath(), "Inicio") + "\nSelecciona lo que quieras recuperar.")
+        self.volver.show(), self.rec.show()
+        self.msg.setText("")
+
+    def recuperar(self):
+        rutas = [i.data(QtCore.Qt.UserRole) for i in self.lista.selectedItems() if i.data(QtCore.Qt.UserRole) not in (None, "..")]
+        if not rutas:
+            self.msg.setText("Selecciona algo de la lista.")
+            return
+        destino = ""
+        for r in rutas:
+            rc, out, err = orden("restaurar", self.copia, r, root=True, espera=3600)
+            if rc != 0:
+                self.msg.setText("No se pudo recuperar: " + error_de(out, err))
+                return
+            destino = json.loads(out).get("destino", destino)
+        self.msg.setText(f"Recuperado en {destino.rsplit('/', 1)[0].replace(QtCore.QDir.homePath(), 'Inicio')}. "
+                         "Lo que tienes ahora no se ha tocado.")
+
+
+class Copias(QtWidgets.QWidget):
+    def __init__(self):
+        super().__init__()
+        self.setWindowTitle("Copias")
+        estilo(self, ESTILO_BASE + EXTRA)
+        self.e = {}
+        self.trabajo = None
+        raiz = QtWidgets.QVBoxLayout(self)
+        raiz.setContentsMargins(14, 10, 14, 14)
+        raiz.setSpacing(10)
+        cab = QtWidgets.QHBoxLayout()
+        t = QtWidgets.QLabel("Copias de seguridad")
+        t.setObjectName("titulo")
+        cab.addWidget(t)
+        cab.addStretch()
+        x = QtWidgets.QPushButton("✕")
+        x.setObjectName("cerrar")
+        x.clicked.connect(self.close)
+        cab.addWidget(x)
+        raiz.addLayout(cab)
+
+        self.estado = QtWidgets.QLabel("…")
+        self.estado.setObjectName("estado")
+        self.estado.setWordWrap(True)
+        raiz.addWidget(self.estado)
+        self.disco = QtWidgets.QLabel("Las copias se guardan en este mismo disco: te protegen de borrar algo por error, "
+                                      "no de que el disco se estropee.")
+        self.disco.setObjectName("aviso")
+        self.disco.setWordWrap(True)
+        raiz.addWidget(self.disco)
+
+        self.activar = QtWidgets.QPushButton("Activar las copias")
+        self.activar.setObjectName("principal")
+        self.activar.clicked.connect(self.alternar_copias)
+        raiz.addWidget(self.activar)
+
+        fila = QtWidgets.QHBoxLayout()
+        self.freq = QtWidgets.QComboBox()
+        for clave, texto in FRECUENCIAS:
+            self.freq.addItem(texto, clave)
+        self.hora = QtWidgets.QTimeEdit(QtCore.QTime(3, 0))
+        self.hora.setDisplayFormat("HH:mm")
+        guardar = QtWidgets.QPushButton("Guardar horario")
+        guardar.setObjectName("accion")
+        guardar.clicked.connect(self.guardar_horario)
+        for w in (self.freq, QtWidgets.QLabel("a las"), self.hora, guardar):
+            fila.addWidget(w)
+        raiz.addLayout(fila)
+
+        for clave, rotulo in (("ultima", "Última copia"), ("proxima", "Próxima copia"), ("copias", "Copias guardadas"), ("espacio", "Espacio que ocupan")):
+            f = QtWidgets.QHBoxLayout()
+            r = QtWidgets.QLabel(rotulo)
+            r.setObjectName("dato")
+            r.setFixedWidth(150)
+            v = QtWidgets.QLabel("—")
+            v.setWordWrap(True)
+            f.addWidget(r)
+            f.addWidget(v, 1)
+            raiz.addLayout(f)
+            self.e[clave] = v
+
+        botones = QtWidgets.QHBoxLayout()
+        self.ahora = QtWidgets.QPushButton("Copiar ahora")
+        self.ahora.setObjectName("accion")
+        self.ahora.clicked.connect(self.copiar_ahora)
+        self.recuperar = QtWidgets.QPushButton("Recuperar archivos…")
+        self.recuperar.setObjectName("accion")
+        self.recuperar.clicked.connect(self.abrir_recuperar)
+        botones.addWidget(self.ahora)
+        botones.addWidget(self.recuperar)
+        raiz.addLayout(botones)
+        self.msg = QtWidgets.QLabel("")
+        self.msg.setWordWrap(True)
+        self.msg.setObjectName("nota")
+        raiz.addWidget(self.msg)
+        nota = QtWidgets.QLabel("Se copia tu carpeta personal, sin cachés ni papelera. Se guardan las 5 últimas copias: al hacer la "
+                                "sexta se borra la más antigua. Si el equipo está apagado a la hora elegida, la copia se hace al encenderlo.")
+        nota.setObjectName("nota")
+        nota.setWordWrap(True)
+        raiz.addWidget(nota)
+        raiz.addStretch()
+
+        self.datos = {}
+        self.reloj = QtCore.QTimer(self)
+        self.reloj.timeout.connect(self.refrescar)
+        self.reloj.start(10000)
+        self.refrescar()
+
+    # ----- estado -----
+    def refrescar(self):
+        if self.trabajo and self.trabajo.isRunning():
+            return
+        rc, out, _ = orden("estado", espera=30)
+        if rc != 0:
+            self.estado.setText("No se pudo leer el estado de las copias.")
+            self.estado.setObjectName("mal")
+            return
+        d = self.datos = json.loads(out)
+        u = d.get("ultima") or {}
+        if not d["activa"]:
+            texto, clase = "Desactivadas: tus archivos no tienen copia.", "aviso"
+        elif u.get("resultado") == "fallo":
+            texto, clase = "La última copia falló: " + u.get("mensaje", ""), "mal"
+        elif d.get("atrasada"):
+            texto, clase = "Hace tiempo que no se hace una copia.", "mal"
+        elif d.get("ultima_ok"):
+            texto, clase = "Activadas. Última copia correcta: " + bonita(d["ultima_ok"]) + ".", "ok"
+        else:
+            texto, clase = "Activadas. Aún no se ha hecho ninguna copia.", "aviso"
+        self.estado.setText(texto)
+        self.estado.setObjectName(clase)
+        self.estado.style().unpolish(self.estado), self.estado.style().polish(self.estado)
+        self.disco.setVisible(bool(d.get("mismo_disco")))
+        self.activar.setText("Desactivar las copias" if d["activa"] else "Activar las copias")
+        self.freq.setCurrentIndex(max(0, [c for c, _ in FRECUENCIAS].index(d["frecuencia"])))
+        self.hora.setTime(QtCore.QTime.fromString(d["hora"], "HH:mm"))
+        resultado = {"ok": "correcta", "aviso": "correcta, con avisos", "fallo": "con error", "pospuesta": "pospuesta (batería)"}.get(u.get("resultado"), "")
+        self.e["ultima"].setText(f"{bonita(u['fecha'])} ({resultado})" if u.get("fecha") else "Ninguna todavía")
+        self.e["proxima"].setText(d["proxima"] or ("—" if not d["activa"] else "pendiente"))
+        n = len(d.get("copias", []))
+        self.e["copias"].setText(f"{n} de {d['maximo']}" + (f". Puedes volver hasta {bonita(d['volver_hasta'])}." if d.get("volver_hasta") else ""))
+        self.e["espacio"].setText(tamano(d.get("espacio_repo", 0)) if d.get("espacio_repo") else "—")
+        self.recuperar.setEnabled(n > 0)
+
+    # ----- acciones -----
+    def lanzar(self, args, entrada, ocupado, al_terminar=None):
+        self.msg.setText(ocupado)
+        for b in (self.activar, self.ahora, self.recuperar):
+            b.setEnabled(False)
+        self.trabajo = Trabajo(args, entrada)
+        self.trabajo.terminado.connect(lambda rc, o, e: self.fin(rc, o, e, args, al_terminar))
+        self.trabajo.start()
+
+    def fin(self, rc, out, err, args, al_terminar):
+        self.activar.setEnabled(True)
+        self.ahora.setEnabled(True)
+        if rc != 0:
+            if pide_contrasena(err):
+                self.terminal(args)
+                self.msg.setText("Tu usuario usa contraseña de administrador: se ha abierto un terminal para escribirla.")
+            else:
+                self.msg.setText("No se pudo: " + error_de(out, err))
+        else:
+            self.msg.setText(al_terminar or "")
+        self.trabajo = None
+        self.refrescar()
+
+    def terminal(self, args):
+        cmd = "sudo leksso-copias " + " ".join(args) + "; printf '\\n\\nPulsa Intro para cerrar.'; read -r _"
+        subprocess.Popen(["leksso-term", "-T", "Copias", "-e", "sh", "-c", cmd], start_new_session=True)
+
+    def alternar_copias(self):
+        if self.datos.get("activa"):
+            self.lanzar(["desactivar"], None, "Desactivando…", "Copias desactivadas. Las que ya había se conservan.")
+            return
+        d = PedirClave(self)
+        # si ya hay repositorio no hace falta clave: leksso-copias lo reutiliza
+        if self.datos.get("copias") or self.datos.get("ultima"):
+            entrada = json.dumps({"frecuencia": self.freq.currentData(), "hora": self.hora.time().toString("HH:mm")})
+        elif d.exec() == QtWidgets.QDialog.Accepted:
+            entrada = json.dumps({"frecuencia": self.freq.currentData(), "hora": self.hora.time().toString("HH:mm"), "clave": d.a.text()})
+        else:
+            return
+        self.lanzar(["activar"], entrada, "Activando…", "Copias activadas.")
+
+    def guardar_horario(self):
+        entrada = json.dumps({"frecuencia": self.freq.currentData(), "hora": self.hora.time().toString("HH:mm")})
+        self.lanzar(["configurar"], entrada, "Guardando…", "Horario guardado.")
+
+    def copiar_ahora(self):
+        if not self.datos.get("activa") and not self.datos.get("ultima"):
+            self.msg.setText("Activa las copias primero.")
+            return
+        self.lanzar(["ejecutar", "--ahora"], None, "Haciendo la copia… puede tardar unos minutos.", "Copia terminada.")
+
+    def abrir_recuperar(self):
+        rc, out, err = orden("listar", root=True, espera=60)
+        if rc != 0:
+            self.msg.setText("No se pudo leer las copias: " + error_de(out, err))
+            return
+        Recuperar(self, json.loads(out)).exec()
+
+    def keyPressEvent(self, ev):
+        if ev.key() == QtCore.Qt.Key_Escape:
+            self.close()
+        else:
+            super().keyPressEvent(ev)
+
+
+def main():
+    if alternar("leksso-copias-ui"):
+        return 0
+    app = QtWidgets.QApplication(sys.argv)
+    app.setDesktopFileName("leksso-copias-ui")
+    w = Copias()
+    w.resize(520, 560)
+    w.show()
+    return app.exec()
+
+
+if __name__ == "__main__":
+    sys.exit(main())

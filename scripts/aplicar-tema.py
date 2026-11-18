@@ -6,7 +6,7 @@ calculan en OKLCH para que acentos y estados tengan el mismo peso visual en todo
 matices. Este script cambia, en cada archivo, los colores del tema activo por los del
 nuevo tema, y apunta cuál queda activo en config/tema/activo.
 
-Temas: marea (por defecto), pizarra, waves.  Solo modo oscuro por ahora.
+Temas: marea (por defecto), pizarra, waves (oscuros) y alba (claro).
 
 Uso:
   python3 aplicar-tema.py marea            aplica y deja los .json de tokens al día
@@ -40,6 +40,8 @@ TEMAS = {
     "marea":   {"nh": 205, "nc": .022, "ah": 192, "sh": 245, "magenta": 320},
     "pizarra": {"nh": 75,  "nc": .010, "ah": 238, "sh": 195, "magenta": 320},
     "waves":   {"nh": 265, "nc": .050, "ah": 240, "sh": 200, "magenta": 320},
+    # claro: neutros casi blancos con un punto cálido, texto oscuro; los acentos bajan de luminosidad en vez de subir
+    "alba":    {"nh": 85,  "nc": .012, "ah": 250, "sh": 195, "magenta": 320, "claro": True},
 }
 ESTADOS = {"ok": (138, 148, 158), "warn": (80, 88, 96), "bad": (20, 26, 32)}
 
@@ -104,11 +106,11 @@ def dist_matiz(a, b):
     return min(x, 360 - x)
 
 
-def ajustar(L, C, H, contra, minimo, paso=.01):
-    """Sube la luminosidad hasta que el color alcance `minimo` de contraste con `contra`."""
+def ajustar(L, C, H, contra, minimo, paso=.01, sentido=1):
+    """Cambia la luminosidad (sube con sentido=1, baja con -1) hasta que el color alcance `minimo` de contraste con `contra`."""
     c = rgb(L, C, H)
-    while contraste(c, contra) < minimo and L < .99:
-        L += paso
+    while contraste(c, contra) < minimo and .02 < L < .99:
+        L += paso * sentido
         c = rgb(L, C, H)
     return c
 
@@ -118,28 +120,43 @@ def tokens(nombre):
     t = TEMAS[nombre]
     nh, nc, ah, sh = t["nh"], t["nc"], t["ah"], t["sh"]
     N = lambda L, k=1: rgb(L, nc * k, nh)
-    r = {
-        "bg": N(.16), "s1": N(.20), "s2": N(.235), "line": N(.33, 1.2),
-        "off": N(.18), "alt": N(.185), "base2": N(.195), "mid": N(.265), "dark": N(.115),
-        "text": rgb(.94, nc * .5, nh), "faint": rgb(.55, nc * .8, nh),
-        "soft": rgb(.30, .07, ah),
-    }
-    peor = r["s2"]
-    r["muted"] = ajustar(.70, nc * .7, nh, peor, 4.5)
-    r["acc"] = ajustar(.74, .17, ah, peor, 4.5)
-    r["acc_hi"] = rgb(.82, .13, ah)
-    r["acc_dim"] = rgb(.55, .09, ah)
-    r["sec"] = ajustar(.76, .11, sh, peor, 4.5)
-    r["magenta"] = ajustar(.76, .12, t["magenta"], peor, 4.5)
+    claro = t.get("claro", False)
+    if claro:
+        r = {
+            "bg": N(.955, .8), "s1": rgb(.995, nc * .3, nh), "s2": N(.925, .9), "line": N(.80, .9),
+            "off": N(.97, .7), "alt": N(.945, .8), "base2": N(.935, .8), "mid": N(.90, .9), "dark": N(.98, .5),
+            "text": rgb(.22, nc * 1.2, nh), "faint": rgb(.62, nc, nh),
+            "soft": rgb(.90, .05, ah),
+        }
+        peor, sentido = r["mid"], -1   # fondo más oscuro sobre el que debe leerse todo; los colores bajan de luminosidad
+    else:
+        r = {
+            "bg": N(.16), "s1": N(.20), "s2": N(.235), "line": N(.33, 1.2),
+            "off": N(.18), "alt": N(.185), "base2": N(.195), "mid": N(.265), "dark": N(.115),
+            "text": rgb(.94, nc * .5, nh), "faint": rgb(.55, nc * .8, nh),
+            "soft": rgb(.30, .07, ah),
+        }
+        peor, sentido = r["s2"], 1
+    luz = (lambda oscuro, claro_: claro_) if claro else (lambda oscuro, claro_: oscuro)
+    r["muted"] = ajustar(luz(.70, .50), nc * .7, nh, peor, 4.5, sentido=sentido)
+    r["acc"] = ajustar(luz(.74, .55), .17, ah, peor, 4.5, sentido=sentido)
+    r["acc_hi"] = rgb(luz(.82, .45), .13, ah)
+    r["acc_dim"] = rgb(luz(.55, .72), .09, ah)
+    r["sec"] = ajustar(luz(.76, .55), .11, sh, peor, 4.5, sentido=sentido)
+    r["magenta"] = ajustar(luz(.76, .52), .12, t["magenta"], peor, 4.5, sentido=sentido)
     cerca = (ah, sh)
     def elegir(cands):
         return max(cands, key=lambda h: min(dist_matiz(x, h) for x in cerca))
     mt = {k: elegir(v) for k, v in ESTADOS.items()}
-    r["ok"] = ajustar(.78, .15, mt["ok"], peor, 4.5)
-    r["warn"] = ajustar(.85, .14, mt["warn"], peor, 4.5)
-    r["bad"] = ajustar(.72, .18, mt["bad"], peor, 4.5)
-    r["ok_soft"], r["warn_soft"] = rgb(.27, .05, mt["ok"]), rgb(.27, .05, mt["warn"])
-    r["warn_soft2"], r["bad_soft"] = rgb(.25, .045, mt["warn"]), rgb(.27, .06, mt["bad"])
+    r["ok"] = ajustar(luz(.78, .55), .15, mt["ok"], peor, 4.5, sentido=sentido)
+    r["warn"] = ajustar(luz(.85, .60), .14, mt["warn"], peor, 4.5, sentido=sentido)
+    r["bad"] = ajustar(luz(.72, .55), .18, mt["bad"], peor, 4.5, sentido=sentido)
+    if claro:
+        r["ok_soft"], r["warn_soft"] = rgb(.92, .05, mt["ok"]), rgb(.93, .05, mt["warn"])
+        r["warn_soft2"], r["bad_soft"] = rgb(.89, .045, mt["warn"]), rgb(.92, .05, mt["bad"])
+    else:
+        r["ok_soft"], r["warn_soft"] = rgb(.27, .05, mt["ok"]), rgb(.27, .05, mt["warn"])
+        r["warn_soft2"], r["bad_soft"] = rgb(.25, .045, mt["warn"]), rgb(.27, .06, mt["bad"])
     return {k: hexa(v) for k, v in r.items()}, mt
 
 
@@ -223,7 +240,7 @@ def aplicar(destino):
     ACTIVO.write_text(destino + "\n")
     for nombre in TEMAS:
         (ACTIVO.parent / f"{nombre}.json").write_text(
-            json.dumps({"tema": nombre, "modo": "oscuro", "colores": {k: "#" + v for k, v in tokens(nombre)[0].items()}},
+            json.dumps({"tema": nombre, "modo": "claro" if TEMAS[nombre].get("claro") else "oscuro", "colores": {k: "#" + v for k, v in tokens(nombre)[0].items()}},
                        indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
     print(f"Tema {destino} aplicado (antes: {actual}); {cambiados} archivos cambiados.")
 
@@ -234,7 +251,7 @@ if __name__ == "__main__":
     if sys.argv[1] == "--json":
         for nombre in TEMAS:
             (ACTIVO.parent / f"{nombre}.json").write_text(
-                json.dumps({"tema": nombre, "modo": "oscuro", "colores": {k: "#" + v for k, v in tokens(nombre)[0].items()}},
+                json.dumps({"tema": nombre, "modo": "claro" if TEMAS[nombre].get("claro") else "oscuro", "colores": {k: "#" + v for k, v in tokens(nombre)[0].items()}},
                            indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
         sys.exit(0)
     if sys.argv[1] == "--comprobar":

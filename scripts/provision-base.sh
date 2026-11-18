@@ -30,7 +30,7 @@ RAIZ="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 ESCRITORIO=(labwc sway swaybg waybar kitty fuzzel grim pcmanfm-qt qt6-wayland qt6-svg-plugins qt6ct xwayland fonts-font-awesome seatd xdg-desktop-portal-wlr micro imv zathura zathura-pdf-poppler mpv vlc xarchiver udisks2 udiskie gvfs gvfs-backends polkitd ntfs-3g exfatprogs usbutils v4l-utils bluez pavucontrol-qt swaylock wl-clipboard mako-notifier libnotify-bin swayidle brightnessctl slurp cliphist wdisplays blueman cups fonts-noto-color-emoji fonts-liberation ffmpegthumbnailer power-profiles-daemon playerctl wlr-randr network-manager streamdeck-ui python3-pyside6.qtwidgets python3-pyside6.qtgui python3-pyside6.qtcore python3-pyside6.qtsvg)
 AUDIO=(pipewire pipewire-pulse wireplumber)
 AISLAMIENTO=(bubblewrap firejail python3-seccomp)
-HERRAMIENTAS=(git curl btop lm-sensors python3 bc pciutils mokutil fwupd)
+HERRAMIENTAS=(git curl btop lm-sensors python3 bc pciutils mokutil fwupd plocate restic)   # plocate: búsqueda de archivos; restic: copias de seguridad
 GRAFICA=(mesa-vulkan-drivers)
 HYPERV=(hyperv-daemons)       # solo útil dentro de una máquina virtual de Hyper-V
 COMPATIBILIDAD=(wine winetricks)
@@ -167,6 +167,13 @@ install -m 0644 "$RAIZ"/config/systemd/leksso-hardware.service "$RAIZ"/config/sy
 systemctl daemon-reload >/dev/null 2>&1 || true
 systemctl enable leksso-hardware.timer >/dev/null 2>&1 || true
 
+# Copias de seguridad (restic): el programa, el servicio y el temporizador del sistema. Quedan DESACTIVADAS hasta que el
+# usuario las active en Ajustes, Copias; esta instalación nunca toca el horario ni la clave que él eligió (viven en
+# /var/lib/leksso, /etc/leksso y leksso-copias.timer.d, que aquí no se escriben).
+install -m 0755 "$RAIZ/scripts/leksso-copias.py" /usr/local/bin/leksso-copias
+install -m 0644 "$RAIZ/config/systemd/leksso-copias.service" "$RAIZ/config/systemd/leksso-copias.timer" /etc/systemd/system/
+systemctl daemon-reload >/dev/null 2>&1 || true
+
 # Stream Deck: se inicia al conectarlo (el acceso a USB lo da la regla del paquete).
 install -m 0644 "$RAIZ/config/systemd/leksso-streamdeck.service" "$RAIZ/config/systemd/leksso-permisor.service" /etc/systemd/user/
 install -m 0644 "$RAIZ/config/udev/70-leksso-streamdeck.rules" /etc/udev/rules.d/
@@ -235,6 +242,7 @@ install -d -m 0755 /usr/local/share/leksso/temas
 install -m 0644 "$RAIZ"/config/tema/*.json /usr/local/share/leksso/temas/
 install -m 0755 "$RAIZ/scripts/leksso-tema.py" /usr/local/bin/leksso-tema
 install -m 0755 "$RAIZ/config/bin/leksso-apariencia" /usr/local/bin/leksso-apariencia
+install -m 0755 "$RAIZ/config/bin/leksso-copias-ui" /usr/local/bin/leksso-copias-ui
 sudo -u "$USUARIO" leksso-tema reaplicar || true
 # La sesión abierta sigue con la configuración vieja (barra, atajos): se le pide que lea la nueva sin cerrar sesión.
 sudo -u "$USUARIO" leksso-tema recargar || true
@@ -258,6 +266,7 @@ else
 fi
 
 # Libera la caché de paquetes descargados (cientos de MB que no hacen falta).
+updatedb >/dev/null 2>&1 || true   # primer índice de la búsqueda de archivos (menos de un segundo); luego lo renueva el temporizador de plocate
 apt-get clean
 
 echo "Listo. Reinicia: al iniciar sesión en la primera consola arranca el escritorio de LeksSO."

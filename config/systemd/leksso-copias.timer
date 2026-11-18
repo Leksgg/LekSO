@@ -1,0 +1,11 @@
+[Unit]
+Description=Hora de la copia de seguridad de LeksSO (la elige el usuario en Ajustes, Copias)
+
+[Timer]
+# El horario (OnCalendar) lo escribe leksso-copias en leksso-copias.timer.d/horario.conf al activarlas o cambiarlas.
+# Persistent: si el equipo estaba apagado a la hora, la copia se hace al encenderlo.
+Persistent=true
+AccuracySec=1min
+
+[Install]
+WantedBy=timers.target

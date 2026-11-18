@@ -62,7 +62,7 @@ CATALOGO = [
     ("Utilidades", "compresores", "WinRAR", "apt", "p7zip-full unrar-free", "p7zip-full", "Zip, 7z, rar y tar."),
     ("Utilidades", "monitor", "CPUID HWMonitor / SIV", "apt", "btop lm-sensors", "btop", ""),
     ("Utilidades", "logitech", "Logi Options+", "apt", "solaar", "solaar", ""),
-    ("Utilidades", "copias", "Smart Backup", "apt", "restic timeshift", "restic", "restic: copias a disco o nube. Timeshift: puntos de restauración del sistema."),
+    ("Utilidades", "copias", "Smart Backup", "apt", "timeshift", "timeshift", "Las copias de tus archivos ya vienen con LeksSO (Ajustes, Copias). Esto añade Timeshift, para puntos de restauración del sistema; es avanzado."),
     ("Utilidades", "antivirus", "Malwarebytes", "apt", "clamav", "clamav", "Opcional. En Linux con la caja y sin ejecución por doble clic suele sobrar."),
     ("Utilidades", "vpn", "ExpressVPN", "apt", "wireguard", "wireguard", "WireGuard con la configuración de tu proveedor."),
     # Juegos
@@ -86,7 +86,7 @@ ALTERNATIVAS = {
     "compresores": "No hay WinRAR con ventana para Linux; son compresores libres.",
     "monitor": "No hay HWMonitor ni SIV para Linux; son otras herramientas.",
     "logitech": "Logitech no publica Options+ para Linux; es de terceros.",
-    "copias": "No hay Smart Backup para Linux; son otros programas.",
+    "copias": "No hay Smart Backup para Linux; LeksSO trae sus propias copias en Ajustes.",
     "antivirus": "No hay Malwarebytes de escritorio para Linux; es otro antivirus.",
     "vpn": "ExpressVPN tiene aplicación oficial para Linux (en su web, con tu cuenta); esto es WireGuard genérico.",
     "heroic": "Epic, Amazon y GOG no publican su lanzador para Linux. Heroic es de terceros: entra con tu cuenta y ejecuta tus juegos.",

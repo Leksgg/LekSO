@@ -160,6 +160,8 @@ class Permisor:
         orden, admin = m.get("orden"), m.get("admin") is True
         if not isinstance(orden, str) or not 0 < len(orden) <= MAX_ORDEN or "\0" in orden:
             raise Denegado("orden no válida")
+        if asistentes.toca_copias(orden):
+            raise Denegado("las copias de seguridad no se pueden tocar desde la IA: las gestiona el usuario en Ajustes, Copias")
         p = self.permisos(asistente)
         if not p["activo"]:
             raise Denegado("este asistente está desactivado")

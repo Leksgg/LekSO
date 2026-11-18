@@ -26,6 +26,7 @@ AJUSTES = [
      ["leksso-term", "-T", "Aplicaciones", "-e", "sh", "-c", "leksso-apps; printf '\\nPulsa Intro para cerrar.'; read -r _"],
      "leksso-apps"),
     ("Actualizaciones", "Versión y novedades", ["leksso-actualizaciones"], "leksso-actualizaciones"),
+    ("Copias", "Copias de seguridad de tus archivos", ["leksso-copias-ui"], "leksso-copias-ui"),
     ("Archivos y papelera", "Recuperar lo borrado", ["pcmanfm-qt", "trash:///"], "pcmanfm-qt"),
 ]
 PERFILES = [("Ahorro", "power-saver"), ("Equilibrado", "balanced"), ("Rendimiento", "performance")]

@@ -86,6 +86,7 @@
     "modules-right": [
       "custom/version",
       "custom/actualizacion",
+      "custom/copias",
       "custom/ia",
       "cpu",
       "memory",
@@ -167,6 +168,13 @@
       "interval": 60,
       "tooltip-format": "Versión instalada de LeksSO (clic: actualizaciones)",
       "on-click": "leksso-actualizaciones"
+    },
+    "custom/copias": {
+      "exec": "leksso-copias barra",
+      "return-type": "json",
+      "interval": 600,
+      "hide-empty-text": true,
+      "on-click": "leksso-copias-ui"
     },
     "custom/actualizacion": {
       "exec": "leksso-actualizar barra",

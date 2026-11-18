@@ -14,12 +14,14 @@ Uso:
   leksso-tema recargar          pide a la barra, los avisos y el compositor que lean de nuevo su configuración
 """
 import os
+import re
+import shutil
 import subprocess
 import sys
 
 sys.path.insert(0, "/usr/local/lib/leksso-ui")
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "config", "ui"))
-from leksso_ui import BASE, _CARPETAS, mapa_de_colores, recolorear, tema_activo, tokens  # noqa: E402
+from leksso_ui import BASE, _CARPETAS, es_claro, mapa_de_colores, recolorear, tema_activo, tokens  # noqa: E402
 
 CASA = os.path.expanduser("~")
 ESTADO = os.path.join(CASA, ".config", "leksso", "tema")
@@ -116,6 +118,51 @@ def imagen_de_bloqueo(nombre):
         os.replace(ruta + ".nuevo", ruta)
 
 
+ICONOS_SISTEMA = "/usr/share/icons/LeksSO"
+ICONOS_USUARIO = os.path.join(CASA, ".local", "share", "icons", "LeksSO")
+
+
+def blanco_brillante(nombre):
+    """kitty lleva el «blanco brillante» (color15) como blanco puro, que no es un papel del tema: en un tema claro sería
+    invisible sobre el fondo, así que allí se pone el color del texto."""
+    ruta = os.path.join(CASA, ".config", "kitty", "kitty.conf")
+    try:
+        texto = open(ruta, encoding="utf-8", newline="").read()
+    except OSError:
+        return
+    color = "#" + tokens(nombre)["text"] if es_claro(nombre) else "#ffffff"
+    nuevo = re.sub(r"(?m)^(color15\s+)#[0-9a-fA-F]{6}", lambda m: m.group(1) + color, texto)
+    if nuevo != texto:
+        open(ruta + ".nuevo", "w", encoding="utf-8", newline="").write(nuevo)
+        os.replace(ruta + ".nuevo", ruta)
+
+
+def iconos(nombre):
+    """Los iconos llevan los colores del tema (cuerpo de archivo, carpeta, marcos). Con Marea sirven los del sistema; con
+    otro tema se hace una copia en la carpeta del usuario, que tiene prioridad, con los colores cambiados. En un tema claro
+    el texto de las etiquetas (que va sobre un color de tipo de archivo) pasa a ser oscuro."""
+    if os.path.isdir(ICONOS_USUARIO):
+        shutil.rmtree(ICONOS_USUARIO, ignore_errors=True)
+    if nombre == BASE:
+        return
+    origen = next((d for d in (ICONOS_SISTEMA, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "config", "iconos", "LeksSO"))
+                   if os.path.isdir(d)), None)
+    if not origen:
+        return
+    mapa = mapa_de_colores(BASE, nombre)
+    if es_claro(nombre):
+        mapa[tokens(BASE)["bg"]] = tokens(nombre)["text"]
+    shutil.copytree(origen, ICONOS_USUARIO)
+    for raiz, _, archivos in os.walk(ICONOS_USUARIO):
+        for f in archivos:
+            if f.endswith(".svg"):
+                ruta = os.path.join(raiz, f)
+                texto = open(ruta, encoding="utf-8", newline="").read()
+                nuevo = recolorear(texto, mapa)
+                if nuevo != texto:
+                    open(ruta, "w", encoding="utf-8", newline="").write(nuevo)
+
+
 def guardar(nombre):
     os.makedirs(os.path.dirname(ESTADO), exist_ok=True)
     # atómico (archivo nuevo + renombrar): así las ventanas abiertas, que vigilan la carpeta, se enteran del cambio
@@ -129,6 +176,8 @@ def aplicar(destino, desde):
     mapa = {} if desde == destino else mapa_de_colores(desde, destino)
     n = recolorear_archivos(mapa) if mapa else 0
     imagen_de_bloqueo(destino)
+    blanco_brillante(destino)
+    iconos(destino)
     guardar(destino)
     if n:
         recargar()

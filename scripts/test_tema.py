@@ -78,8 +78,8 @@ class PruebasTema(unittest.TestCase):
         base = {d: open(os.path.join(RAIZ, "config", o), "rb").read() for o, d in COPIAS.items()}
         self.assertEqual(base, self.contenido())
 
-    def test_hay_tres_temas(self):
-        self.assertEqual(set(self.tema("listar").stdout.split()), {"marea", "pizarra", "waves"})
+    def test_hay_cuatro_temas(self):
+        self.assertEqual(set(self.tema("listar").stdout.split()), {"marea", "pizarra", "waves", "alba"})
 
     def test_waves_ida_y_vuelta_identica(self):
         antes = self.contenido()
@@ -90,6 +90,29 @@ class PruebasTema(unittest.TestCase):
         self.assertEqual(self.tema("aplicar", "pizarra").returncode, 0)  # de un tema a otro sin pasar por Marea
         self.assertEqual(self.tema("aplicar", "marea").returncode, 0)
         self.assertEqual(antes, self.contenido())
+
+    def test_tema_claro_completo(self):
+        antes = self.contenido()
+        self.assertEqual(self.tema("aplicar", "alba").returncode, 0)
+        t = leksso_ui.tokens("alba")
+        kitty = open(os.path.join(self.casa, ".config", "kitty", "kitty.conf"), encoding="utf-8").read().lower()
+        self.assertIn("color15 #" + t["text"], kitty)        # el blanco brillante no se queda invisible sobre fondo claro
+        self.assertIn("background #" + t["bg"], kitty)
+        iconos = os.path.join(self.casa, ".local", "share", "icons", "LeksSO")
+        self.assertTrue(os.path.isdir(iconos))
+        svgs = [os.path.join(r, f) for r, _, fs in os.walk(iconos) for f in fs if f.endswith(".svg")]
+        self.assertTrue(svgs)
+        todo = "".join(open(f, encoding="utf-8").read().lower() for f in svgs)
+        self.assertNotIn("#021012", todo)                     # ningún icono conserva el fondo oscuro de Marea
+        self.assertNotIn("#112123", todo)
+        self.assertEqual(self.tema("aplicar", "marea").returncode, 0)
+        self.assertFalse(os.path.isdir(iconos))               # con Marea valen los del sistema
+        self.assertEqual(antes, self.contenido())
+        self.assertIn("color15 #ffffff", open(os.path.join(self.casa, ".config", "kitty", "kitty.conf"), encoding="utf-8").read().lower())
+
+    def test_contraste_del_tema_claro(self):
+        self.assertTrue(leksso_ui.es_claro("alba"))
+        self.assertFalse(leksso_ui.es_claro("marea"))
 
     def test_estilo_de_ventanas_sigue_el_tema(self):
         os.makedirs(os.path.join(self.casa, ".config", "leksso"))

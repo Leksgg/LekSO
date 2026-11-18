@@ -49,6 +49,23 @@ class Ordenes(unittest.TestCase):
             self.ia("claude", op="ejecutar", orden="apt update", admin=True)
         self.assertEqual(self.hechas, [("usuario", "ls")])
 
+    def test_la_ia_no_toca_las_copias_ni_con_permiso_libre(self):
+        fijar(claude={"activo": True, "comandos": True, "admin": "libre"})
+        for orden in ("sudo leksso-copias desactivar", "rm -rf /var/lib/leksso-copias", "cat /etc/leksso/copias.key",
+                      "restic -r /var/lib/leksso-copias forget --keep-last 0 --prune", "systemctl stop leksso-copias.timer",
+                      "cat /var/lib/leksso/copias.json"):
+            for admin in (False, True):
+                with self.assertRaises(Denegado, msg=orden):
+                    self.ia("claude", op="ejecutar", orden=orden, admin=admin)
+        self.assertEqual(self.hechas, [])
+        self.assertEqual(self.ia("claude", op="ejecutar", orden="ls")["codigo"], 0)     # lo demás sigue como siempre
+
+    def test_regla_de_copias_sin_falsos_positivos(self):
+        for ok in ("ls ~/Documentos", "apt update", "git status", "echo hola"):
+            self.assertFalse(asistentes.toca_copias(ok), ok)
+        for mal in ("leksso-copias estado", "LEKSSO_COPIAS=1 x", "/etc/leksso/copias.key", "restic snapshots"):
+            self.assertTrue(asistentes.toca_copias(mal), mal)
+
     def test_cada_asistente_sus_permisos(self):
         fijar(claude={"activo": True, "comandos": True, "admin": "libre"}, codex={"activo": True})
         self.ia("claude", op="ejecutar", orden="apt update", admin=True)

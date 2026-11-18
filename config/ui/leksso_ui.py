@@ -31,6 +31,16 @@ def tokens(nombre):
     return {}
 
 
+def es_claro(nombre):
+    """True si el tema es claro (campo «modo» de su archivo de colores)."""
+    for carpeta in _CARPETAS:
+        try:
+            return json.load(open(os.path.join(carpeta, nombre + ".json"), encoding="utf-8")).get("modo") == "claro"
+        except (OSError, ValueError):
+            continue
+    return False
+
+
 def mapa_de_colores(desde, hasta):
     a, b = tokens(desde), tokens(hasta)
     return {a[k]: b[k] for k in a if k in b}

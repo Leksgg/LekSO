@@ -3,6 +3,13 @@
 Formato: `+` nuevo · `-` eliminado o retirado · `~` modificado · `*` otros.
 Lo más reciente, arriba.
 
+## Sin publicar
+
++ Tema claro **Alba** (papel cálido con acento azul), en Ajustes → Apariencia. Los iconos de archivos y carpetas y el blanco brillante del terminal siguen el tema, para que también se lea bien en claro.
++ Búsqueda de archivos: una caja en Archivos (Ctrl+F) que encuentra por nombre al instante en tu carpeta personal y en los discos conectados. Usa `plocate`: no deja ningún proceso en marcha; el índice pesa unos 2 MB y se renueva una vez al día.
++ **Copias de seguridad** en Ajustes → Copias, desactivadas hasta que las actives. Eliges la frecuencia (cada día, cada semana o cada mes) y la hora; se guardan las 5 últimas copias y al hacer la sexta se borra la más antigua, solo después de comprobar que la nueva está sana. Se copia tu carpeta personal, cifrada con una clave que eliges tú. La ventana muestra siempre la última copia, la próxima y hasta qué día puedes volver, avisa si el disco es el mismo que el de tus archivos y, si una copia falla, lo ves en la barra. Recuperar archivos los deja en `~/Recuperado`, sin tocar lo que tienes. Si el equipo estaba apagado a la hora elegida, la copia se hace al encenderlo. La IA no puede tocar las copias.
+~ Los programas `restic` y `plocate` vienen instalados. Timeshift ya no se instala por defecto: queda en el catálogo de aplicaciones para quien quiera puntos de restauración del sistema.
+
 ## Beta 0.1.20 · 2026-11-18
 
 + Tercer tema de color, **Waves** (azul marino con acento celeste), en Ajustes → Apariencia. Cambia todo el escritorio igual que Marea y Pizarra.

@@ -124,6 +124,13 @@ class Explorador(QtCore.QObject):
         self.e_ruta = QtWidgets.QLabel()
         self.e_ruta.setObjectName("ruta")
         barra.addWidget(self.e_ruta, 1)
+        self.e_buscar = QtWidgets.QLineEdit()
+        self.e_buscar.setPlaceholderText("Buscar archivos… (Ctrl+F)")
+        self.e_buscar.setClearButtonEnabled(True)
+        self.e_buscar.setFixedWidth(220)
+        self.e_buscar.returnPressed.connect(lambda: self.buscar(self.e_buscar.text()))
+        self.e_buscar.textChanged.connect(lambda t: None if t.strip() else self.cerrar_busqueda())
+        barra.addWidget(self.e_buscar)
         b.addLayout(barra)
         self.lista = QtWidgets.QListView()
         self.lista.setModel(self.m_lista)
@@ -145,6 +152,13 @@ class Explorador(QtCore.QObject):
         self.lista.activated.connect(self.abrir)
         self.lista.doubleClicked.connect(self.abrir)
         b.addWidget(self.lista, 1)
+        self.res = QtWidgets.QListWidget()
+        self.res.setIconSize(QtCore.QSize(32, 32))
+        self.res.setTextElideMode(QtCore.Qt.ElideMiddle)
+        self.res.itemActivated.connect(lambda it: self.abrir_resultado(it.data(QtCore.Qt.UserRole)))
+        self.res.itemDoubleClicked.connect(lambda it: self.abrir_resultado(it.data(QtCore.Qt.UserRole)))
+        self.res.hide()
+        b.addWidget(self.res, 1)
         self.e_pie = QtWidgets.QLabel()
         self.e_pie.setObjectName("pie")
         b.addWidget(self.e_pie)
@@ -154,7 +168,9 @@ class Explorador(QtCore.QObject):
         for teclas, accion in (("Backspace", self.subir), ("F2", self.renombrar), ("Delete", self.a_papelera),
                                ("Ctrl+C", lambda: self.copiar(False)), ("Ctrl+X", lambda: self.copiar(True)),
                                ("Ctrl+V", self.pegar), ("Ctrl+Shift+N", self.carpeta_nueva),
-                               ("Ctrl+H", self.alternar_ocultos), ("F5", self.recargar)):
+                               ("Ctrl+H", self.alternar_ocultos), ("F5", self.recargar),
+                               ("Ctrl+F", lambda: (self.e_buscar.setFocus(), self.e_buscar.selectAll())),
+                               ("Escape", lambda: self.e_buscar.clear())):
             QtGui.QShortcut(QtGui.QKeySequence(teclas), self.v_lista, accion)
 
         # los discos que se conectan o quitan cambian la lista de lugares
@@ -253,6 +269,56 @@ class Explorador(QtCore.QObject):
             if i.column() == 0 and r and os.path.basename(r) and os.path.realpath(os.path.dirname(r)) == aqui:
                 rutas.append(r)
         return rutas
+
+    def buscar(self, texto):
+        """Búsqueda por nombre con plocate: no hay ningún proceso residente, solo un índice que se renueva cada día."""
+        palabras = texto.split()
+        if not palabras:
+            self.cerrar_busqueda()
+            return
+        try:
+            r = subprocess.run(["plocate", "-i", "-A", "-l", "1500", "--"] + palabras, capture_output=True, text=True, timeout=8)
+        except FileNotFoundError:
+            self.e_pie.setText("La búsqueda necesita plocate, que no está instalado.")
+            return
+        except subprocess.TimeoutExpired:
+            self.e_pie.setText("La búsqueda tardó demasiado. Prueba con más letras.")
+            return
+        propios = (CASA + "/", f"/media/{os.environ.get('USER', '')}/", f"/run/media/{os.environ.get('USER', '')}/")
+        rutas = [x for x in r.stdout.splitlines() if x.startswith(propios) and (self.ocultos or "/." not in x[len(CASA):])]
+        # lo que está en tu carpeta personal primero, y dentro de eso, lo de nombre más corto (coincide mejor)
+        rutas.sort(key=lambda x: (not x.startswith(CASA + "/"), len(os.path.basename(x)), x))
+        iconos = QtWidgets.QFileIconProvider()
+        self.res.clear()
+        for ruta in rutas[:200]:
+            carpeta = os.path.dirname(ruta)
+            visible = "Inicio" + carpeta[len(CASA):] if carpeta.startswith(CASA) else carpeta
+            it = QtWidgets.QListWidgetItem(iconos.icon(QtCore.QFileInfo(ruta)), f"{os.path.basename(ruta)}\n{visible}")
+            it.setData(QtCore.Qt.UserRole, ruta)
+            it.setToolTip(ruta)
+            self.res.addItem(it)
+        self.lista.hide()
+        self.res.show()
+        self.e_ruta.setText(f"Resultados de «{texto.strip()}»")
+        if not rutas:
+            self.e_pie.setText("Sin resultados. La búsqueda se renueva cada día: lo creado hoy puede no aparecer.")
+        else:
+            mas = f" (los {200} primeros)" if len(rutas) > 200 else ""
+            self.e_pie.setText(f"{min(len(rutas), 200)} resultados{mas}. El índice se renueva cada día.")
+
+    def cerrar_busqueda(self):
+        if self.res.isVisible():
+            self.res.hide()
+            self.lista.show()
+            self.ir(self.ruta)
+
+    def abrir_resultado(self, ruta):
+        if os.path.isdir(ruta):
+            self.e_buscar.clear()
+            self.ir(ruta)
+        elif ruta:
+            subprocess.Popen(["xdg-open", ruta], start_new_session=True, stdin=subprocess.DEVNULL,
+                             stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
     def abrir(self, indice=None):
         rutas = [self.m_lista.filePath(indice)] if isinstance(indice, QtCore.QModelIndex) and indice.isValid() \

@@ -1,0 +1,10 @@
+[Unit]
+Description=Copia de seguridad de LeksSO
+After=local-fs.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/leksso-copias ejecutar
+Nice=19
+IOSchedulingClass=idle
+TimeoutStartSec=6h
