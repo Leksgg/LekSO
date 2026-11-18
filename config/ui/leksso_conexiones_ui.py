@@ -149,8 +149,10 @@ class Conexiones(QtWidgets.QWidget):
         cs = d["conexiones"]
         fuera = sum(1 for c in cs if c["categoria"] == "internet")
         entran = sum(1 for c in cs if c["categoria"] == "entrante")
-        sin = sum(1 for c in cs if c["categoria"] != "escuchando" and c["confianza"] == "sin validar")
-        texto = f"{fuera} conexiones a Internet · {entran} entrantes · {sin} sin validar"
+        fuera = sum(c.get("conexiones", 1) for c in cs if c["categoria"] == "internet")
+        entran = sum(c.get("conexiones", 1) for c in cs if c["categoria"] == "entrante")
+        sin = len({c["ident"] for c in cs if c["categoria"] != "escuchando" and c["confianza"] == "sin validar"})
+        texto = f"{fuera} conexiones a Internet · {entran} entrantes · {sin} programa(s) sin validar"
         if d.get("aprende_hasta"):
             texto += f"\nAprendiendo: hasta el {cuando(d['aprende_hasta'])} solo se anota lo que conecta, sin avisos."
         self.resumen.setText(texto)
@@ -171,7 +173,7 @@ class Conexiones(QtWidgets.QWidget):
             for c in filas:
                 estado = "bloqueada" if c.get("bloqueada") else c["confianza"]
                 extra = (" · nueva" if c.get("nueva") else "") + (f" · {c['por_que']}" if c.get("por_que") and estado == "validada" else "")
-                dest = f"{c['destino']}:{c['puerto']}" + (f" ({c['servicio']})" if c.get("servicio") else "")
+                dest = f"{c['destino']}:{c['puerto']}" + (f" ({c['servicio']})" if c.get("servicio") else "") + (f"  ×{c['conexiones']}" if c.get("conexiones", 1) > 1 else "")
                 it = QtWidgets.QTreeWidgetItem([c["nombre"] + (f"  [{c['paquete']}]" if c.get("paquete") else ""), dest, tamano(c["enviados"]), estado + extra])
                 it.setForeground(3, QtGui.QBrush(QtGui.QColor(pintar(COLOR.get(estado, "#94a1a3")))))
                 it.setData(0, QtCore.Qt.UserRole, c)

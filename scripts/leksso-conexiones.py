@@ -65,6 +65,7 @@ UMBRAL_ENVIO = 100 * 1024 * 1024          # un programa no se considera «envian
 FACTOR_ENVIO = 4                           # ni por debajo de 4 veces su media diaria
 
 CATEGORIAS = ("entrante", "internet", "red_local", "escuchando", "local")
+CERRANDO = {"TIME-WAIT", "FIN-WAIT-1", "FIN-WAIT-2", "CLOSING", "LAST-ACK", "SYN-RECV", "CLOSE"}
 # Programas y servicios que no se pueden parar ni bloquear desde aquí: sin ellos el equipo pierde red, hora, sesión o actualizaciones.
 NO_TOCAR_COMM = {"systemd", "systemd-resolve", "systemd-resolved", "systemd-timesyn", "systemd-timesyncd", "NetworkManager",
                  "wpa_supplicant", "dhclient", "dbus-daemon", "polkitd", "sway", "labwc", "udevd", "systemd-udevd", "chronyd", "init"}
@@ -340,6 +341,8 @@ def hacer_foto():
         if cat == "local":
             continue
         pid = c["pid"]
+        if not pid and c["estado"] in CERRANDO:
+            continue                                  # restos de una conexión que ya se cerró: el núcleo los guarda un rato sin dueño
         if pid not in cache_proc:
             cadena = ancestros(pid) if pid else []
             cache_proc[pid] = (cadena[0] if cadena else None, [identidad(p) for p in cadena[1:]] if cadena else [])
@@ -584,8 +587,24 @@ def exige_root():
         sys.exit(json.dumps({"ok": False, "error": "Hace falta ser administrador (sudo)."}))
 
 
+def agrupar(lista):
+    """Una fila por (programa, categoría, destino, puerto, protocolo) con cuántas conexiones son y cuánto han enviado en total."""
+    grupos = {}
+    for r in lista:
+        k = (r["ident"], r["categoria"], r["destino"], r["puerto"], r["proto"])
+        g = grupos.get(k)
+        if g is None:
+            grupos[k] = dict(r, conexiones=1)
+        else:
+            g["conexiones"] += 1
+            g["enviados"] += r["enviados"]
+            g["recibidos"] += r["recibidos"]
+    return list(grupos.values())
+
+
 def listar():
     lista, _ = hacer_foto()
+    lista = agrupar(lista)
     conocidas = leer_json(CONOCIDAS, {})
     for r in lista:
         k = conocidas.get(r["ident"], {})

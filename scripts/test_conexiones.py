@@ -78,6 +78,24 @@ class Pruebas(unittest.TestCase):
         self.m.escribir_json(self.m.CONOCIDAS, c)
 
     # ---- leer y clasificar ----
+    def test_los_restos_de_conexiones_cerradas_sin_dueno_no_cuentan(self):
+        m = self.m
+        m.leer_ss = lambda: SS + "tcp TIME-WAIT 0 0 192.168.1.5:50030 93.184.216.50:443\ntcp ESTAB 0 0 192.168.1.5:50031 93.184.216.51:443\n"
+        lista, _ = m.hacer_foto()
+        destinos = {r["destino"] for r in lista}
+        self.assertNotIn("93.184.216.50", destinos)        # TIME-WAIT sin proceso: resto de una conexión que ya se cerró
+        self.assertIn("93.184.216.51", destinos)           # ESTAB sin proceso (p. ej. de otro espacio de nombres): sí se enseña
+
+    def test_las_conexiones_iguales_se_agrupan(self):
+        m = self.m
+        extra = "".join(f"tcp ESTAB 0 0 192.168.1.5:{51000 + i} 142.250.1.1:443 users:((\"brave\",pid=1000,fd={50 + i})) cubic bytes_sent:1000 bytes_received:5\n" for i in range(4))
+        m.leer_ss = lambda: SS + extra
+        lista, _ = m.hacer_foto()
+        filas = [r for r in m.agrupar(lista) if r["nombre"] == "brave" and r["destino"] == "142.250.1.1"]
+        self.assertEqual(len(filas), 1)
+        self.assertEqual(filas[0]["conexiones"], 5)         # la de SS + 4 nuevas
+        self.assertEqual(filas[0]["enviados"], 5000 + 4000)
+
     def test_parsear_ss(self):
         cs = self.m.parsear_ss(SS)
         self.assertEqual(len(cs), 10)
