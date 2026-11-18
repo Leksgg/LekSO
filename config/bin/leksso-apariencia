@@ -2,7 +2,7 @@
 """Apariencia de LeksSO: elegir el tema de color de todo el escritorio.
 
 Cada tarjeta es un tema. «Aplicar» lo cambia al momento (barra, terminal, menús, avisos, bordes, Archivos...) y la
-ventana se queda abierta con los colores nuevos. Letra e iconos se ajustan en qt6ct (botón de abajo).
+ventana se queda abierta con los colores nuevos.
 Se cierra con la X o con Esc.
 """
 import subprocess
@@ -60,10 +60,6 @@ class Apariencia(QtWidgets.QWidget):
         self.estado.setWordWrap(True)
         self.raiz.addWidget(self.estado)
         self.raiz.addStretch()
-        avanzado = QtWidgets.QPushButton("Letra e iconos…")
-        avanzado.setObjectName("accion")
-        avanzado.clicked.connect(lambda: subprocess.Popen(["qt6ct"], start_new_session=True))
-        self.raiz.addWidget(avanzado)
         self.pintar()
 
     def pintar(self):
@@ -105,7 +101,7 @@ def main():
     app = QtWidgets.QApplication(sys.argv)
     app.setDesktopFileName("leksso-apariencia")
     w = Apariencia()
-    w.resize(460, 520)
+    w.resize(460, 480)
     w.show()
     return app.exec()
 

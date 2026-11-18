@@ -6,7 +6,7 @@ Lo más reciente, arriba.
 ## Sin publicar
 
 + Tercer tema de color, **Waves** (azul marino con acento celeste), en Ajustes → Apariencia. Cambia todo el escritorio igual que Marea y Pizarra.
-~ Si se elige un esquema de colores suelto en «Letra e iconos» (qt6ct), el tema de Apariencia lo vuelve a poner en su sitio al cambiar de tema, para que las apps Qt sigan el tema elegido.
+- Se quita de Apariencia el botón «Letra e iconos», que abría la herramienta de configuración de Qt (qt6ct): solo servía para elegir esquemas de colores sueltos que no seguían el tema y confundía con la ventana de Apariencia. Las apps Qt siguen la paleta del tema.
 
 ## Alpha 0.1.19 · 2026-11-18
 

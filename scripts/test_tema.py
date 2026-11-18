@@ -31,8 +31,6 @@ class PruebasTema(unittest.TestCase):
             os.makedirs(os.path.dirname(d), exist_ok=True)
             shutil.copy(os.path.join(RAIZ, "config", origen), d)
         self.env = dict(os.environ, HOME=self.casa)
-        qt = os.path.join(self.casa, ".config", "qt6ct", "qt6ct.conf")
-        shutil.copy(os.path.join(RAIZ, "config", "qt6ct", "qt6ct.conf"), qt)
 
     def tearDown(self):
         shutil.rmtree(self.casa, ignore_errors=True)
@@ -92,15 +90,6 @@ class PruebasTema(unittest.TestCase):
         self.assertEqual(self.tema("aplicar", "pizarra").returncode, 0)  # de un tema a otro sin pasar por Marea
         self.assertEqual(self.tema("aplicar", "marea").returncode, 0)
         self.assertEqual(antes, self.contenido())
-
-    def test_qt6ct_no_se_queda_con_otro_esquema(self):
-        qt = os.path.join(self.casa, ".config", "qt6ct", "qt6ct.conf")
-        texto = open(qt, encoding="utf-8").read().replace("leksso.conf", "waves.conf").replace("custom_palette=true", "custom_palette=false")
-        open(qt, "w", encoding="utf-8").write(texto)  # el usuario eligió «waves» en qt6ct
-        self.tema("aplicar", "pizarra")
-        conf = open(qt, encoding="utf-8").read()
-        self.assertIn("colors/leksso.conf", conf)
-        self.assertIn("custom_palette=true", conf)
 
     def test_estilo_de_ventanas_sigue_el_tema(self):
         os.makedirs(os.path.join(self.casa, ".config", "leksso"))
