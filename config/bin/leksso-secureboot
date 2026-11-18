@@ -12,7 +12,7 @@ import sys
 from PySide6 import QtCore, QtWidgets
 
 sys.path.insert(0, "/usr/local/lib/leksso-ui")
-from leksso_ui import ESTILO, alternar  # noqa: E402
+from leksso_ui import ESTILO_BASE, alternar, estilo  # noqa: E402
 
 ORDEN = ["leksso-actualizar", "hardware"]
 OCULTA = "••••••••"
@@ -54,7 +54,7 @@ class Ventana(QtWidgets.QWidget):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("Secure Boot")
-        self.setStyleSheet(ESTILO)
+        estilo(self, ESTILO_BASE)
         self.clave = ""
         self.visible = False
         raiz = QtWidgets.QVBoxLayout(self)

@@ -25,7 +25,7 @@ CASA = os.path.expanduser("~")
 ESTADO = os.path.join(CASA, ".config", "leksso", "tema")
 # archivos del usuario que llevan colores (relativos a ~)
 ARCHIVOS = [
-    ".config/waybar/style.css", ".config/foot/foot.ini", ".config/kitty/kitty.conf", ".config/sway/config",
+    ".config/waybar/style.css", ".config/kitty/kitty.conf", ".config/sway/config",
     ".config/mako/config", ".config/fuzzel/fuzzel.ini", ".config/swaylock/config",
     ".config/qt6ct/colors/leksso.conf", ".config/pcmanfm-qt/default/settings.conf",
     ".local/share/themes/LeksSO/openbox-3/themerc",
@@ -79,8 +79,9 @@ def entorno_de_sesion():
 
 def recargar():
     env = entorno_de_sesion()
-    ordenes = [["pkill", "-USR2", "-u", str(os.getuid()), "waybar"], ["makoctl", "reload"], ["swaymsg", "reload"],
-               ["labwc", "--reconfigure"]]
+    # kitty es un único proceso para todas las ventanas: SIGUSR1 le hace releer kitty.conf sin cerrarlas
+    ordenes = [["pkill", "-USR2", "-u", str(os.getuid()), "waybar"], ["pkill", "-USR1", "-u", str(os.getuid()), "-x", "kitty"],
+               ["makoctl", "reload"], ["swaymsg", "reload"], ["labwc", "--reconfigure"]]
     for o in ordenes:
         try:
             subprocess.run(o, capture_output=True, timeout=10, env=env)
@@ -88,9 +89,38 @@ def recargar():
             pass
 
 
+BLOQUEO_BASE = "/usr/share/leksso/bloqueo.png"
+BLOQUEO_USUARIO = os.path.join(CASA, ".config", "leksso", "bloqueo.png")
+
+
+def imagen_de_bloqueo(nombre):
+    """La imagen de la pantalla de bloqueo lleva los colores del tema: para Marea sirve la del sistema; para los
+    demás se genera una en la carpeta del usuario y swaylock apunta a ella."""
+    ruta = os.path.join(CASA, ".config", "swaylock", "config")
+    destino = BLOQUEO_BASE
+    if nombre != BASE:
+        generador = next((g for g in ("/usr/local/lib/leksso/generar-pantalla-bloqueo.py",
+                                      os.path.join(os.path.dirname(os.path.abspath(__file__)), "generar-pantalla-bloqueo.py"))
+                          if os.path.exists(g)), None)
+        r = subprocess.run(["python3", generador, BLOQUEO_USUARIO, nombre], capture_output=True) if generador else None
+        if r is not None and r.returncode == 0:
+            destino = BLOQUEO_USUARIO
+    try:
+        texto = open(ruta, encoding="utf-8", newline="").read()
+    except OSError:
+        return
+    nuevo = "".join(("image=" + destino + ("\r\n" if l.endswith("\r\n") else "\n") if l.startswith("image=") else l)
+                    for l in texto.splitlines(keepends=True))
+    if nuevo != texto:
+        open(ruta + ".nuevo", "w", encoding="utf-8", newline="").write(nuevo)
+        os.replace(ruta + ".nuevo", ruta)
+
+
 def guardar(nombre):
     os.makedirs(os.path.dirname(ESTADO), exist_ok=True)
-    open(ESTADO, "w", encoding="utf-8").write(nombre + "\n")
+    # atómico (archivo nuevo + renombrar): así las ventanas abiertas, que vigilan la carpeta, se enteran del cambio
+    open(ESTADO + ".nuevo", "w", encoding="utf-8").write(nombre + "\n")
+    os.replace(ESTADO + ".nuevo", ESTADO)
 
 
 def aplicar(destino, desde):
@@ -98,6 +128,7 @@ def aplicar(destino, desde):
         sys.exit(f"Tema desconocido: {destino}. Disponibles: {', '.join(disponibles())}")
     mapa = {} if desde == destino else mapa_de_colores(desde, destino)
     n = recolorear_archivos(mapa) if mapa else 0
+    imagen_de_bloqueo(destino)
     guardar(destino)
     if n:
         recargar()

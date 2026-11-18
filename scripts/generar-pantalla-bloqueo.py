@@ -2,17 +2,23 @@
 """Genera la imagen de la pantalla de bloqueo de LeksSO: un mensaje claro de que está bloqueada y qué hacer.
 
 Se coloca centrada sobre el color de fondo; el anillo de la contraseña de swaylock queda justo debajo.
-Uso: python3 generar-pantalla-bloqueo.py [destino]   (por defecto /usr/share/leksso/bloqueo.png)
+Uso: python3 generar-pantalla-bloqueo.py [destino] [tema]   (por defecto /usr/share/leksso/bloqueo.png y el tema Marea)
 """
 import os
 import sys
 
 from PIL import Image, ImageDraw, ImageFont
 
-FONDO = (16, 21, 27)       # #021012
-CIAN = (76, 195, 224)      # #00c4bf
-TEXTO = (223, 230, 238)    # #e3edef
-APAGADO = (138, 152, 168)  # #94a1a3
+sys.path.insert(0, "/usr/local/lib/leksso-ui")
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "config", "ui"))
+from leksso_ui import BASE, tokens  # noqa: E402
+
+
+def colores(tema):
+    """(fondo, acento, texto, apagado) del tema, sacados de sus papeles."""
+    t = tokens(tema) or tokens(BASE)
+    rgb = lambda h: tuple(int(h[i:i + 2], 16) for i in (0, 2, 4))
+    return rgb(t["bg"]), rgb(t["acc"]), rgb(t["text"]), rgb(t["muted"])
 
 
 def fuente(tam, negrita=False):
@@ -29,7 +35,8 @@ def centrado(d, y, texto, f, color, ancho):
     d.text(((ancho - (caja[2] - caja[0])) // 2, y), texto, font=f, fill=color)
 
 
-def main(destino):
+def main(destino, tema=BASE):
+    FONDO, CIAN, TEXTO, APAGADO = colores(tema)
     ancho, alto = 1000, 720
     img = Image.new("RGB", (ancho, alto), FONDO)
     d = ImageDraw.Draw(img)
@@ -42,4 +49,4 @@ def main(destino):
 
 
 if __name__ == "__main__":
-    main(sys.argv[1] if len(sys.argv) > 1 else "/usr/share/leksso/bloqueo.png")
+    main(sys.argv[1] if len(sys.argv) > 1 else "/usr/share/leksso/bloqueo.png", sys.argv[2] if len(sys.argv) > 2 else BASE)

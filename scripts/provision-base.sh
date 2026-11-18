@@ -27,7 +27,7 @@ HOME_USR="$(getent passwd "$USUARIO" | cut -d: -f6)"
 RAIZ="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
 # Paquetes por capa. Todos existen en Debian 13 (trixie); winetricks necesita la sección contrib.
-ESCRITORIO=(labwc sway swaybg waybar foot kitty fuzzel grim pcmanfm-qt qt6-wayland qt6-svg-plugins qt6ct xwayland fonts-font-awesome seatd xdg-desktop-portal-wlr micro imv zathura zathura-pdf-poppler mpv vlc xarchiver udisks2 udiskie gvfs gvfs-backends polkitd ntfs-3g exfatprogs usbutils v4l-utils bluez pavucontrol-qt swaylock wl-clipboard mako-notifier libnotify-bin swayidle brightnessctl slurp cliphist wdisplays blueman cups fonts-noto-color-emoji fonts-liberation ffmpegthumbnailer power-profiles-daemon playerctl wlr-randr network-manager streamdeck-ui python3-pyside6.qtwidgets python3-pyside6.qtgui python3-pyside6.qtcore python3-pyside6.qtsvg)
+ESCRITORIO=(labwc sway swaybg waybar kitty fuzzel grim pcmanfm-qt qt6-wayland qt6-svg-plugins qt6ct xwayland fonts-font-awesome seatd xdg-desktop-portal-wlr micro imv zathura zathura-pdf-poppler mpv vlc xarchiver udisks2 udiskie gvfs gvfs-backends polkitd ntfs-3g exfatprogs usbutils v4l-utils bluez pavucontrol-qt swaylock wl-clipboard mako-notifier libnotify-bin swayidle brightnessctl slurp cliphist wdisplays blueman cups fonts-noto-color-emoji fonts-liberation ffmpegthumbnailer power-profiles-daemon playerctl wlr-randr network-manager streamdeck-ui python3-pyside6.qtwidgets python3-pyside6.qtgui python3-pyside6.qtcore python3-pyside6.qtsvg)
 AUDIO=(pipewire pipewire-pulse wireplumber)
 AISLAMIENTO=(bubblewrap firejail python3-seccomp)
 HERRAMIENTAS=(git curl btop lm-sensors python3 bc pciutils mokutil fwupd)
@@ -123,8 +123,6 @@ else
 fi
 install -m 0644 "$RAIZ/scripts/seccomp-estricta.py" /usr/local/lib/leksso-ia/seccomp-estricta.py
 chmod 0755 /usr/local/bin/leksso-ia
-install -d -o "$USUARIO" -g "$USUARIO" "$HOME_USR/.config/foot"
-install -o "$USUARIO" -g "$USUARIO" -m 0644 "$RAIZ/config/foot/foot.ini" "$HOME_USR/.config/foot/foot.ini"
 install -d -o "$USUARIO" -g "$USUARIO" "$HOME_USR/.config/kitty"
 install -o "$USUARIO" -g "$USUARIO" -m 0644 "$RAIZ/config/kitty/kitty.conf" "$HOME_USR/.config/kitty/kitty.conf"
 # Explorador: árbol de carpetas y barra de ruta con botones.
@@ -164,6 +162,7 @@ systemctl --global enable leksso-actualizar.timer >/dev/null 2>&1 || true
 # con un clic en Ajustes → Actualizaciones. Ver scripts/leksso_hardware.py.
 install -d -m 0755 /usr/local/lib/leksso
 install -m 0644 "$RAIZ/scripts/leksso_hardware.py" /usr/local/lib/leksso/leksso_hardware.py
+install -m 0644 "$RAIZ/scripts/generar-pantalla-bloqueo.py" /usr/local/lib/leksso/generar-pantalla-bloqueo.py   # la usa leksso-tema
 install -m 0644 "$RAIZ"/config/systemd/leksso-hardware.service "$RAIZ"/config/systemd/leksso-hardware.timer /etc/systemd/system/
 systemctl daemon-reload >/dev/null 2>&1 || true
 systemctl enable leksso-hardware.timer >/dev/null 2>&1 || true
@@ -196,7 +195,8 @@ install -m 0755 "$RAIZ/config/sway/zonas.sh" /usr/local/bin/leksso-zonas
 install -o "$USUARIO" -g "$USUARIO" -m 0644 "$RAIZ/config/bash_profile" "$HOME_USR/.bash_profile"
 # Escritorio con iconos: carpeta Escritorio y accesos.
 install -o "$USUARIO" -g "$USUARIO" -m 0644 "$RAIZ/config/user-dirs.dirs" "$HOME_USR/.config/user-dirs.dirs"
-install -d -o "$USUARIO" -g "$USUARIO" "$HOME_USR/Escritorio"
+install -d -o "$USUARIO" -g "$USUARIO" "$HOME_USR/Escritorio" "$HOME_USR/Descargas" "$HOME_USR/Documentos" \
+  "$HOME_USR/Imágenes" "$HOME_USR/Vídeos" "$HOME_USR/Música"   # las de «Lugares» en Archivos (solo salen las que existen)
 install -o "$USUARIO" -g "$USUARIO" -m 0755 "$RAIZ"/config/escritorio/*.desktop "$HOME_USR/Escritorio/"
 
 # Programas predeterminados por tipo de archivo (no pisa lo que el usuario ya haya elegido).

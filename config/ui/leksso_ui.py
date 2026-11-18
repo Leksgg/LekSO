@@ -83,6 +83,42 @@ ESTILO_BASE = ESTILO  # sin recolorear: para volver a pintar una ventana abierta
 ESTILO = pintar(ESTILO)
 
 
+_VIVOS = []      # (ventana, hoja de estilo base) de las ventanas que siguen el tema
+_VIGILANTE = []  # el observador de ~/.config/leksso, creado la primera vez
+
+
+def estilo(widget, base):
+    """Pone a `widget` la hoja de estilo `base` (escrita con los colores base) con los colores del tema activo y la
+    repinta sola cuando se cambia de tema (leksso-tema), sin cerrar ni abrir la ventana."""
+    import weakref
+    widget.setStyleSheet(pintar(base))
+    _VIVOS.append((weakref.ref(widget), base))
+    if not _VIGILANTE:
+        from PySide6 import QtCore
+        ruta = os.path.expanduser("~/.config/leksso/tema")
+        carpeta = os.path.dirname(ruta)
+        os.makedirs(carpeta, exist_ok=True)
+        # se vigilan la carpeta (el archivo se reemplaza) y el archivo (por si se escribe en el sitio)
+        v = QtCore.QFileSystemWatcher([carpeta] + ([ruta] if os.path.exists(ruta) else []))
+        ultimo = [tema_activo()]
+
+        def cambio(_):
+            if os.path.exists(ruta) and ruta not in v.files():
+                v.addPath(ruta)  # tras reemplazarlo, el archivo es otro: hay que volver a vigilarlo
+            if tema_activo() == ultimo[0]:
+                return
+            ultimo[0] = tema_activo()
+            for ref, b in list(_VIVOS):
+                w = ref()
+                if w is None:
+                    _VIVOS.remove((ref, b))
+                else:
+                    w.setStyleSheet(pintar(b))
+        v.directoryChanged.connect(cambio)
+        v.fileChanged.connect(cambio)
+        _VIGILANTE.append(v)
+
+
 def alternar(nombre):
     """Si ya hay una ventana abierta de este programa, la cierra (el botón actúa de interruptor)
     y devuelve True. Si no, se registra y devuelve False."""

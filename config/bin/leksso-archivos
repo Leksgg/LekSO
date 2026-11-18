@@ -18,12 +18,15 @@ from PySide6 import QtCore, QtGui, QtWidgets
 
 sys.path.insert(0, "/usr/local/lib/leksso-ui")
 try:
-    from leksso_ui import ESTILO, pintar
+    from leksso_ui import ESTILO_BASE, estilo, pintar
 except ImportError:
-    ESTILO = ""
+    ESTILO_BASE = ""
 
     def pintar(texto):
         return texto
+
+    def estilo(widget, base):
+        widget.setStyleSheet(base)
 
 CASA = os.path.expanduser("~")
 EXTRA = """
@@ -82,7 +85,7 @@ class Explorador(QtCore.QObject):
         # --- ventana «Carpetas» ---
         self.v_arbol = QtWidgets.QWidget()
         self.v_arbol.setWindowTitle("Carpetas")
-        self.v_arbol.setStyleSheet(ESTILO + pintar(EXTRA))
+        estilo(self.v_arbol, ESTILO_BASE + EXTRA)
         a = QtWidgets.QVBoxLayout(self.v_arbol)
         a.setContentsMargins(0, 0, 0, 0)
         a.setSpacing(0)
@@ -104,7 +107,7 @@ class Explorador(QtCore.QObject):
 
         # --- ventana «Archivos» ---
         self.v_lista = QtWidgets.QWidget()
-        self.v_lista.setStyleSheet(ESTILO + pintar(EXTRA))
+        estilo(self.v_lista, ESTILO_BASE + EXTRA)
         b = QtWidgets.QVBoxLayout(self.v_lista)
         b.setContentsMargins(0, 0, 0, 0)
         b.setSpacing(0)

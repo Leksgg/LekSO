@@ -16,7 +16,7 @@ import sys
 from PySide6 import QtCore, QtGui, QtWidgets
 
 sys.path.insert(0, "/usr/local/lib/leksso-ui")
-from leksso_ui import ESTILO, alternar  # noqa: E402
+from leksso_ui import ESTILO_BASE, alternar, estilo  # noqa: E402
 
 DIRS = ["/usr/share/applications", "/usr/local/share/applications",
         os.path.expanduser("~/.local/share/applications")]  # el último manda (puede ocultar)
@@ -75,7 +75,7 @@ class Menu(QtWidgets.QWidget):
         super().__init__()
         self.setWindowTitle("Aplicaciones")
         self.apps = leer_apps()
-        self.setStyleSheet(ESTILO)
+        estilo(self, ESTILO_BASE)
         raiz = QtWidgets.QVBoxLayout(self)
         raiz.setContentsMargins(14, 10, 14, 14)
         cab = QtWidgets.QHBoxLayout()

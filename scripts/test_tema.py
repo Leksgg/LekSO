@@ -14,7 +14,7 @@ import leksso_ui  # noqa: E402
 
 TEMA = os.path.join(RAIZ, "scripts", "leksso-tema.py")
 COPIAS = {
-    "waybar/style.css": ".config/waybar/style.css", "foot/foot.ini": ".config/foot/foot.ini",
+    "waybar/style.css": ".config/waybar/style.css",
     "kitty/kitty.conf": ".config/kitty/kitty.conf", "sway/config": ".config/sway/config",
     "mako/config": ".config/mako/config", "fuzzel/fuzzel.ini": ".config/fuzzel/fuzzel.ini",
     "swaylock/config": ".config/swaylock/config", "qt6ct/colors/leksso.conf": ".config/qt6ct/colors/leksso.conf",

@@ -11,7 +11,7 @@ import sys
 from PySide6 import QtCore, QtWidgets
 
 sys.path.insert(0, "/usr/local/lib/leksso-ui")
-from leksso_ui import ESTILO, alternar, pintar  # noqa: E402
+from leksso_ui import ESTILO_BASE, alternar, estilo, pintar  # noqa: E402
 
 
 def admite(metodo):
@@ -46,7 +46,7 @@ class Energia(QtWidgets.QWidget):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("Energía")
-        self.setStyleSheet(ESTILO)
+        estilo(self, ESTILO_BASE)
         raiz = QtWidgets.QVBoxLayout(self)
         raiz.setContentsMargins(14, 10, 14, 14)
         cab = QtWidgets.QHBoxLayout()
