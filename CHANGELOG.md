@@ -3,7 +3,7 @@
 Formato: `+` nuevo · `-` eliminado o retirado · `~` modificado · `*` otros.
 Lo más reciente, arriba.
 
-## Sin publicar
+## Beta 0.1.21 · 2026-11-18
 
 + Tema claro **Alba** (papel cálido con acento azul), en Ajustes → Apariencia. Los iconos de archivos y carpetas y el blanco brillante del terminal siguen el tema, para que también se lea bien en claro.
 + Búsqueda de archivos: una caja en Archivos (Ctrl+F) que encuentra por nombre al instante en tu carpeta personal y en los discos conectados. Usa `plocate`: no deja ningún proceso en marcha; el índice pesa unos 2 MB y se renueva una vez al día.
