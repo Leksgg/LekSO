@@ -39,6 +39,6 @@ LOG="$LOGS/$(ls -t "$LOGS" | head -1)"
 [ "$(basename "$LOG")" = "$ANTES" ] && echo "AVISO: no hay registro nuevo de OBS" >&2
 read -r SAL PER_ RET < <(parsear "$LOG")
 printf 'sistema,segundos,cpu_media_pct,ram_media_mb,gpu_media_pct,nvenc_media_pct,saltados,perdidos,retrasados\n'
-printf 'lekso,%s,%.1f,%.0f,%.1f,%.1f,%s,%s,%s\n' "$SEG" "$(echo "$cpu/$MUESTRAS" | bc -l)" \
+printf 'leksso,%s,%.1f,%.0f,%.1f,%.1f,%s,%s,%s\n' "$SEG" "$(echo "$cpu/$MUESTRAS" | bc -l)" \
   "$(echo "$rss/$MUESTRAS/1024" | bc -l)" "$(echo "$gpu/$MUESTRAS" | bc -l)" "$(echo "$enc/$MUESTRAS" | bc -l)" \
   "$SAL" "$PER_" "$RET"

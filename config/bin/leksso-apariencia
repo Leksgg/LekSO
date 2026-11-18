@@ -1,0 +1,113 @@
+#!/usr/bin/env python3
+"""Apariencia de LeksSO: elegir el tema de color de todo el escritorio.
+
+Cada tarjeta es un tema. «Aplicar» lo cambia al momento (barra, terminal, menús, avisos, bordes, Archivos...) y la
+ventana se queda abierta con los colores nuevos. Letra e iconos se ajustan en qt6ct (botón de abajo).
+Se cierra con la X o con Esc.
+"""
+import subprocess
+import sys
+
+from PySide6 import QtCore, QtGui, QtWidgets
+
+sys.path.insert(0, "/usr/local/lib/leksso-ui")
+from leksso_ui import ESTILO_BASE, alternar, pintar, tema_activo, tokens  # noqa: E402
+
+NOMBRES = {"marea": ("Marea", "Petróleo oscuro con acento turquesa"), "pizarra": ("Pizarra", "Grafito cálido con acento azul")}
+MUESTRA = ("bg", "s2", "line", "acc", "sec", "ok", "warn", "bad")
+
+
+def temas():
+    r = subprocess.run(["leksso-tema", "listar"], capture_output=True, text=True)
+    return [t for t in r.stdout.split() if tokens(t)]
+
+
+class Muestra(QtWidgets.QWidget):
+    def __init__(self, colores):
+        super().__init__()
+        self.colores = colores
+        self.setFixedHeight(22)
+
+    def paintEvent(self, _):
+        p = QtGui.QPainter(self)
+        ancho = max(1, self.width() // len(self.colores))
+        for i, c in enumerate(self.colores):
+            p.fillRect(i * ancho, 0, ancho, self.height(), QtGui.QColor("#" + c))
+
+
+class Apariencia(QtWidgets.QWidget):
+    def __init__(self):
+        super().__init__()
+        self.setWindowTitle("Apariencia")
+        self.raiz = QtWidgets.QVBoxLayout(self)
+        self.raiz.setContentsMargins(14, 10, 14, 14)
+        cab = QtWidgets.QHBoxLayout()
+        t = QtWidgets.QLabel("Apariencia")
+        t.setObjectName("titulo")
+        cab.addWidget(t)
+        cab.addStretch()
+        x = QtWidgets.QPushButton("✕")
+        x.setObjectName("cerrar")
+        x.setToolTip("Cerrar (Esc)")
+        x.clicked.connect(self.close)
+        cab.addWidget(x)
+        self.raiz.addLayout(cab)
+        self.zona = QtWidgets.QVBoxLayout()
+        self.raiz.addLayout(self.zona)
+        self.estado = QtWidgets.QLabel("")
+        self.estado.setObjectName("nota")
+        self.estado.setWordWrap(True)
+        self.raiz.addWidget(self.estado)
+        self.raiz.addStretch()
+        avanzado = QtWidgets.QPushButton("Letra e iconos…")
+        avanzado.setObjectName("accion")
+        avanzado.clicked.connect(lambda: subprocess.Popen(["qt6ct"], start_new_session=True))
+        self.raiz.addWidget(avanzado)
+        self.pintar()
+
+    def pintar(self):
+        self.setStyleSheet(pintar(ESTILO_BASE))
+        while self.zona.count():
+            it = self.zona.takeAt(0)
+            if it.widget():
+                it.widget().deleteLater()
+        activo = tema_activo()
+        for nombre in temas():
+            nom, desc = NOMBRES.get(nombre, (nombre.capitalize(), ""))
+            b = QtWidgets.QPushButton(("● " if nombre == activo else "") + f"{nom}\n{desc}")
+            b.setObjectName("accion")
+            b.setEnabled(nombre != activo)
+            b.clicked.connect(lambda _=False, n=nombre: self.aplicar(n))
+            self.zona.addWidget(b)
+            self.zona.addWidget(Muestra([tokens(nombre)[k] for k in MUESTRA if k in tokens(nombre)]))
+            self.zona.addSpacing(8)
+
+    def aplicar(self, nombre):
+        r = subprocess.run(["leksso-tema", "aplicar", nombre], capture_output=True, text=True)
+        if r.returncode:
+            self.estado.setText("No se pudo cambiar: " + (r.stderr.strip() or r.stdout.strip())[:200])
+            return
+        self.pintar()
+        self.estado.setText("Hecho. Barra, avisos y bordes ya lo usan. Las ventanas y terminales que tengas abiertos "
+                            "lo estrenan al abrirlos de nuevo.")
+
+    def keyPressEvent(self, ev):
+        if ev.key() == QtCore.Qt.Key_Escape:
+            self.close()
+        else:
+            super().keyPressEvent(ev)
+
+
+def main():
+    if alternar("leksso-apariencia"):
+        return 0
+    app = QtWidgets.QApplication(sys.argv)
+    app.setDesktopFileName("leksso-apariencia")
+    w = Apariencia()
+    w.resize(460, 420)
+    w.show()
+    return app.exec()
+
+
+if __name__ == "__main__":
+    sys.exit(main())

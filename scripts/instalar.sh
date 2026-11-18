@@ -23,16 +23,16 @@ set -euo pipefail
 
 REPO="https://github.com/Leksgg/LeksSO.git"
 REPO_OFICIAL="$REPO"
-CLON="/var/lib/lekso/repo"
-CLAVE_PUBLICA='lekso-release namespaces="git" ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIG8wCtKi9u4zuhJM7Qn13ZhyGhCLspTx2t6h72ERbeq1'
+CLON="/var/lib/leksso/repo"
+CLAVE_PUBLICA='leksso-release namespaces="git" ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIG8wCtKi9u4zuhJM7Qn13ZhyGhCLspTx2t6h72ERbeq1'
 HUELLA_ESPERADA='SHA256:E5cacFQkhc7QCOXvlEa16/iiuqXTI4XFwuz22zbQg8I'
 RAMA="origin/main"
 OSRELEASE="/etc/os-release"
 # Solo para las pruebas del propio instalador (nunca llegan por sudo): sustituyen la clave y el origen.
-if [ "${LEKSO_INSTALAR_PRUEBAS:-}" = "1" ]; then
-  REPO="${LEKSO_PRUEBA_REPO:-$REPO}"; CLON="${LEKSO_PRUEBA_CLON:-$CLON}"
-  CLAVE_PUBLICA="${LEKSO_PRUEBA_CLAVE:-$CLAVE_PUBLICA}"; HUELLA_ESPERADA="${LEKSO_PRUEBA_HUELLA:-$HUELLA_ESPERADA}"
-  RAMA="${LEKSO_PRUEBA_RAMA:-$RAMA}"; OSRELEASE="${LEKSO_PRUEBA_OSRELEASE:-$OSRELEASE}"
+if [ "${LEKSSO_INSTALAR_PRUEBAS:-}" = "1" ]; then
+  REPO="${LEKSSO_PRUEBA_REPO:-$REPO}"; CLON="${LEKSSO_PRUEBA_CLON:-$CLON}"
+  CLAVE_PUBLICA="${LEKSSO_PRUEBA_CLAVE:-$CLAVE_PUBLICA}"; HUELLA_ESPERADA="${LEKSSO_PRUEBA_HUELLA:-$HUELLA_ESPERADA}"
+  RAMA="${LEKSSO_PRUEBA_RAMA:-$RAMA}"; OSRELEASE="${LEKSSO_PRUEBA_OSRELEASE:-$OSRELEASE}"
 fi
 ETIQUETA='^v[0-9]+\.[0-9]+\.[0-9]+-(alpha|beta|rc)$'
 
@@ -141,15 +141,15 @@ main() {
   git -C "$CLON" clean -fdxq
   info "Instalando (puede tardar unos minutos)"
   bash "$CLON/scripts/provision-base.sh" "$USUARIO"
-  install -d -m 0755 /var/lib/lekso
-  printf '{"version": "%s", "commit": "%s", "firma": "%s"}\n' "${tag#v}" "$COMMIT" "$FIRMA" > /var/lib/lekso/instalada.json
+  install -d -m 0755 /var/lib/leksso
+  printf '{"version": "%s", "commit": "%s", "firma": "%s"}\n' "${tag#v}" "$COMMIT" "$FIRMA" > /var/lib/leksso/instalada.json
   # instalado desde un paquete local (USB): las actualizaciones vendrán del repositorio oficial
-  if [ "$REPO" != "$REPO_OFICIAL" ] && [ "${LEKSO_INSTALAR_PRUEBAS:-0}" != 1 ]; then git -C "$CLON" remote set-url origin "$REPO_OFICIAL"; fi
+  if [ "$REPO" != "$REPO_OFICIAL" ] && [ "${LEKSSO_INSTALAR_PRUEBAS:-0}" != 1 ]; then git -C "$CLON" remote set-url origin "$REPO_OFICIAL"; fi
   info "Listo"
   echo "LeksSO ${nombre:-$tag} instalado. Reinicia el equipo (sudo reboot): al iniciar sesión en la primera consola arranca el escritorio."
 }
 
 # Para las pruebas se puede cargar el script sin ejecutarlo.
-if [ "${LEKSO_INSTALAR_SOLO_FUNCIONES:-}" != "1" ]; then
+if [ "${LEKSSO_INSTALAR_SOLO_FUNCIONES:-}" != "1" ]; then
   main "$@"
 fi

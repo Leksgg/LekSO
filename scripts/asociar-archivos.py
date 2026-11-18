@@ -12,9 +12,9 @@ import sys
 
 APPS = ["/usr/share/applications", "/usr/local/share/applications",
         os.path.expanduser("~/.local/share/applications")]
-EDITOR, IMAGEN, PDF, REPRODUCTOR = ("lekso-editor.desktop", "imv.desktop",
+EDITOR, IMAGEN, PDF, REPRODUCTOR = ("leksso-editor.desktop", "imv.desktop",
                                     "org.pwmt.zathura.desktop", "vlc.desktop")
-ARCHIVADOR, WINE, INFO = "xarchiver.desktop", "lekso-wine.desktop", "lekso-info.desktop"
+ARCHIVADOR, WINE, INFO = "xarchiver.desktop", "leksso-wine.desktop", "leksso-info.desktop"
 
 TEXTO_APP = re.compile(r"^application/(json|.*\+json|.*\+xml|xml|x-yaml|yaml|toml|x-toml|javascript|"
                        r"x-javascript|typescript|x-shellscript|x-sh|x-gdscript|sql|x-sql|x-php|"

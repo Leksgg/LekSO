@@ -5,16 +5,16 @@
 # de ese sistema base y descarga solo esos paquetes (los de Debian, con las firmas de Debian comprobadas por apt).
 # Deja una carpeta con los .deb y un índice (Packages.gz) que el instalador usa como fuente de apt local.
 #
-# Uso (en un Debian 13 con internet, como root): construir-repo-offline.sh SALIDA [RAIZ_REPO_LEKSO]
-#   SALIDA            carpeta donde quedará el repositorio (por ejemplo /var/tmp/lekso-offline)
-#   RAIZ_REPO_LEKSO   copia del repositorio de LeksSO de la que leer las listas de paquetes (por defecto, la de este script)
+# Uso (en un Debian 13 con internet, como root): construir-repo-offline.sh SALIDA [RAIZ_REPO_LEKSSO]
+#   SALIDA            carpeta donde quedará el repositorio (por ejemplo /var/tmp/leksso-offline)
+#   RAIZ_REPO_LEKSSO   copia del repositorio de LeksSO de la que leer las listas de paquetes (por defecto, la de este script)
 set -euo pipefail
 
 [ "$(id -u)" -eq 0 ] || { echo "Ejecuta como root." >&2; exit 1; }
 SALIDA="${1:?Indica la carpeta de salida}"
 RAIZ="${2:-$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)}"
-MIRROR="${LEKSO_MIRROR:-http://deb.debian.org/debian}"
-BASE="/var/tmp/lekso-base-$$"
+MIRROR="${LEKSSO_MIRROR:-http://deb.debian.org/debian}"
+BASE="/var/tmp/leksso-base-$$"
 
 apt-get install -y -qq debootstrap dpkg-dev >/dev/null
 
@@ -44,13 +44,13 @@ EOF
 # 3. Descargar (sin instalar) todo el cierre de dependencias.
 mkdir -p "$SALIDA"
 rm -f "$SALIDA"/*.deb
-mkdir -p "$BASE/var/cache/lekso-descargas"
-mount --bind "$SALIDA" "$BASE/var/cache/lekso-descargas"
-trap 'umount "$BASE/var/cache/lekso-descargas" 2>/dev/null || true; rm -rf "$BASE"' EXIT
+mkdir -p "$BASE/var/cache/leksso-descargas"
+mount --bind "$SALIDA" "$BASE/var/cache/leksso-descargas"
+trap 'umount "$BASE/var/cache/leksso-descargas" 2>/dev/null || true; rm -rf "$BASE"' EXIT
 chroot "$BASE" apt-get update -qq
 # shellcheck disable=SC2086
 chroot "$BASE" env DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends --download-only \
-  -o Dir::Cache::archives=/var/cache/lekso-descargas $TODOS
+  -o Dir::Cache::archives=/var/cache/leksso-descargas $TODOS
 rm -f "$SALIDA/lock"; rm -rf "$SALIDA/partial"
 
 # 4. Índice del repositorio local.

@@ -3,8 +3,10 @@
 # Uso: firmar-imagen.sh IMAGEN.iso      (con el agente de firma desbloqueado: scripts/desbloquear-firma.sh)
 set -euo pipefail
 ISO="${1:?Uso: $0 IMAGEN.iso}"
-CLAVE="${LEKSO_CLAVE_FIRMA:-$HOME/.ssh/lekso_release}"
-SOCK="${LEKSO_AGENTE:-$HOME/.ssh/lekso-agent.sock}"
+CLAVE="${LEKSSO_CLAVE_FIRMA:-$HOME/.ssh/leksso_release}"
+# la clave se llamaba lekso_release antes del cambio de nombre: si solo existe esa, se usa
+[ -e "$CLAVE" ] || ! [ -e "$HOME/.ssh/lekso_release" ] || CLAVE="$HOME/.ssh/lekso_release"
+SOCK="${LEKSSO_AGENTE:-$HOME/.ssh/leksso-agent.sock}"
 FIRMA="$CLAVE"
 if [ -S "$SOCK" ] && SSH_AUTH_SOCK="$SOCK" ssh-add -l >/dev/null 2>&1; then export SSH_AUTH_SOCK="$SOCK"; FIRMA="$CLAVE.pub"; fi
 ( cd "$(dirname "$ISO")" && sha256sum "$(basename "$ISO")" ) > "$ISO.sha256"

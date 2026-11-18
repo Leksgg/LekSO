@@ -1,0 +1,7 @@
+[Desktop Entry]
+Type=Application
+Name=Ver información del archivo
+Exec=leksso-term -T "Información del archivo" -e leksso-info %f
+Terminal=false
+NoDisplay=true
+MimeType=application/octet-stream;

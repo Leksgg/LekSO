@@ -1,7 +1,0 @@
-[Desktop Entry]
-Type=Application
-Name=Programa de Windows (en caja)
-Exec=lekso-wine %f
-Terminal=false
-NoDisplay=true
-MimeType=application/x-ms-dos-executable;application/vnd.microsoft.portable-executable;

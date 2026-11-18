@@ -1,4 +1,4 @@
-"""Pruebas de lekso_hardware: lectura de salidas, listas cerradas y avisos.
+"""Pruebas de leksso_hardware: lectura de salidas, listas cerradas y avisos.
 
 No tocan el sistema: usan textos de ejemplo. Uso: python3 scripts/test_hardware.py
 """
@@ -7,7 +7,7 @@ import os
 import unittest
 
 AQUI = os.path.dirname(os.path.abspath(__file__))
-_e = importlib.util.spec_from_file_location("lekso_hardware", os.path.join(AQUI, "lekso_hardware.py"))
+_e = importlib.util.spec_from_file_location("leksso_hardware", os.path.join(AQUI, "leksso_hardware.py"))
 hw = importlib.util.module_from_spec(_e)
 _e.loader.exec_module(hw)
 

@@ -19,14 +19,14 @@ apt-get install -y --no-install-recommends nftables unattended-upgrades
 # 1. Cortafuegos: todo lo entrante se bloquea salvo lo que responde a lo que tú abres.
 REGLA_SSH=""
 [ "$SSH" -eq 1 ] && REGLA_SSH="tcp dport 22 accept"
-# Si el acceso remoto está encendido (lekso-acceso-remoto on), se conserva su regla: solo red local.
-[ "$SSH" -eq 0 ] && [ -f /etc/lekso/acceso-remoto ] &&   REGLA_SSH='ip saddr { 10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16 } tcp dport 22 accept comment "lekso-acceso-remoto"'
+# Si el acceso remoto está encendido (leksso-acceso-remoto on), se conserva su regla: solo red local.
+[ "$SSH" -eq 0 ] && [ -f /etc/leksso/acceso-remoto ] &&   REGLA_SSH='ip saddr { 10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16 } tcp dport 22 accept comment "leksso-acceso-remoto"'
 cat > /etc/nftables.conf <<NFT
 #!/usr/sbin/nft -f
 # LeksSO: entrante bloqueado por defecto. Saliente libre.
 flush ruleset
 
-table inet lekso {
+table inet leksso {
   chain entrada {
     type filter hook input priority 0; policy drop;
     ct state established,related accept
@@ -58,7 +58,7 @@ systemctl enable --now apt-daily.timer apt-daily-upgrade.timer >/dev/null 2>&1 |
 
 # 3. Núcleo: un programa no puede espiar a otros del mismo usuario ni leer direcciones del núcleo.
 #    No se bloquean los espacios de usuario: los necesitan la caja y Steam.
-cat > /etc/sysctl.d/90-lekso.conf <<'SYS'
+cat > /etc/sysctl.d/90-leksso.conf <<'SYS'
 kernel.yama.ptrace_scope = 1
 kernel.kptr_restrict = 2
 kernel.dmesg_restrict = 1

@@ -1,0 +1,114 @@
+#!/usr/bin/env python3
+"""Ajustes de LeksSO: un solo sitio para las cosas del sistema (sonido, red, pantallas...).
+
+Cada botón abre la herramienta que ya existe para eso; aquí solo se reúnen.
+Se cierra con la X o con Esc.
+"""
+import shutil
+import subprocess
+import sys
+
+from PySide6 import QtCore, QtWidgets
+
+sys.path.insert(0, "/usr/local/lib/leksso-ui")
+from leksso_ui import ESTILO, alternar  # noqa: E402
+
+# (nombre, descripción, orden, programa que debe existir)
+AJUSTES = [
+    ("Sonido", "Salidas, entradas, volumen", ["pavucontrol-qt"], "pavucontrol-qt"),
+    ("Red", "Cable y Wi-Fi", ["leksso-term", "-T", "Redes", "-e", "leksso-redes"], "nmtui"),
+    ("Pantallas", "Resolución y escala", ["wdisplays"], "wdisplays"),
+    ("Bluetooth", "Auriculares y mandos", ["blueman-manager"], "blueman-manager"),
+    ("Apariencia", "Tema de color, letra, iconos", ["leksso-apariencia"], "leksso-apariencia"),
+    ("Secure Boot", "Clave de firma de controladores", ["leksso-secureboot"], "leksso-secureboot"),
+    ("Impresoras", "Añadir impresoras", ["brave-browser", "http://localhost:631"], "cupsd"),
+    ("Aplicaciones", "Instalar programas",
+     ["leksso-term", "-T", "Aplicaciones", "-e", "sh", "-c", "leksso-apps; printf '\\nPulsa Intro para cerrar.'; read -r _"],
+     "leksso-apps"),
+    ("Actualizaciones", "Versión y novedades", ["leksso-actualizaciones"], "leksso-actualizaciones"),
+    ("Archivos y papelera", "Recuperar lo borrado", ["pcmanfm-qt", "trash:///"], "pcmanfm-qt"),
+]
+PERFILES = [("Ahorro", "power-saver"), ("Equilibrado", "balanced"), ("Rendimiento", "performance")]
+
+
+def info():
+    def sal(*c):
+        return subprocess.run(c, capture_output=True, text=True).stdout.strip()
+    mem = sal("sh", "-c", "free -m | awk 'NR==2{printf \"%d MB de %d MB en uso\", $3, $2}'")
+    disco = sal("sh", "-c", "df -h / | awk 'NR==2{print $3\" de \"$2\" en uso\"}'")
+    return (f"{sal('leksso-actualizar', 'version')} (sobre Debian {sal('cat', '/etc/debian_version')})\nNúcleo: {sal('uname', '-r')}\n"
+            f"Memoria: {mem}\nDisco: {disco}\nEquipo: {sal('hostname')}")
+
+
+class Ajustes(QtWidgets.QWidget):
+    def __init__(self):
+        super().__init__()
+        self.setWindowTitle("Ajustes")
+        self.setStyleSheet(ESTILO)
+        raiz = QtWidgets.QVBoxLayout(self)
+        raiz.setContentsMargins(14, 10, 14, 14)
+        cab = QtWidgets.QHBoxLayout()
+        t = QtWidgets.QLabel("Ajustes")
+        t.setObjectName("titulo")
+        cab.addWidget(t)
+        cab.addStretch()
+        x = QtWidgets.QPushButton("✕")
+        x.setObjectName("cerrar")
+        x.setToolTip("Cerrar (Esc)")
+        x.clicked.connect(self.close)
+        cab.addWidget(x)
+        raiz.addLayout(cab)
+        rejilla = QtWidgets.QGridLayout()
+        n = 0
+        for nombre, desc, orden, prog in AJUSTES:
+            b = QtWidgets.QPushButton(f"{nombre}\n{desc}")
+            b.setObjectName("accion")
+            ok = shutil.which(prog) is not None or prog == "cupsd"
+            b.setEnabled(ok)
+            if not ok:
+                b.setToolTip("No está instalado")
+            b.clicked.connect(lambda _=False, o=orden: self.abrir(o))
+            rejilla.addWidget(b, n // 2, n % 2)
+            n += 1
+        raiz.addLayout(rejilla)
+        if shutil.which("powerprofilesctl"):
+            raiz.addWidget(QtWidgets.QLabel("Modo de energía"))
+            fila = QtWidgets.QHBoxLayout()
+            actual = subprocess.run(["powerprofilesctl", "get"], capture_output=True, text=True).stdout.strip()
+            for texto, clave in PERFILES:
+                b = QtWidgets.QPushButton(("● " if clave == actual else "") + texto)
+                b.setObjectName("accion")
+                b.clicked.connect(lambda _=False, c=clave: (subprocess.run(["powerprofilesctl", "set", c]), self.close()))
+                fila.addWidget(b)
+            raiz.addLayout(fila)
+        sobre = QtWidgets.QLabel(info())
+        sobre.setObjectName("nota")
+        sobre.setTextInteractionFlags(QtCore.Qt.TextSelectableByMouse)
+        raiz.addWidget(sobre)
+        raiz.addStretch()
+
+    def abrir(self, orden):
+        subprocess.Popen(orden, start_new_session=True, stdin=subprocess.DEVNULL,
+                         stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        self.close()
+
+    def keyPressEvent(self, ev):
+        if ev.key() == QtCore.Qt.Key_Escape:
+            self.close()
+        else:
+            super().keyPressEvent(ev)
+
+
+def main():
+    if alternar("leksso-ajustes"):
+        return 0
+    app = QtWidgets.QApplication(sys.argv)
+    app.setDesktopFileName("leksso-ajustes")
+    w = Ajustes()
+    w.resize(600, 540)
+    w.show()
+    return app.exec()
+
+
+if __name__ == "__main__":
+    sys.exit(main())

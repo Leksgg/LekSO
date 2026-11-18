@@ -1,0 +1,111 @@
+#!/usr/bin/env python3
+"""Historial del portapapeles de LeksSO: lo último que copiaste, para volver a pegarlo.
+
+Usa cliphist (que guarda el historial) y wl-copy. Un clic en una entrada la deja en el
+portapapeles y cierra; con la X o Esc se cierra sin cambiar nada.
+"""
+import subprocess
+import sys
+
+from PySide6 import QtCore, QtWidgets
+
+sys.path.insert(0, "/usr/local/lib/leksso-ui")
+from leksso_ui import ESTILO, alternar  # noqa: E402
+
+
+def entradas():
+    r = subprocess.run(["cliphist", "list"], capture_output=True, text=True)
+    out = []
+    for linea in r.stdout.splitlines()[:200]:
+        ident, _, texto = linea.partition("\t")
+        if ident.isdigit():
+            out.append((ident, texto.strip()))
+    return out
+
+
+class Historial(QtWidgets.QWidget):
+    def __init__(self):
+        super().__init__()
+        self.setWindowTitle("Portapapeles")
+        self.setStyleSheet(ESTILO)
+        raiz = QtWidgets.QVBoxLayout(self)
+        raiz.setContentsMargins(14, 10, 14, 14)
+        cab = QtWidgets.QHBoxLayout()
+        t = QtWidgets.QLabel("Portapapeles")
+        t.setObjectName("titulo")
+        cab.addWidget(t)
+        cab.addStretch()
+        x = QtWidgets.QPushButton("✕")
+        x.setObjectName("cerrar")
+        x.setToolTip("Cerrar (Esc)")
+        x.clicked.connect(self.close)
+        cab.addWidget(x)
+        raiz.addLayout(cab)
+        self.busca = QtWidgets.QLineEdit()
+        self.busca.setPlaceholderText("Buscar en lo copiado…")
+        self.busca.textChanged.connect(self.llenar)
+        raiz.addWidget(self.busca)
+        self.lista = QtWidgets.QListWidget()
+        self.lista.itemClicked.connect(self.elegir)
+        self.lista.itemActivated.connect(self.elegir)
+        raiz.addWidget(self.lista)
+        borrar = QtWidgets.QPushButton("Borrar historial")
+        borrar.setObjectName("accion")
+        borrar.clicked.connect(self.borrar)
+        raiz.addWidget(borrar)
+        self.todo = entradas()
+        self.llenar("")
+        self.busca.setFocus()
+
+    def llenar(self, texto):
+        self.lista.clear()
+        q = texto.strip().lower()
+        for ident, t in self.todo:
+            if q and q not in t.lower():
+                continue
+            it = QtWidgets.QListWidgetItem(t[:120] or "(imagen o contenido binario)")
+            it.setData(QtCore.Qt.UserRole, ident)
+            self.lista.addItem(it)
+        if self.lista.count():
+            self.lista.setCurrentRow(0)
+        else:
+            self.lista.addItem("Todavía no hay nada copiado" if not self.todo else "Sin resultados")
+
+    def elegir(self, item):
+        ident = item.data(QtCore.Qt.UserRole)
+        if not ident:
+            return
+        dec = subprocess.run(["cliphist", "decode", ident], capture_output=True)
+        subprocess.run(["wl-copy"], input=dec.stdout)
+        self.close()
+
+    def borrar(self):
+        subprocess.run(["cliphist", "wipe"])
+        self.todo = []
+        self.llenar("")
+
+    def keyPressEvent(self, ev):
+        if ev.key() == QtCore.Qt.Key_Escape:
+            self.close()
+        elif ev.key() in (QtCore.Qt.Key_Down, QtCore.Qt.Key_Up):
+            self.lista.setFocus()
+            QtWidgets.QApplication.sendEvent(self.lista, ev)
+        elif ev.key() in (QtCore.Qt.Key_Return, QtCore.Qt.Key_Enter) and self.lista.currentItem():
+            self.elegir(self.lista.currentItem())
+        else:
+            super().keyPressEvent(ev)
+
+
+def main():
+    if alternar("leksso-portapapeles"):
+        return 0
+    app = QtWidgets.QApplication(sys.argv)
+    app.setDesktopFileName("leksso-portapapeles")
+    w = Historial()
+    w.resize(520, 560)
+    w.show()
+    return app.exec()
+
+
+if __name__ == "__main__":
+    sys.exit(main())

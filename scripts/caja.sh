@@ -6,7 +6,7 @@
 #   caja.sh [--rw CARPETA]... [--ro CARPETA]... [--env VAR=VALOR]... [--red] [--gui] [--audio] [--gpu]
 #           [--wine PREFIJO] -- programa [argumentos]
 #   --gui: ventana en el escritorio (Wayland y Xwayland). --audio: PipeWire/Pulse. --gpu: /dev/dri.
-#   --ia: caja para una IA local; solo ve el socket del permisor (lekso-ia.sock) y pide permiso para todo.
+#   --ia: caja para una IA local; solo ve el socket del permisor (leksso-ia.sock) y pide permiso para todo.
 #   --ia-nube: igual para una IA en la nube (usa el canal «nube», que siempre pregunta); necesita --red.
 #   --estricta: filtro seccomp para programas NO fiables (sin espacios de usuario, mount, ptrace, bpf...).
 #               No sirve para Steam ni los juegos, que los necesitan.
@@ -22,11 +22,11 @@ set -euo pipefail
 RW=(); RO=(); ENV=(); RED=0; PREFIJO=""; GUI=0; AUDIO=0; GPU=0; ESTRICTA=0; IA=""
 while [ $# -gt 0 ]; do
   case "$1" in
-    --ia)      [ -z "$IA" ] || { echo "Usa --ia o --ia-nube, no los dos" >&2; exit 2; }; IA="lekso-ia.sock"; shift ;;
-    --ia-nube) [ -z "$IA" ] || { echo "Usa --ia o --ia-nube, no los dos" >&2; exit 2; }; IA="lekso-ia-nube.sock"; shift ;;
+    --ia)      [ -z "$IA" ] || { echo "Usa --ia o --ia-nube, no los dos" >&2; exit 2; }; IA="leksso-ia.sock"; shift ;;
+    --ia-nube) [ -z "$IA" ] || { echo "Usa --ia o --ia-nube, no los dos" >&2; exit 2; }; IA="leksso-ia-nube.sock"; shift ;;
     --ia-asistente) [ -z "$IA" ] || { echo "Usa una sola opción --ia" >&2; exit 2; }
                case "$2" in ""|*[!a-z]*) echo "Nombre de asistente no válido: $2" >&2; exit 2 ;; esac
-               IA="lekso-ia-$2.sock"; shift 2 ;;
+               IA="leksso-ia-$2.sock"; shift 2 ;;
     --gui)   GUI=1; shift ;;
     --audio) AUDIO=1; shift ;;
     --gpu)   GPU=1; shift ;;
@@ -56,8 +56,8 @@ ARGS=(
 [ "$RED" -eq 1 ] && ARGS+=(--share-net)
 
 # Pantalla, audio y GPU, solo si se piden. Dentro hay un /run/user/UID nuevo y vacío al que
-# se añaden únicamente estos sockets. Los sockets del permisor de IA (lekso-ia.sock y
-# lekso-control.sock) viven en el XDG_RUNTIME_DIR real y NUNCA se montan en la caja.
+# se añaden únicamente estos sockets. Los sockets del permisor de IA (leksso-ia.sock y
+# leksso-control.sock) viven en el XDG_RUNTIME_DIR real y NUNCA se montan en la caja.
 RT="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}"; DENTRO="/run/user/$(id -u)"
 if [ "$GUI" -eq 1 ] || [ "$AUDIO" -eq 1 ] || [ -n "$IA" ]; then ARGS+=(--tmpfs "$DENTRO" --setenv XDG_RUNTIME_DIR "$DENTRO"); fi
 # --ia / --ia-nube: la caja de una IA. Dentro entra SOLO el socket de su canal; el de control nunca.
@@ -90,7 +90,7 @@ if [ -n "$PREFIJO" ]; then
 fi
 
 if [ "$ESTRICTA" -eq 1 ]; then
-  SC="${LEKSO_SECCOMP:-/usr/local/lib/lekso-ia/seccomp-estricta.py}"
+  SC="${LEKSSO_SECCOMP:-/usr/local/lib/leksso-ia/seccomp-estricta.py}"
   [ -f "$SC" ] || SC="$(dirname "$(realpath "$0")")/seccomp-estricta.py"
   python3 -c "import seccomp" 2>/dev/null || { echo "Falta python3-seccomp para --estricta" >&2; exit 3; }
   exec 9< <(python3 "$SC")

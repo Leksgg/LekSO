@@ -1,6 +1,6 @@
 [Desktop Entry]
 Type=Application
 Name=Panel de la IA
-Exec=lekso-term -T "Panel de la IA" -e python3 /usr/local/lib/lekso-ia/panel.py
-Icon=lekso-ia
+Exec=leksso-term -T "Panel de la IA" -e python3 /usr/local/lib/leksso-ia/panel.py
+Icon=leksso-ia
 Terminal=false

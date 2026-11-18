@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+# Terminal de LeksSO (kitty). Acepta los argumentos de estilo foot que usa el resto del sistema:
+#   leksso-term [-T TÍTULO] [--app-id ID] [-e PROGRAMA ARGUMENTOS...]
+# Todas las ventanas comparten un único proceso de kitty (menos memoria).
+titulo=(); clase=()
+while [ $# -gt 0 ]; do
+  case "$1" in
+    -T|--title) titulo=(--title "$2"); shift 2 ;;
+    --app-id)   clase=(--class "$2"); shift 2 ;;
+    -e)         shift; break ;;
+    *)          shift ;;
+  esac
+done
+exec kitty --single-instance --instance-group leksso "${titulo[@]}" "${clase[@]}" -- "$@"

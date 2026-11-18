@@ -1,7 +1,7 @@
 ﻿# Crea la memoria USB de instalación de LeksSO desde Windows (PowerShell como administrador).
 #
-#   .\crear-usb.ps1 -Iso C:\ruta\lekso-instalador.iso            con una imagen que ya tienes
-#   .\crear-usb.ps1 -Url https://.../lekso-instalador.iso        la descarga y comprueba su firma antes de grabar
+#   .\crear-usb.ps1 -Iso C:\ruta\leksso-instalador.iso            con una imagen que ya tienes
+#   .\crear-usb.ps1 -Url https://.../leksso-instalador.iso        la descarga y comprueba su firma antes de grabar
 #
 # Seguridad: solo ofrece discos USB, te enseña modelo y tamaño, y no toca nada hasta que escribes BORRAR.
 # La imagen se comprueba con su suma SHA-256 y, si hay archivos .sha256 y .sha256.sig a su lado, con la
@@ -12,7 +12,7 @@ param(
   [switch]$SinFirma   # solo para imágenes de pruebas propias
 )
 $ErrorActionPreference = 'Stop'
-$ClavePublica = 'lekso-release namespaces="file" ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIG8wCtKi9u4zuhJM7Qn13ZhyGhCLspTx2t6h72ERbeq1'
+$ClavePublica = 'leksso-release namespaces="file" ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIG8wCtKi9u4zuhJM7Qn13ZhyGhCLspTx2t6h72ERbeq1'
 
 if (-not ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
   throw 'Abre PowerShell como administrador (clic derecho > Ejecutar como administrador).'
@@ -21,7 +21,7 @@ if (-not ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdenti
 # 1. La imagen: local o descargada
 if ($Url) {
   if ($Url -notmatch '^https://') { throw 'La dirección debe ser https.' }
-  $Iso = Join-Path $env:TEMP 'lekso-instalador.iso'
+  $Iso = Join-Path $env:TEMP 'leksso-instalador.iso'
   Write-Host "Descargando $Url ..."
   Invoke-WebRequest -Uri $Url -OutFile $Iso -UseBasicParsing
   foreach ($ext in '.sha256', '.sha256.sig') {
@@ -41,8 +41,8 @@ if (Test-Path $archivoSuma) {
   if (Test-Path "$archivoSuma.sig") {
     $ssh = (Get-Command ssh-keygen.exe -ErrorAction SilentlyContinue).Source
     if (-not $ssh) { throw 'Falta ssh-keygen (Windows: Configuración > Características opcionales > Cliente OpenSSH) para comprobar la firma.' }
-    $perm = Join-Path $env:TEMP 'lekso_allowed_signers'; Set-Content -Path $perm -Value $ClavePublica -Encoding ascii
-    Get-Content $archivoSuma -Raw | & $ssh -Y verify -f $perm -I lekso-release -n file -s "$archivoSuma.sig" | Out-Null
+    $perm = Join-Path $env:TEMP 'leksso_allowed_signers'; Set-Content -Path $perm -Value $ClavePublica -Encoding ascii
+    Get-Content $archivoSuma -Raw | & $ssh -Y verify -f $perm -I leksso-release -n file -s "$archivoSuma.sig" | Out-Null
     if ($LASTEXITCODE -ne 0) { throw 'La FIRMA de la imagen no es válida. No grabo nada.' }
     Write-Host 'Firma de LeksSO: válida.'
   } elseif (-not $SinFirma) { throw 'La imagen no trae firma (.sha256.sig). Si es una imagen de pruebas tuya, usa -SinFirma.' }

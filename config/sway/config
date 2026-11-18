@@ -1,11 +1,11 @@
 # LeksSO sobre sway: escritorio por zonas.
 # Raíl de iconos a la izquierda | explorador | centro (la app activa, a pantalla completa de su zona,
 # con terminal debajo) | panel de la IA a la derecha. Barra de tareas abajo.
-# Las zonas las monta lekso-zonas al iniciar.
+# Las zonas las monta leksso-zonas al iniciar.
 
 set $mod Mod4
-set $term lekso-term
-set $menu lekso-menu
+set $term leksso-term
+set $menu leksso-menu
 
 default_border pixel 1
 # El foco del teclado va a la ventana donde haces clic, no a donde se queda el ratón
@@ -28,42 +28,42 @@ output * bg #021012 solid_color
 gaps inner 0
 
 exec waybar
-exec systemctl --user start lekso-permisor.service
-exec lekso-zonas
-exec lekso-actualizar comprobar --avisar
+exec systemctl --user start leksso-permisor.service
+exec leksso-zonas
+exec leksso-actualizar comprobar --avisar
 exec mako
 exec wl-paste --type text --watch cliphist store
 exec wl-paste --type image --watch cliphist store
 # Reposo: bloquear a los 10 min, apagar pantalla a los 15 y suspender a los 30 (solo con batería)
-exec swayidle -w timeout 600 'swaylock -f' timeout 900 'swaymsg "output * power off"' resume 'swaymsg "output * power on"' timeout 1800 'lekso-reposo' before-sleep 'swaylock -f'
+exec swayidle -w timeout 600 'swaylock -f' timeout 900 'swaymsg "output * power off"' resume 'swaymsg "output * power on"' timeout 1800 'leksso-reposo' before-sleep 'swaylock -f'
 exec udiskie --no-tray --no-notify --automount
 
 # El menú de aplicaciones flota en el centro de la pantalla
-for_window [app_id="lekso-menu"] floating enable, resize set 480 620, move position center
+for_window [app_id="leksso-menu"] floating enable, resize set 480 620, move position center
 # El asistente de IA se acopla como pestaña en la zona de la derecha
-for_window [app_id="^lekso-asistente-"] move container to mark panel-ia, focus
-for_window [app_id="^lekso-asistente$"] move container to mark panel-ia, focus
-for_window [app_id="lekso-asistentes"] floating enable
-for_window [app_id="lekso-energia"] floating enable, resize set 380 580, move position center
-for_window [app_id="lekso-portapapeles"] floating enable, resize set 520 560, move position center
-for_window [app_id="lekso-ajustes"] floating enable, resize set 600 540, move position center
-for_window [app_id="lekso-actualizaciones"] floating enable, resize set 620 520, move position center
+for_window [app_id="^leksso-asistente-"] move container to mark panel-ia, focus
+for_window [app_id="^leksso-asistente$"] move container to mark panel-ia, focus
+for_window [app_id="leksso-asistentes"] floating enable
+for_window [app_id="leksso-energia"] floating enable, resize set 380 580, move position center
+for_window [app_id="leksso-portapapeles"] floating enable, resize set 520 560, move position center
+for_window [app_id="leksso-ajustes"] floating enable, resize set 600 540, move position center
+for_window [app_id="leksso-actualizaciones"] floating enable, resize set 620 520, move position center
 
 # Atajos básicos (Mod = tecla Windows)
-bindsym $mod+Return exec lekso-term -T Terminal
+bindsym $mod+Return exec leksso-term -T Terminal
 bindsym $mod+d exec $menu
-bindsym $mod+e exec lekso-zonas --plegar
+bindsym $mod+e exec leksso-zonas --plegar
 bindsym $mod+q kill
 bindsym $mod+Shift+c reload
 bindsym $mod+Shift+e exec swaymsg exit
-bindsym $mod+a exec lekso-panel-ia
+bindsym $mod+a exec leksso-panel-ia
 
 # Cambiar de app en el centro
 bindsym $mod+Tab focus next
 bindsym $mod+Shift+Tab focus prev
 bindsym Mod1+Tab focus next
 bindsym $mod+f fullscreen toggle
-bindsym $mod+m exec lekso-flotantes
+bindsym $mod+m exec leksso-flotantes
 
 # Mover el foco entre zonas con las flechas
 bindsym $mod+Left focus left
@@ -76,22 +76,22 @@ for_window [app_id=".*"] inhibit_idle fullscreen
 for_window [class=".*"] inhibit_idle fullscreen
 
 # Teclas de volumen, micrófono, brillo y multimedia (también con la pantalla bloqueada)
-bindsym --locked XF86AudioRaiseVolume exec lekso-medios volumen-subir
-bindsym --locked XF86AudioLowerVolume exec lekso-medios volumen-bajar
-bindsym --locked XF86AudioMute exec lekso-medios volumen-silencio
-bindsym --locked XF86AudioMicMute exec lekso-medios micro-silencio
-bindsym --locked XF86MonBrightnessUp exec lekso-medios brillo-subir
-bindsym --locked XF86MonBrightnessDown exec lekso-medios brillo-bajar
-bindsym --locked XF86AudioPlay exec lekso-medios play
-bindsym --locked XF86AudioNext exec lekso-medios siguiente
-bindsym --locked XF86AudioPrev exec lekso-medios anterior
+bindsym --locked XF86AudioRaiseVolume exec leksso-medios volumen-subir
+bindsym --locked XF86AudioLowerVolume exec leksso-medios volumen-bajar
+bindsym --locked XF86AudioMute exec leksso-medios volumen-silencio
+bindsym --locked XF86AudioMicMute exec leksso-medios micro-silencio
+bindsym --locked XF86MonBrightnessUp exec leksso-medios brillo-subir
+bindsym --locked XF86MonBrightnessDown exec leksso-medios brillo-bajar
+bindsym --locked XF86AudioPlay exec leksso-medios play
+bindsym --locked XF86AudioNext exec leksso-medios siguiente
+bindsym --locked XF86AudioPrev exec leksso-medios anterior
 
 # Capturas, portapapeles y ajustes
-bindsym Print exec lekso-captura region
-bindsym Shift+Print exec lekso-captura pantalla
-bindsym $mod+Print exec lekso-captura ventana
-bindsym $mod+v exec lekso-portapapeles
-bindsym $mod+i exec lekso-ajustes
+bindsym Print exec leksso-captura region
+bindsym Shift+Print exec leksso-captura pantalla
+bindsym $mod+Print exec leksso-captura ventana
+bindsym $mod+v exec leksso-portapapeles
+bindsym $mod+i exec leksso-ajustes
 bindsym $mod+l exec swaylock -f
 
 # Ajustes locales de este equipo (por ejemplo, la resolución en una máquina virtual).

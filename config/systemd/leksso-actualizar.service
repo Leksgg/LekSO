@@ -1,0 +1,6 @@
+[Unit]
+Description=Comprobar si hay una versión nueva de LeksSO
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/leksso-actualizar comprobar --avisar

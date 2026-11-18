@@ -7,7 +7,7 @@ T=$(mktemp -d); export XDG_RUNTIME_DIR="$T/run"; mkdir -p "$XDG_RUNTIME_DIR" "$T
 echo "CLAVE-PRIVADA" > "$T/secreto/id"; echo "dato" > "$T/proy/a.txt"
 ln -s "$T/secreto/id" "$T/proy/enlace"                       # enlace hacia fuera dentro de la carpeta concedida
 export SECRETO_API="sk-no-debe-verse"
-python3 -c "import socket,os;s=socket.socket(socket.AF_UNIX);s.bind(os.environ['XDG_RUNTIME_DIR']+'/lekso-control.sock');s.listen()" &
+python3 -c "import socket,os;s=socket.socket(socket.AF_UNIX);s.bind(os.environ['XDG_RUNTIME_DIR']+'/leksso-control.sock');s.listen()" &
 PS=$!
 python3 -m http.server 8765 --bind 127.0.0.1 >/dev/null 2>&1 & HS=$!
 sleep 1
@@ -27,7 +27,7 @@ en -- cat /etc/shadow >/dev/null 2>&1 && falla "lee /etc/shadow" || bien "no lee
 en -- python3 -c "import socket;socket.create_connection(('127.0.0.1',8765),2)" >/dev/null 2>&1 && falla "tiene red sin --red" || bien "sin red por defecto"
 bash "$CAJA" --red -- python3 -c "import socket;socket.create_connection(('127.0.0.1',8765),2)" >/dev/null 2>&1 && bien "con --red sí hay red (control)" || bien "con --red: red aislada igualmente (loopback propio)"
 for opc in "" "--gui --audio --gpu"; do
-  en $opc -- sh -c "ls $XDG_RUNTIME_DIR/lekso-control.sock /run/user/$(id -u)/lekso-control.sock /run/user/$(id -u)/lekso-ia.sock" >/dev/null 2>&1 \
+  en $opc -- sh -c "ls $XDG_RUNTIME_DIR/leksso-control.sock /run/user/$(id -u)/leksso-control.sock /run/user/$(id -u)/leksso-ia.sock" >/dev/null 2>&1 \
     && falla "el socket del permisor es visible (opciones: ${opc:-ninguna})" || bien "el socket del permisor no es visible (opciones: ${opc:-ninguna})"
 done
 [ "$(en -- sh -c 'ls /proc | grep -c "^[0-9]"')" -le 4 ] && bien "no ve los procesos del sistema" || falla "ve procesos ajenos"

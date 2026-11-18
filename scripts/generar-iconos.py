@@ -6,7 +6,7 @@ Cada icono es una hoja con la esquina doblada y una banda de color por familia
 a tamaño pequeño; las letras ayudan a tamaño grande. Hereda de Adwaita para todo
 lo que no se define aquí.
 
-Uso: python3 generar-iconos.py [carpeta_destino]   (por defecto config/iconos/LekSO)
+Uso: python3 generar-iconos.py [carpeta_destino]   (por defecto config/iconos/LeksSO)
 """
 import os
 import sys
@@ -132,12 +132,12 @@ APPS = {
                                        '<rect x="22" y="21" width="9" height="7" rx="1" fill="#00c4bf"/>'
                                        '<rect x="34" y="21" width="6" height="7" rx="1" fill="#2c6f86"/>'
                                        '<rect x="22" y="31" width="9" height="7" rx="1" fill="#2c6f86"/>'),
-    "lekso-ia": MARCO.format(dentro='<path d="M24 13l3 8 8 3-8 3-3 8-3-8-8-3 8-3z" fill="#00c4bf"/>'
+    "leksso-ia": MARCO.format(dentro='<path d="M24 13l3 8 8 3-8 3-3 8-3-8-8-3 8-3z" fill="#00c4bf"/>'
                                     '<circle cx="35" cy="14" r="2" fill="#e3edef"/>'),
 }
 
 INDEX = """[Icon Theme]
-Name=LekSO
+Name=LeksSO
 Comment=Iconos de tipos de archivo, ligeros y por colores
 Inherits=Adwaita,hicolor
 Directories=scalable/mimetypes,scalable/places,scalable/apps
@@ -167,7 +167,7 @@ Type=Scalable
 
 def main():
     raiz = os.path.abspath(sys.argv[1] if len(sys.argv) > 1 else
-                           os.path.join(os.path.dirname(__file__), "..", "config", "iconos", "LekSO"))
+                           os.path.join(os.path.dirname(__file__), "..", "config", "iconos", "LeksSO"))
     mime = os.path.join(raiz, "scalable", "mimetypes")
     lugares = os.path.join(raiz, "scalable", "places")
     os.makedirs(mime, exist_ok=True)

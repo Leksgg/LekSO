@@ -6,7 +6,7 @@ Escritorio ligero sobre Debian, con una capa de aislamiento para programas y un 
 
 | Carpeta | Qué es |
 | --- | --- |
-| `lekso-ia/` | Permisor de IA: alcance por tarea (leer, escribir, borrar), registro firmado, deshacer, gestor de modelos de Ollama y panel de texto. |
+| `leksso-ia/` | Permisor de IA: alcance por tarea (leer, escribir, borrar), registro firmado, deshacer, gestor de modelos de Ollama y panel de texto. |
 | `scripts/caja.sh` | Caja con Bubblewrap para programas y para una IA (`--ia`, `--ia-nube`), con pantalla, audio y GPU opcionales y un perfil `--estricta`. |
 | `scripts/provision-base.sh` | Prepara un Debian mínimo con el escritorio. |
 | `scripts/bench-obs.sh`, `bench-obs.ps1` | Medición comparable de OBS entre Linux y Windows. |
@@ -21,12 +21,12 @@ Escritorio ligero sobre Debian, con una capa de aislamiento para programas y un 
 
 ## Versiones y actualizaciones
 
-La versión instalada se ve en Ajustes → Actualizaciones, con `lekso-actualizar version` y en la pantalla de inicio de sesión. Cuando se publica una versión nueva aparece un aviso en la barra y una notificación; se instala desde Ajustes, con tu permiso y solo si está firmada por LeksSO. Se puede volver a la anterior.
+La versión instalada se ve en Ajustes → Actualizaciones, con `leksso-actualizar version` y en la pantalla de inicio de sesión. Cuando se publica una versión nueva aparece un aviso en la barra y una notificación; se instala desde Ajustes, con tu permiso y solo si está firmada por LeksSO. Se puede volver a la anterior.
 
 ## Pruebas
 
 ```
-cd lekso-ia
+cd leksso-ia
 PYTHONPATH=. python3 -m unittest test_nucleo test_modelo test_ataques
 bash prueba_e2e.sh
 python3 test_caida.py

@@ -1,0 +1,2 @@
+# Al conectar un Stream Deck (Elgato, 0fd9), inicia su servicio en la sesión del usuario.
+SUBSYSTEM=="usb", ATTR{idVendor}=="0fd9", TAG+="systemd", ENV{SYSTEMD_USER_WANTS}+="leksso-streamdeck.service"

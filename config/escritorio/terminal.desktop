@@ -1,6 +1,6 @@
 [Desktop Entry]
 Type=Application
 Name=Terminal
-Exec=lekso-term -T Terminal
+Exec=leksso-term -T Terminal
 Icon=utilities-terminal
 Terminal=false

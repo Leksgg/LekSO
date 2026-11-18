@@ -1,5 +1,5 @@
 color=021012
-image=/usr/share/lekso/bloqueo.png
+image=/usr/share/leksso/bloqueo.png
 scaling=center
 indicator-idle-visible
 indicator-radius=90

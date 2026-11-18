@@ -4,8 +4,8 @@ Uso: python3 scripts/test_archivos.py   (en un equipo LeksSO: necesita PySide6 y
 """
 import importlib.machinery, importlib.util, os, sys, tempfile, shutil
 os.environ["QT_QPA_PLATFORM"] = "offscreen"
-_aqui = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "config", "bin", "lekso-archivos")
-l = importlib.machinery.SourceFileLoader("arch", _aqui if os.path.exists(_aqui) else "/usr/local/bin/lekso-archivos")
+_aqui = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "config", "bin", "leksso-archivos")
+l = importlib.machinery.SourceFileLoader("arch", _aqui if os.path.exists(_aqui) else "/usr/local/bin/leksso-archivos")
 m = importlib.util.module_from_spec(importlib.util.spec_from_loader("arch", l)); l.exec_module(m)
 from PySide6 import QtWidgets, QtCore
 app = QtWidgets.QApplication([])

@@ -1,6 +1,6 @@
 """Pruebas del instalador (scripts/instalar.sh): elección de versión y verificación de firma y de rama.
 
-Usan repositorios y claves temporales (LEKSO_INSTALAR_PRUEBAS=1 solo sirve para sustituirlos).
+Usan repositorios y claves temporales (LEKSSO_INSTALAR_PRUEBAS=1 solo sirve para sustituirlos).
 Requieren bash, git y ssh-keygen. Uso: python3 scripts/test_instalar.py
 """
 import os
@@ -28,11 +28,11 @@ def posix(ruta):
 
 class Base(unittest.TestCase):
     def setUp(self):
-        self.d = tempfile.mkdtemp(prefix="lekso-inst-")
+        self.d = tempfile.mkdtemp(prefix="leksso-inst-")
         self.oficial = self.clave("oficial")
         self.otra = self.clave("otra")
         self.pub = open(self.oficial + ".pub").read().split()[:2]
-        self.linea = f'lekso-release namespaces="git" {self.pub[0]} {self.pub[1]}'
+        self.linea = f'leksso-release namespaces="git" {self.pub[0]} {self.pub[1]}'
         self.huella = sh("ssh-keygen", "-lf", self.oficial + ".pub").split()[1]
         self.repo = os.path.join(self.d, "repo")
         os.makedirs(self.repo)
@@ -55,9 +55,9 @@ class Base(unittest.TestCase):
             sh("git", "tag", "-a", nombre, "-m", "v", ref, cwd=self.repo)
 
     def bash(self, codigo, huella=None):
-        env = dict(os.environ, LEKSO_INSTALAR_PRUEBAS="1", LEKSO_INSTALAR_SOLO_FUNCIONES="1",
-                   LEKSO_PRUEBA_REPO=posix(self.repo), LEKSO_PRUEBA_CLON=posix(os.path.join(self.d, "clon")),
-                   LEKSO_PRUEBA_CLAVE=self.linea, LEKSO_PRUEBA_HUELLA=huella or self.huella, LEKSO_PRUEBA_RAMA="origin/main")
+        env = dict(os.environ, LEKSSO_INSTALAR_PRUEBAS="1", LEKSSO_INSTALAR_SOLO_FUNCIONES="1",
+                   LEKSSO_PRUEBA_REPO=posix(self.repo), LEKSSO_PRUEBA_CLON=posix(os.path.join(self.d, "clon")),
+                   LEKSSO_PRUEBA_CLAVE=self.linea, LEKSSO_PRUEBA_HUELLA=huella or self.huella, LEKSSO_PRUEBA_RAMA="origin/main")
         return subprocess.run(["bash", "-c", f'source "{posix(SCRIPT)}"; set +e; {codigo}'],
                               env=env, capture_output=True, text=True)
 
@@ -131,7 +131,7 @@ class Verificacion(Base):
         otra_pub = open(self.otra + ".pub").read().split()[:2]
         os.makedirs(os.path.join(self.repo, "config"))
         open(os.path.join(self.repo, "config", "allowed_signers"), "w").write(
-            f'lekso-release namespaces="git" {otra_pub[0]} {otra_pub[1]}\n')
+            f'leksso-release namespaces="git" {otra_pub[0]} {otra_pub[1]}\n')
         sh("git", "add", "-A", cwd=self.repo)
         sh("git", "commit", "-q", "-m", "clave del atacante", cwd=self.repo)
         self.etiqueta("v0.1.3-alpha", self.otra)

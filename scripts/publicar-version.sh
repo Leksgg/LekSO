@@ -4,21 +4,23 @@
 # Uso: scripts/publicar-version.sh 0.1.2-alpha     una versión concreta (VERSION y CHANGELOG ya preparados)
 #      añade --sin-subir para preparar y firmar en local sin publicar (por ejemplo, para probar el instalador)
 #      añade --sin-firma para publicar SIN firmar (fase de pruebas): solo la instalan los equipos que tienen
-#      /etc/lekso/sin-firma; los demás la rechazan. Una imagen de instalación sigue necesitando una versión firmada.
+#      /etc/leksso/sin-firma; los demás la rechazan. Una imagen de instalación sigue necesitando una versión firmada.
 #      scripts/publicar-version.sh --auto          la siguiente versión (+1 en el último número), con lo que haya
 #                                                  bajo «## Sin publicar» en CHANGELOG.md
 #
 # Antes de publicar comprueba: que VERSION y CHANGELOG.md dicen lo mismo, que no hay cambios sin subir
-# y que la etiqueta no existe. La etiqueta se firma con la clave de LEKSO_CLAVE_FIRMA (por defecto
-# ~/.ssh/lekso_release). Si la clave tiene contraseña, desbloquéala antes con scripts/desbloquear-firma.sh
+# y que la etiqueta no existe. La etiqueta se firma con la clave de LEKSSO_CLAVE_FIRMA (por defecto
+# ~/.ssh/leksso_release). Si la clave tiene contraseña, desbloquéala antes con scripts/desbloquear-firma.sh
 # y se firmará sin preguntar. Los equipos solo instalan versiones firmadas con la clave de config/allowed_signers
 # cuyo commit pertenezca a la rama principal.
 set -euo pipefail
 
 FIRMAR=1
 for a in "$@"; do [ "$a" = "--sin-firma" ] && FIRMAR=0; done
-CLAVE="${LEKSO_CLAVE_FIRMA:-$HOME/.ssh/lekso_release}"
-SOCK="${LEKSO_AGENTE:-$HOME/.ssh/lekso-agent.sock}"
+CLAVE="${LEKSSO_CLAVE_FIRMA:-$HOME/.ssh/leksso_release}"
+# la clave se llamaba lekso_release antes del cambio de nombre: si solo existe esa, se usa
+[ -e "$CLAVE" ] || ! [ -e "$HOME/.ssh/lekso_release" ] || CLAVE="$HOME/.ssh/lekso_release"
+SOCK="${LEKSSO_AGENTE:-$HOME/.ssh/leksso-agent.sock}"
 [ "$FIRMAR" = 0 ] || [ -f "$CLAVE" ] || { echo "No encuentro la clave de firma: $CLAVE" >&2; exit 1; }
 cd "$(dirname "$0")/.."
 
@@ -74,7 +76,7 @@ if [ "$FIRMAR" = 1 ]; then
   git -c gpg.ssh.allowedSignersFile=config/allowed_signers tag -v "v$V"
 else
   git tag -a "v$V" -m "LeksSO $BONITA (sin firmar: fase de pruebas)"
-  echo "AVISO: v$V va SIN FIRMA. Solo la aceptan los equipos en fase de pruebas (/etc/lekso/sin-firma)."
+  echo "AVISO: v$V va SIN FIRMA. Solo la aceptan los equipos en fase de pruebas (/etc/leksso/sin-firma)."
 fi
 if [ "$SUBIR" = 1 ]; then
   git push origin HEAD:main "v$V"

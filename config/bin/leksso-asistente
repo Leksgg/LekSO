@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+# Atajo del asistente de IA. Los ajustes (cuáles usas y qué puede hacer cada uno) están en la ventana leksso-asistentes.
+#
+#   leksso-asistente [abrir] [NOMBRE]   abre el asistente (el único activo, o el que digas; si no, la ventana)
+#   leksso-asistente estado             asistentes y permisos
+#   leksso-asistente instalar NOMBRE    instala el programa si falta (necesita conexión y tu contraseña)
+set -uo pipefail
+paquete() { case "$1" in claude) echo "@anthropic-ai/claude-code";; codex) echo "@openai/codex";; *) return 1;; esac; }
+case "${1:-abrir}" in
+  abrir) shift 2>/dev/null || true; exec leksso-asistentes abrir "$@" ;;
+  estado) exec leksso-asistentes estado ;;
+  instalar)
+    p="$(paquete "${2:-}")" || { echo "Disponibles: claude codex" >&2; exit 2; }
+    command -v "$2" >/dev/null 2>&1 && { echo "$2 ya está instalado."; exit 0; }
+    command -v npm >/dev/null 2>&1 || sudo env DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends nodejs npm \
+      || { echo "No se pudo instalar Node (¿hay conexión?)." >&2; exit 1; }
+    sudo npm install -g "$p" || { echo "No se pudo instalar (¿hay conexión?)." >&2; exit 1; } ;;
+  activar|desactivar) echo "Eso se elige ahora en la ventana de asistentes: leksso-asistentes" ;;
+  *) sed -n '2,6p' "$0" | sed 's/^# \{0,1\}//'; exit 2 ;;
+esac

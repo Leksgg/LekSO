@@ -9,8 +9,8 @@ SWAP_MB=$(( RAM_KB / 1024 * 12 / 10 ))
 [ "$SWAP_MB" -lt 2048 ] && SWAP_MB=2048
 [ "$SWAP_MB" -gt 32768 ] && SWAP_MB=32768
 
-cat > /tmp/lekso-receta <<'EOF'
-lekso :: \
+cat > /tmp/leksso-receta <<'EOF'
+leksso :: \
   1 1 1 free \
      $iflabel{ gpt } \
      $reusemethod{ } \
@@ -33,7 +33,7 @@ lekso :: \
   . \
   8000 20000 1000000000 ext4 \
      $lvmok{ } \
-     in_vg{ lekso } \
+     in_vg{ leksso } \
      lv_name{ raiz } \
      method{ format } \
      format{ } \
@@ -43,13 +43,13 @@ lekso :: \
   . \
   SWAP_MB SWAP_MB SWAP_MB linux-swap \
      $lvmok{ } \
-     in_vg{ lekso } \
+     in_vg{ leksso } \
      lv_name{ swap } \
      method{ swap } \
      format{ } \
   .
 EOF
-sed -i "s/SWAP_MB/$SWAP_MB/g" /tmp/lekso-receta
+sed -i "s/SWAP_MB/$SWAP_MB/g" /tmp/leksso-receta
 
-debconf-set partman-auto/expert_recipe_file /tmp/lekso-receta
-debconf-set partman-auto/choose_recipe lekso
+debconf-set partman-auto/expert_recipe_file /tmp/leksso-receta
+debconf-set partman-auto/choose_recipe leksso

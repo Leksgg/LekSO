@@ -1,0 +1,50 @@
+#!/usr/bin/env bash
+# Acceso remoto a este equipo por SSH, SOLO desde la red local. Apagado por defecto.
+#
+# Uso: sudo leksso-acceso-remoto on       lo enciende (instala el servidor SSH si falta)
+#      sudo leksso-acceso-remoto off      lo apaga y cierra el puerto
+#      leksso-acceso-remoto estado        dice si está encendido
+#
+# Encendido: se entra con tu usuario y tu contraseña (o tu clave SSH), nunca como root, y solo desde
+# direcciones de red local (192.168.x.x, 10.x.x.x, 172.16-31.x.x). Desde internet el puerto sigue cerrado.
+set -euo pipefail
+MARCA=/etc/leksso/acceso-remoto
+REGLA='ip saddr { 10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16 } tcp dport 22 accept comment "leksso-acceso-remoto"'
+
+estado() { if [ -f "$MARCA" ] && systemctl is-active -q ssh 2>/dev/null; then echo "encendido"; else echo "apagado"; fi; }
+quitar_regla() {
+  local h
+  for h in $(nft -a list chain inet leksso entrada 2>/dev/null | sed -n 's/.*leksso-acceso-remoto.*# handle \([0-9]*\)$/\1/p'); do
+    nft delete rule inet leksso entrada handle "$h"
+  done
+  sed -i '/leksso-acceso-remoto/d' /etc/nftables.conf
+}
+
+case "${1:-estado}" in
+  estado) estado ;;
+  on)
+    [ "$(id -u)" -eq 0 ] || { echo "Ejecuta con sudo: sudo leksso-acceso-remoto on" >&2; exit 1; }
+    if ! dpkg -s openssh-server >/dev/null 2>&1; then
+      DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends openssh-server
+    fi
+    install -d /etc/ssh/sshd_config.d /etc/leksso
+    printf '# LeksSO: acceso remoto\nPermitRootLogin no\nMaxAuthTries 4\nX11Forwarding no\n' > /etc/ssh/sshd_config.d/leksso.conf
+    quitar_regla
+    nft add rule inet leksso entrada $REGLA
+    # que sobreviva al reinicio: la misma regla en el archivo del cortafuegos, dentro de la cadena de entrada
+    sed -i "/udp sport 547 udp dport 546 accept/a\\    $REGLA" /etc/nftables.conf
+    touch "$MARCA"
+    systemctl enable -q --now ssh
+    echo "Acceso remoto ENCENDIDO (solo red local). Dirección de este equipo:"
+    ip -4 -o addr show scope global | awk '{print "  ssh '"${SUDO_USER:-usuario}"'@" $4}' | sed 's#/[0-9]*$##'
+    echo "Para apagarlo: sudo leksso-acceso-remoto off"
+    ;;
+  off)
+    [ "$(id -u)" -eq 0 ] || { echo "Ejecuta con sudo: sudo leksso-acceso-remoto off" >&2; exit 1; }
+    systemctl disable -q --now ssh ssh.socket 2>/dev/null || true
+    quitar_regla
+    rm -f "$MARCA"
+    echo "Acceso remoto APAGADO."
+    ;;
+  *) echo "Uso: leksso-acceso-remoto on|off|estado" >&2; exit 2 ;;
+esac

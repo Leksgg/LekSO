@@ -18,24 +18,24 @@
     "custom/archivos": {
       "format": "",
       "tooltip-format": "Plegar o desplegar las carpetas (Súper+E)",
-      "on-click": "lekso-zonas --plegar"
+      "on-click": "leksso-zonas --plegar"
     },
     "custom/modelos": {
       "format": "",
       "tooltip-format": "Modelos de IA",
-      "on-click": "lekso-term -T \"Modelos de IA\" -e python3 /usr/local/lib/lekso-ia/modelo.py ver"
+      "on-click": "leksso-term -T \"Modelos de IA\" -e python3 /usr/local/lib/leksso-ia/modelo.py ver"
     },
     "custom/juego": {
-      "exec": "lekso-juego barra",
+      "exec": "leksso-juego barra",
       "return-type": "json",
       "interval": 30,
       "signal": 9,
-      "on-click": "lekso-juego"
+      "on-click": "leksso-juego"
     },
     "custom/config": {
       "format": "",
       "tooltip-format": "Ajustes",
-      "on-click": "lekso-ajustes"
+      "on-click": "leksso-ajustes"
     },
     "modules-right": [
       "custom/flotantes",
@@ -45,7 +45,7 @@
     "custom/vista": {
       "format": "",
       "tooltip-format": "Restaurar la vista por defecto",
-      "on-click": "sh -c 'lekso-zonas --restaurar >/tmp/lekso-zonas.log 2>&1'"
+      "on-click": "sh -c 'leksso-zonas --restaurar >/tmp/leksso-zonas.log 2>&1'"
     },
     "custom/streamdeck": {
       "format": "",
@@ -55,28 +55,28 @@
     "custom/apps": {
       "format": "",
       "tooltip-format": "Aplicaciones",
-      "on-click": "lekso-menu"
+      "on-click": "leksso-menu"
     },
     "custom/energia": {
       "format": "",
       "tooltip-format": "Apagar, suspender, hibernar…",
-      "on-click": "lekso-energia"
+      "on-click": "leksso-energia"
     },
     "custom/asistente": {
       "format": "",
       "tooltip-format": "Asistentes de IA (clic derecho: ajustes y permisos)",
-      "on-click": "lekso-asistentes abrir",
-      "on-click-right": "lekso-asistentes"
+      "on-click": "leksso-asistentes abrir",
+      "on-click-right": "leksso-asistentes"
     },
     "custom/flotantes": {
       "format": "",
       "tooltip-format": "Ocultar o mostrar las ventanas flotantes",
-      "on-click": "lekso-flotantes"
+      "on-click": "leksso-flotantes"
     },
     "custom/portapapeles": {
       "format": "",
       "tooltip-format": "Historial del portapapeles (Mod+V)",
-      "on-click": "lekso-portapapeles"
+      "on-click": "leksso-portapapeles"
     }
   },
   {
@@ -111,8 +111,8 @@
       "max-length": 22
     },
     "custom/ia": {
-      "exec": "python3 /usr/local/lib/lekso-ia/modelo.py estado",
-      "on-click": "lekso-panel-ia",
+      "exec": "python3 /usr/local/lib/leksso-ia/modelo.py estado",
+      "on-click": "leksso-panel-ia",
       "return-type": "json",
       "interval": 30
     },
@@ -148,7 +148,7 @@
       "tooltip-format-ethernet": "Cable · {ifname}\nIP {ipaddr}\nPuerta de enlace {gwaddr}",
       "tooltip-format-wifi": "Wi-Fi: {essid}\nSeñal {signalStrength}%\nIP {ipaddr}",
       "tooltip-format-disconnected": "Sin conexión",
-      "on-click": "lekso-term -T \"Redes\" -e lekso-redes"
+      "on-click": "leksso-term -T \"Redes\" -e leksso-redes"
     },
     "clock": {
       "format": "{:%H:%M}",
@@ -169,17 +169,17 @@
       "interval": 30
     },
     "custom/version": {
-      "exec": "lekso-actualizar version",
+      "exec": "leksso-actualizar version",
       "interval": 60,
       "tooltip-format": "Versión instalada de LeksSO (clic: actualizaciones)",
-      "on-click": "lekso-actualizaciones"
+      "on-click": "leksso-actualizaciones"
     },
     "custom/actualizacion": {
-      "exec": "lekso-actualizar barra",
+      "exec": "leksso-actualizar barra",
       "return-type": "json",
       "interval": 900,
       "hide-empty-text": true,
-      "on-click": "lekso-actualizaciones"
+      "on-click": "leksso-actualizaciones"
     }
   }
 ]

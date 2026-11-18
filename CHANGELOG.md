@@ -3,6 +3,13 @@
 Formato: `+` nuevo · `-` eliminado o retirado · `~` modificado · `*` otros.
 Lo más reciente, arriba.
 
+## Sin publicar
+
++ Ajustes → Apariencia permite elegir el tema de color (Marea o Pizarra) y lo aplica al momento a todo el escritorio: barra, menús, avisos, bordes de ventana, bloqueo y las ventanas de LeksSO. Antes solo cambiaba Archivos. El terminal y las ventanas ya abiertas estrenan el tema al abrirlos de nuevo. «Letra e iconos» sigue en un botón aparte.
++ Con Secure Boot, la clave de firma de controladores y su contraseña de un solo uso se crean solas tras aceptar un aviso una vez, y la contraseña se consulta en Ajustes → Secure Boot, oculta hasta pulsar Ver.
+~ El controlador de NVIDIA con Secure Boot se instala en dos fases: primero se registra la clave y se reinicia, y solo después se instala el controlador, para no quedarse sin imagen.
+~ El sistema pasa a llamarse LeksSO también por dentro: comandos (`leksso-*`), carpetas (`/etc/leksso`, `~/.config/leksso`) y servicios. Al actualizar, los equipos ya instalados se migran solos y no se pierde ningún dato.
+
 ## Alpha 0.1.16 · 2026-11-17
 
 + VLC viene con el sistema y es el reproductor predeterminado de vídeo y audio.

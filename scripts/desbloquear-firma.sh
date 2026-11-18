@@ -7,8 +7,10 @@
 # Cerrar antes de tiempo: scripts/desbloquear-firma.sh cerrar
 set -euo pipefail
 
-SOCK="${LEKSO_AGENTE:-$HOME/.ssh/lekso-agent.sock}"
-CLAVE="${LEKSO_CLAVE_FIRMA:-$HOME/.ssh/lekso_release}"
+SOCK="${LEKSSO_AGENTE:-$HOME/.ssh/leksso-agent.sock}"
+CLAVE="${LEKSSO_CLAVE_FIRMA:-$HOME/.ssh/leksso_release}"
+# la clave se llamaba lekso_release antes del cambio de nombre: si solo existe esa, se usa
+[ -e "$CLAVE" ] || ! [ -e "$HOME/.ssh/lekso_release" ] || CLAVE="$HOME/.ssh/lekso_release"
 [ -f "$CLAVE" ] || { echo "No encuentro la clave de firma: $CLAVE" >&2; exit 1; }
 
 PIDF="$SOCK.pid"

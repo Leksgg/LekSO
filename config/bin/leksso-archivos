@@ -1,0 +1,363 @@
+#!/usr/bin/env python3
+"""Archivos de LeksSO: el explorador en dos piezas que van juntas.
+
+  «Carpetas»  lugares y árbol de carpetas (zona izquierda; se puede plegar)
+  «Archivos»  el contenido de la carpeta elegida (zona central: es lo que se ve cuando no hay una app abierta)
+
+Lo que hagas en una se refleja en la otra. Doble clic abre la carpeta o el archivo con su aplicación.
+Teclas en «Archivos»: Intro abrir · Retroceso subir · F2 renombrar · Supr a la papelera · Ctrl+C/X/V copiar, cortar,
+pegar · Ctrl+Mayús+N carpeta nueva · Ctrl+H ver ocultos · F5 recargar.
+Para lo avanzado (pestañas, miniaturas, discos) sigue instalado el explorador completo: pcmanfm-qt.
+"""
+import os
+import shutil
+import subprocess
+import sys
+
+from PySide6 import QtCore, QtGui, QtWidgets
+
+sys.path.insert(0, "/usr/local/lib/leksso-ui")
+try:
+    from leksso_ui import ESTILO, pintar
+except ImportError:
+    ESTILO = ""
+
+    def pintar(texto):
+        return texto
+
+CASA = os.path.expanduser("~")
+EXTRA = """
+QWidget { background: #021012; color: #e3edef; font-size: 13px; }
+QTreeView, QListView, QListWidget { background: #021012; border: none; outline: none; }
+QTreeView::item, QListWidget::item { padding: 3px 2px; }
+QTreeView::item:selected, QListView::item:selected, QListWidget::item:selected { background: #003635; color: #e3edef; }
+QTreeView::item:hover, QListView::item:hover, QListWidget::item:hover { background: #09191b; }
+QLabel#seccion { color: #667576; font-size: 11px; padding: 8px 8px 2px 8px; }
+QLabel#ruta { color: #94a1a3; padding: 6px 8px; }
+QLabel#pie { color: #667576; padding: 4px 8px; font-size: 12px; }
+QPushButton#plano { background: transparent; border: none; color: #94a1a3; padding: 4px 10px; }
+QPushButton#plano:hover { color: #00c4bf; background: #003635; }
+QMenu { background: #112123; border: 1px solid #25393c; }
+QMenu::item { padding: 6px 22px; }
+QMenu::item:selected { background: #003635; }
+QLineEdit { background: #09191b; border: 1px solid #00c4bf; padding: 2px; }
+"""
+
+
+def lugares():
+    """Carpetas habituales que existen y dispositivos conectados."""
+    fijos = [("Inicio", CASA)]
+    for clave, defecto in (("DESKTOP", "Escritorio"), ("DOWNLOAD", "Descargas"), ("DOCUMENTS", "Documentos"),
+                           ("PICTURES", "Imágenes"), ("VIDEOS", "Vídeos"), ("MUSIC", "Música")):
+        try:
+            ruta = subprocess.run(["xdg-user-dir", clave], capture_output=True, text=True, timeout=3).stdout.strip()
+        except (OSError, subprocess.SubprocessError):
+            ruta = ""
+        ruta = ruta or os.path.join(CASA, defecto)
+        if os.path.isdir(ruta) and os.path.realpath(ruta) != os.path.realpath(CASA):
+            fijos.append((os.path.basename(ruta), ruta))
+    discos = []
+    for base in (f"/media/{os.environ.get('USER', '')}", f"/run/media/{os.environ.get('USER', '')}"):
+        if os.path.isdir(base):
+            discos += [(n, os.path.join(base, n)) for n in sorted(os.listdir(base)) if os.path.isdir(os.path.join(base, n))]
+    return fijos, discos
+
+
+class Explorador(QtCore.QObject):
+    def __init__(self):
+        super().__init__()
+        self.portapapeles = ([], False)        # (rutas, cortar)
+        self.ocultos = False
+        self.ruta = CASA
+
+        # --- modelos ---
+        self.m_arbol = QtWidgets.QFileSystemModel()
+        self.m_arbol.setFilter(QtCore.QDir.AllDirs | QtCore.QDir.NoDotAndDotDot)
+        self.m_arbol.setRootPath("/")
+        self.m_lista = QtWidgets.QFileSystemModel()
+        self.m_lista.setReadOnly(False)
+        self.m_lista.setRootPath(CASA)
+        self._filtros()
+
+        # --- ventana «Carpetas» ---
+        self.v_arbol = QtWidgets.QWidget()
+        self.v_arbol.setWindowTitle("Carpetas")
+        self.v_arbol.setStyleSheet(ESTILO + pintar(EXTRA))
+        a = QtWidgets.QVBoxLayout(self.v_arbol)
+        a.setContentsMargins(0, 0, 0, 0)
+        a.setSpacing(0)
+        a.addWidget(self._seccion("LUGARES"))
+        self.l_lugares = QtWidgets.QListWidget()
+        self.l_lugares.setFocusPolicy(QtCore.Qt.NoFocus)
+        self.l_lugares.itemClicked.connect(lambda it: self.ir(it.data(QtCore.Qt.UserRole)))
+        a.addWidget(self.l_lugares)
+        a.addWidget(self._seccion("CARPETAS"))
+        self.arbol = QtWidgets.QTreeView()
+        self.arbol.setModel(self.m_arbol)
+        self.arbol.setRootIndex(self.m_arbol.index("/"))
+        self.arbol.setHeaderHidden(True)
+        for c in (1, 2, 3):
+            self.arbol.hideColumn(c)
+        self.arbol.setIndentation(14)
+        self.arbol.clicked.connect(lambda i: self.ir(self.m_arbol.filePath(i), desde_arbol=True))
+        a.addWidget(self.arbol, 1)
+
+        # --- ventana «Archivos» ---
+        self.v_lista = QtWidgets.QWidget()
+        self.v_lista.setStyleSheet(ESTILO + pintar(EXTRA))
+        b = QtWidgets.QVBoxLayout(self.v_lista)
+        b.setContentsMargins(0, 0, 0, 0)
+        b.setSpacing(0)
+        barra = QtWidgets.QHBoxLayout()
+        barra.setContentsMargins(4, 2, 4, 2)
+        for texto, ayuda, accion in (("↑ Subir", "Carpeta de arriba (Retroceso)", self.subir),
+                                     ("⌂ Inicio", "Tu carpeta personal", lambda: self.ir(CASA))):
+            bt = QtWidgets.QPushButton(texto)
+            bt.setObjectName("plano")
+            bt.setToolTip(ayuda)
+            bt.setFocusPolicy(QtCore.Qt.NoFocus)
+            bt.clicked.connect(accion)
+            barra.addWidget(bt)
+        self.e_ruta = QtWidgets.QLabel()
+        self.e_ruta.setObjectName("ruta")
+        barra.addWidget(self.e_ruta, 1)
+        b.addLayout(barra)
+        self.lista = QtWidgets.QListView()
+        self.lista.setModel(self.m_lista)
+        self.lista.setViewMode(QtWidgets.QListView.IconMode)
+        self.lista.setResizeMode(QtWidgets.QListView.Adjust)
+        self.lista.setIconSize(QtCore.QSize(48, 48))
+        self.lista.setGridSize(QtCore.QSize(124, 96))
+        self.lista.setWordWrap(True)
+        self.lista.setUniformItemSizes(False)       # con tamaños uniformes el nombre se corta al ancho del icono
+        self.lista.setTextElideMode(QtCore.Qt.ElideMiddle)
+        self.lista.setSelectionMode(QtWidgets.QAbstractItemView.ExtendedSelection)
+        self.lista.setEditTriggers(QtWidgets.QAbstractItemView.EditKeyPressed)
+        self.lista.setDragEnabled(True)
+        self.lista.setAcceptDrops(True)
+        self.lista.setDropIndicatorShown(True)
+        self.lista.setDefaultDropAction(QtCore.Qt.MoveAction)
+        self.lista.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
+        self.lista.customContextMenuRequested.connect(self.menu)
+        self.lista.activated.connect(self.abrir)
+        self.lista.doubleClicked.connect(self.abrir)
+        b.addWidget(self.lista, 1)
+        self.e_pie = QtWidgets.QLabel()
+        self.e_pie.setObjectName("pie")
+        b.addWidget(self.e_pie)
+        self.m_lista.directoryLoaded.connect(lambda _: self._pie())
+        self.lista.selectionModel().selectionChanged.connect(lambda *_: self._pie())
+
+        for teclas, accion in (("Backspace", self.subir), ("F2", self.renombrar), ("Delete", self.a_papelera),
+                               ("Ctrl+C", lambda: self.copiar(False)), ("Ctrl+X", lambda: self.copiar(True)),
+                               ("Ctrl+V", self.pegar), ("Ctrl+Shift+N", self.carpeta_nueva),
+                               ("Ctrl+H", self.alternar_ocultos), ("F5", self.recargar)):
+            QtGui.QShortcut(QtGui.QKeySequence(teclas), self.v_lista, accion)
+
+        # los discos que se conectan o quitan cambian la lista de lugares
+        self.reloj = QtCore.QTimer(self)
+        self.reloj.timeout.connect(self._lugares)
+        self.reloj.start(4000)
+        self._lugares()
+        self.ir(CASA)
+
+    # ----- piezas -----
+    @staticmethod
+    def _seccion(texto):
+        e = QtWidgets.QLabel(texto)
+        e.setObjectName("seccion")
+        return e
+
+    def _filtros(self):
+        base = QtCore.QDir.AllEntries | QtCore.QDir.NoDotAndDotDot
+        extra = QtCore.QDir.Hidden if self.ocultos else QtCore.QDir.Filter(0)
+        self.m_lista.setFilter(base | extra)
+        self.m_arbol.setFilter(QtCore.QDir.AllDirs | QtCore.QDir.NoDotAndDotDot | extra)
+
+    def _lugares(self):
+        fijos, discos = lugares()
+        clave = [r for _, r in fijos + discos]
+        if clave == getattr(self, "_clave_lugares", None):
+            return
+        self._clave_lugares = clave
+        self.l_lugares.clear()
+        for nombre, ruta in fijos + [("⏏ " + n, r) for n, r in discos]:
+            it = QtWidgets.QListWidgetItem(nombre)
+            it.setData(QtCore.Qt.UserRole, ruta)
+            it.setToolTip(ruta)
+            self.l_lugares.addItem(it)
+        alto = self.l_lugares.sizeHintForRow(0) * max(self.l_lugares.count(), 1) + 6
+        self.l_lugares.setFixedHeight(min(alto, 260))
+        self._marcar_lugar()
+
+    def _marcar_lugar(self):
+        real = os.path.realpath(self.ruta)
+        self.l_lugares.clearSelection()
+        for i in range(self.l_lugares.count()):
+            if os.path.realpath(self.l_lugares.item(i).data(QtCore.Qt.UserRole)) == real:
+                self.l_lugares.item(i).setSelected(True)
+
+    def _pie(self):
+        n = self.m_lista.rowCount(self.lista.rootIndex())
+        sel = len(self.lista.selectionModel().selectedIndexes())
+        try:
+            libre = shutil.disk_usage(self.ruta).free / 1024 ** 3
+            espacio = f" · {libre:.1f} GB libres"
+        except OSError:
+            espacio = ""
+        self.e_pie.setText((f"{sel} seleccionados de {n}" if sel else f"{n} elementos") + espacio
+                           + (" · mostrando ocultos" if self.ocultos else ""))
+
+    # ----- navegación -----
+    def ir(self, ruta, desde_arbol=False):
+        if not ruta or not os.path.isdir(ruta) or not os.access(ruta, os.R_OK | os.X_OK):
+            self.e_pie.setText("No se puede entrar en esa carpeta.")
+            return
+        self.ruta = ruta
+        self.lista.setRootIndex(self.m_lista.setRootPath(ruta))
+        self.lista.clearSelection()
+        visible = "Inicio" + ruta[len(CASA):].replace("/", " › ") if (ruta + "/").startswith(CASA + "/") else ruta
+        self.e_ruta.setText(visible)
+        self.v_lista.setWindowTitle("Archivos · " + (os.path.basename(ruta) or "/"))
+        if not desde_arbol:
+            i = self.m_arbol.index(ruta)
+            self.arbol.setCurrentIndex(i)
+            self.arbol.scrollTo(i)
+        self._marcar_lugar()
+        self._pie()
+
+    def subir(self):
+        arriba = os.path.dirname(self.ruta.rstrip("/")) or "/"
+        if arriba != self.ruta:
+            self.ir(arriba)
+
+    def recargar(self):
+        self.ir(self.ruta)
+
+    def alternar_ocultos(self):
+        self.ocultos = not self.ocultos
+        self._filtros()
+        self._pie()
+
+    # ----- acciones -----
+    def seleccion(self):
+        """Solo lo que está DENTRO de la carpeta que se ve. Mientras la carpeta carga, «seleccionar todo» puede
+        devolver la propia raíz del modelo (hasta «/»): eso nunca debe llegar a copiar, mover o borrar."""
+        aqui = os.path.realpath(self.ruta)
+        rutas = []
+        for i in self.lista.selectionModel().selectedIndexes():
+            r = self.m_lista.filePath(i)
+            if i.column() == 0 and r and os.path.basename(r) and os.path.realpath(os.path.dirname(r)) == aqui:
+                rutas.append(r)
+        return rutas
+
+    def abrir(self, indice=None):
+        rutas = [self.m_lista.filePath(indice)] if isinstance(indice, QtCore.QModelIndex) and indice.isValid() \
+            else self.seleccion()
+        for r in rutas[:8]:
+            if os.path.isdir(r):
+                self.ir(r)
+                return
+            subprocess.Popen(["xdg-open", r], start_new_session=True, stdin=subprocess.DEVNULL,
+                             stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+
+    def renombrar(self):
+        i = self.lista.currentIndex()
+        if i.isValid():
+            self.lista.edit(i)
+
+    def a_papelera(self):
+        rutas = self.seleccion()
+        if not rutas:
+            return
+        r = subprocess.run(["gio", "trash", "--"] + rutas, capture_output=True, text=True)
+        self.e_pie.setText(f"{len(rutas)} a la papelera." if r.returncode == 0 else
+                           "No se pudo mandar a la papelera: " + r.stderr.strip()[:120])
+
+    def copiar(self, cortar):
+        rutas = self.seleccion()
+        if rutas:
+            self.portapapeles = (rutas, cortar)
+            self.e_pie.setText(f"{len(rutas)} {'para mover' if cortar else 'copiados'}. Ve a la carpeta de destino y pega (Ctrl+V).")
+
+    def pegar(self):
+        rutas, cortar = self.portapapeles
+        hechos, fallos = 0, []
+        for origen in rutas:
+            nombre = os.path.basename(origen.rstrip("/"))
+            if not nombre or not os.path.lexists(origen):         # nunca la raíz ni una ruta sin nombre
+                continue
+            destino = os.path.join(self.ruta, nombre)
+            r_origen, r_aqui = os.path.realpath(origen), os.path.realpath(self.ruta)
+            if os.path.isdir(origen) and not os.path.islink(origen) and (r_aqui + "/").startswith(r_origen + "/"):
+                fallos.append(f"{nombre}: no se puede poner una carpeta dentro de sí misma")
+                continue
+            if cortar and r_origen == os.path.realpath(destino):  # mover algo a donde ya está: nada que hacer
+                continue
+            base, n = destino, 2
+            while os.path.lexists(destino):            # nunca se pisa nada: se añade «(2)», «(3)»…
+                raiz, ext = os.path.splitext(base)
+                destino = f"{raiz} ({n}){ext}"
+                n += 1
+            try:
+                if cortar:
+                    shutil.move(origen, destino)
+                elif os.path.isdir(origen) and not os.path.islink(origen):
+                    shutil.copytree(origen, destino, symlinks=True)
+                else:
+                    shutil.copy2(origen, destino, follow_symlinks=False)
+                hechos += 1
+            except (OSError, shutil.Error) as e:
+                fallos.append(f"{os.path.basename(origen)}: {e}")
+        if cortar:
+            self.portapapeles = ([], False)
+        self.e_pie.setText(f"{hechos} {'movidos' if cortar else 'copiados'}." + (" No se pudo: " + "; ".join(fallos)[:160] if fallos else ""))
+
+    def carpeta_nueva(self):
+        nombre, n = "Carpeta nueva", 2
+        while os.path.lexists(os.path.join(self.ruta, nombre)):
+            nombre = f"Carpeta nueva ({n})"
+            n += 1
+        i = self.m_lista.mkdir(self.lista.rootIndex(), nombre)
+        if i.isValid():
+            self.lista.setCurrentIndex(i)
+            self.lista.edit(i)
+        else:
+            self.e_pie.setText("No se pudo crear la carpeta aquí.")
+
+    def menu(self, punto):
+        m = QtWidgets.QMenu(self.v_lista)
+        hay = bool(self.seleccion())
+        if hay:
+            m.addAction("Abrir", self.abrir)
+            m.addSeparator()
+            m.addAction("Copiar", lambda: self.copiar(False))
+            m.addAction("Cortar", lambda: self.copiar(True))
+        if self.portapapeles[0]:
+            m.addAction("Pegar aquí", self.pegar)
+        if hay:
+            m.addAction("Renombrar", self.renombrar)
+            m.addAction("Mover a la papelera", self.a_papelera)
+        m.addSeparator()
+        m.addAction("Carpeta nueva", self.carpeta_nueva)
+        m.addAction("Abrir una terminal aquí", lambda: subprocess.Popen(
+            ["leksso-term", "-T", "Terminal", "--directory", self.ruta], start_new_session=True))
+        oc = m.addAction("Ver archivos ocultos", self.alternar_ocultos)
+        oc.setCheckable(True)
+        oc.setChecked(self.ocultos)
+        m.exec(self.lista.viewport().mapToGlobal(punto))
+
+
+def main():
+    app = QtWidgets.QApplication(sys.argv)
+    app.setDesktopFileName("leksso-archivos")
+    e = Explorador()
+    e.v_arbol.resize(300, 800)
+    e.v_lista.resize(900, 600)
+    e.v_arbol.show()
+    e.v_lista.show()
+    return app.exec()
+
+
+if __name__ == "__main__":
+    sys.exit(main())

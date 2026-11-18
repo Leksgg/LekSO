@@ -1,0 +1,50 @@
+#!/usr/bin/env bash
+# Modo juego de LeksSO: un interruptor que pone el equipo a rendir al máximo mientras juegas.
+#
+#   leksso-juego            lo enciende o lo apaga (lo que usa el botón del carril)
+#   leksso-juego on|off     lo fija
+#   leksso-juego estado     encendido | apagado
+#   leksso-juego barra      texto para la barra
+#
+# Encendido: perfil de energía «rendimiento» y sin la protección del núcleo que frena a algunos juegos de Windows
+# (split lock). Apagado: vuelve al perfil que tenías y reactiva la protección. No sobrevive a un reinicio.
+# GameMode (prioridad del juego) lo activa cada juego: en Steam, opciones de lanzamiento: gamemoderun %command%
+set -uo pipefail
+RT="${XDG_RUNTIME_DIR:-/tmp}"
+MARCA="$RT/leksso-juego"            # existe = encendido; guarda el perfil que había antes
+
+perfil() { powerprofilesctl get 2>/dev/null || echo ""; }
+avisar() { notify-send -a leksso -t 4000 "$1" "$2" 2>/dev/null || true; }
+refrescar() { pkill -RTMIN+9 waybar 2>/dev/null || true; }
+
+encender() {
+  [ -e "$MARCA" ] || perfil > "$MARCA"
+  powerprofilesctl set performance 2>/dev/null || true
+  sudo -n /usr/local/sbin/leksso-juego-raiz on 2>/dev/null || true
+  avisar "Modo juego encendido" "Rendimiento al máximo. Consume más batería y calienta más."
+  refrescar
+}
+apagar() {
+  antes="$(cat "$MARCA" 2>/dev/null || true)"
+  case "$antes" in power-saver|balanced|performance) ;; *) antes=balanced ;; esac
+  powerprofilesctl set "$antes" 2>/dev/null || true
+  sudo -n /usr/local/sbin/leksso-juego-raiz off 2>/dev/null || true
+  rm -f "$MARCA"
+  avisar "Modo juego apagado" "Perfil de energía: $(nombre "$antes")."
+  refrescar
+}
+nombre() { case "$1" in power-saver) echo "ahorro";; balanced) echo "equilibrado";; performance) echo "rendimiento";; *) echo "$1";; esac; }
+
+case "${1:-alternar}" in
+  alternar) if [ -e "$MARCA" ]; then apagar; else encender; fi ;;
+  on) encender ;;
+  off) apagar ;;
+  estado) if [ -e "$MARCA" ]; then echo encendido; else echo apagado; fi ;;
+  barra)
+    if [ -e "$MARCA" ]; then
+      printf '{"text":"\xef\x84\x9b","class":"encendido","tooltip":"Modo juego ENCENDIDO: rendimiento al máximo (clic para apagar)"}\n'
+    else
+      printf '{"text":"\xef\x84\x9b","class":"apagado","tooltip":"Modo juego: rendimiento al máximo mientras juegas (perfil de energía ahora: %s)"}\n' "$(nombre "$(perfil)")"
+    fi ;;
+  *) sed -n '2,11p' "$0" | sed 's/^# \{0,1\}//'; exit 2 ;;
+esac

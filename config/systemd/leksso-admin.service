@@ -1,0 +1,13 @@
+# Servicio de administración de LeksSO: ejecuta como root lo que le pasa el permisor, y solo si el usuario ha dado
+# permiso de administración a algún asistente en /etc/leksso/asistentes.json. Ver leksso_admin.py.
+[Unit]
+Description=Servicio de administración de LeksSO (para los asistentes de IA)
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/python3 /usr/local/lib/leksso-ia/leksso_admin.py
+Restart=on-failure
+RestartSec=2
+
+[Install]
+WantedBy=multi-user.target

@@ -2,16 +2,16 @@
 # Se ejecuta DENTRO del sistema recién instalado (en el instalador, con chroot), sin necesidad de red.
 # Instala LeksSO con el instalador firmado: la versión sale del paquete del USB y se comprueba su firma.
 set -e
-PAQ=/opt/lekso-instalacion
+PAQ=/opt/leksso-instalacion
 # Todo lo que pase queda en un registro del sistema instalado, para poder revisar un fallo después.
-exec >> /var/log/lekso-postinstalar.log 2>&1
+exec >> /var/log/leksso-postinstalar.log 2>&1
 set -x
 export DEBIAN_FRONTEND=noninteractive
 
 # 1. Los paquetes de Debian que necesita LeksSO están en el USB: se usan como fuente de apt local.
 sed -i 's/^deb cdrom:/# deb cdrom:/' /etc/apt/sources.list      # el DVD del instalador ya no es fuente: solo el repositorio local
-echo "deb [trusted=yes] file:$PAQ/offline ./" > /etc/apt/sources.list.d/lekso-offline.list
-echo 'APT::Install-Recommends "false";' > /etc/apt/apt.conf.d/99lekso-sin-recomendados
+echo "deb [trusted=yes] file:$PAQ/offline ./" > /etc/apt/sources.list.d/leksso-offline.list
+echo 'APT::Install-Recommends "false";' > /etc/apt/apt.conf.d/99leksso-sin-recomendados
 apt-get update -qq 2>/dev/null || true      # si los espejos de red fallan por no haber conexión, no importa
 
 # 2. Para quién se instala: el primer usuario que creó el instalador.
@@ -30,13 +30,13 @@ fi
 #     y arranca con el acceso remoto encendido (SSH solo desde la red local), para poder revisarlo.
 if [ -f "$PAQ/FASE_PRUEBAS" ]; then
   apt-get install -y -qq openssh-server >/dev/null
-  install -d /etc/lekso /etc/ssh/sshd_config.d
-  touch /etc/lekso/sin-firma /etc/lekso/acceso-remoto
+  install -d /etc/leksso /etc/ssh/sshd_config.d
+  touch /etc/leksso/sin-firma /etc/leksso/acceso-remoto
   printf '# LeksSO: acceso remoto
 PermitRootLogin no
 MaxAuthTries 4
 X11Forwarding no
-' > /etc/ssh/sshd_config.d/lekso.conf
+' > /etc/ssh/sshd_config.d/leksso.conf
 fi
 
 # 3c. Instalación SIN contraseña de usuario (entrada del menú «sin contraseña»): el usuario no tiene contraseña, el
@@ -44,24 +44,24 @@ fi
 #     es para uso propio. El acceso remoto (SSH) no admite contraseñas vacías, así que desde la red no se puede entrar.
 if [ "${1:-}" = "--sin-contrasena" ]; then
   passwd -d "$USUARIO"
-  echo "$USUARIO ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/lekso-sin-contrasena
-  chmod 440 /etc/sudoers.d/lekso-sin-contrasena
-  install -d /etc/systemd/system/getty@tty1.service.d /etc/lekso
+  echo "$USUARIO ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/leksso-sin-contrasena
+  chmod 440 /etc/sudoers.d/leksso-sin-contrasena
+  install -d /etc/systemd/system/getty@tty1.service.d /etc/leksso
   cat > /etc/systemd/system/getty@tty1.service.d/autologin.conf <<'EOF'
 [Service]
 ExecStart=
 ExecStart=-/sbin/agetty -o '-p -f -- \\u' --noclear --autologin @USUARIO@ %I $TERM
 EOF
   sed -i "s/@USUARIO@/$USUARIO/" /etc/systemd/system/getty@tty1.service.d/autologin.conf
-  touch /etc/lekso/sin-contrasena
+  touch /etc/leksso/sin-contrasena
 fi
 
 # 4. LeksSO, con la comprobación de firma del instalador.
 VERSION="$(cat "$PAQ/VERSION_TAG")"
-SUDO_USER="$USUARIO" bash "$PAQ/instalar.sh" --origen "$PAQ/lekso.bundle" --version "$VERSION" --si
+SUDO_USER="$USUARIO" bash "$PAQ/instalar.sh" --origen "$PAQ/leksso.bundle" --version "$VERSION" --si
 
 # 5. Fuentes de apt normales para el sistema ya instalado (las actualizaciones de Debian irán por red) y limpieza.
-rm -f /etc/apt/sources.list.d/lekso-offline.list /etc/apt/apt.conf.d/99lekso-sin-recomendados
+rm -f /etc/apt/sources.list.d/leksso-offline.list /etc/apt/apt.conf.d/99leksso-sin-recomendados
 cat > /etc/apt/sources.list <<'EOF'
 deb http://deb.debian.org/debian trixie main contrib non-free-firmware
 deb http://deb.debian.org/debian trixie-updates main contrib non-free-firmware

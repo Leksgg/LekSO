@@ -1,0 +1,140 @@
+#!/usr/bin/env python3
+"""Secure Boot de LeksSO: si el equipo lo tiene activo, aquí se ve el estado de la clave con la que se firman los
+controladores (por ejemplo, el de NVIDIA) y, si hace falta, la contraseña de un solo uso del registro.
+
+La contraseña se crea sola al registrar la clave, y se muestra oculta hasta que pulsas «Ver».
+Se cierra con la X o con Esc.
+"""
+import json
+import subprocess
+import sys
+
+from PySide6 import QtCore, QtWidgets
+
+sys.path.insert(0, "/usr/local/lib/leksso-ui")
+from leksso_ui import ESTILO, alternar  # noqa: E402
+
+ORDEN = ["leksso-actualizar", "hardware"]
+OCULTA = "••••••••"
+
+
+def sal(*cmd, tiempo=30):
+    try:
+        r = subprocess.run(cmd, capture_output=True, text=True, timeout=tiempo)
+        return r.returncode, r.stdout.strip()
+    except (OSError, subprocess.SubprocessError):
+        return 1, ""
+
+
+def resumen():
+    rc, t = sal(*ORDEN, "mok")
+    try:
+        return json.loads(t) if rc == 0 else {}
+    except ValueError:
+        return {}
+
+
+def explicacion(r):
+    """Texto en lenguaje llano según el estado."""
+    if not r:
+        return "No se pudo comprobar el estado de Secure Boot."
+    if not r.get("secure_boot"):
+        return "Secure Boot no está activo (o no se pudo comprobar). No necesitas ninguna clave."
+    estado = r.get("clave")
+    if estado == "registrada":
+        return "Secure Boot está activo y la clave de firma de controladores ya está registrada. No tienes que hacer nada."
+    if estado == "pendiente":
+        return ("Falta un paso: reinicia el equipo y, en la pantalla azul, elige «Enroll MOK», «Continue», «Yes», "
+                "escribe la contraseña de abajo y «Reboot».")
+    return ("Secure Boot está activo y todavía no hay clave registrada. No hace falta hacer nada ahora: se registra "
+            "sola cuando instales el controlador de NVIDIA (Ajustes → Actualizaciones). Si no usas NVIDIA, nunca se necesita.")
+
+
+class Ventana(QtWidgets.QWidget):
+    def __init__(self):
+        super().__init__()
+        self.setWindowTitle("Secure Boot")
+        self.setStyleSheet(ESTILO)
+        self.clave = ""
+        self.visible = False
+        raiz = QtWidgets.QVBoxLayout(self)
+        raiz.setContentsMargins(14, 10, 14, 14)
+        cab = QtWidgets.QHBoxLayout()
+        t = QtWidgets.QLabel("Secure Boot")
+        t.setObjectName("titulo")
+        cab.addWidget(t)
+        cab.addStretch()
+        x = QtWidgets.QPushButton("✕")
+        x.setObjectName("cerrar")
+        x.setToolTip("Cerrar (Esc)")
+        x.clicked.connect(self.close)
+        cab.addWidget(x)
+        raiz.addLayout(cab)
+        self.texto = QtWidgets.QLabel()
+        self.texto.setWordWrap(True)
+        raiz.addWidget(self.texto)
+        self.caja = QtWidgets.QWidget()
+        fila = QtWidgets.QHBoxLayout(self.caja)
+        fila.setContentsMargins(0, 8, 0, 0)
+        etiqueta = QtWidgets.QLabel("Contraseña de un solo uso:")
+        self.valor = QtWidgets.QLabel(OCULTA)
+        self.valor.setStyleSheet("font-size: 18px; font-weight: bold; letter-spacing: 2px;")
+        self.valor.setTextInteractionFlags(QtCore.Qt.TextSelectableByMouse)
+        self.ver = QtWidgets.QPushButton("Ver")
+        self.ver.setObjectName("accion")
+        self.ver.clicked.connect(self.alternar_vista)
+        fila.addWidget(etiqueta)
+        fila.addWidget(self.valor)
+        fila.addStretch()
+        fila.addWidget(self.ver)
+        raiz.addWidget(self.caja)
+        self.nota = QtWidgets.QLabel("La contraseña solo sirve para confirmar el registro en la pantalla azul del arranque. "
+                                     "No cifra nada ni es la de tu usuario.")
+        self.nota.setObjectName("nota")
+        self.nota.setWordWrap(True)
+        raiz.addWidget(self.nota)
+        raiz.addStretch()
+        r = resumen()
+        self.texto.setText(explicacion(r))
+        self.caja.setVisible(bool(r.get("hay_contrasena")))
+
+    def alternar_vista(self):
+        if self.visible:
+            self.visible = False
+            self.valor.setText(OCULTA)
+            self.ver.setText("Ver")
+            return
+        if not self.clave:
+            rc, t = sal("sudo", "-n", *ORDEN, "mok-contrasena")     # sin contraseña de sudo: directo
+            if rc != 0 or not t:
+                # con contraseña de sudo hace falta una terminal para escribirla; ahí se ve la clave
+                subprocess.Popen(["leksso-term", "-T", "Contraseña de Secure Boot", "-e", "sh", "-c",
+                                  "sudo leksso-actualizar hardware mok-contrasena; printf '\\n\\nPulsa Intro para cerrar.'; read -r _"],
+                                 start_new_session=True, stdin=subprocess.DEVNULL,
+                                 stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                return
+            self.clave = t
+        self.visible = True
+        self.valor.setText(self.clave)
+        self.ver.setText("Ocultar")
+
+    def keyPressEvent(self, ev):
+        if ev.key() == QtCore.Qt.Key_Escape:
+            self.close()
+        else:
+            super().keyPressEvent(ev)
+
+
+def main():
+    if alternar("leksso-secureboot"):
+        return 0
+    app = QtWidgets.QApplication(sys.argv)
+    app.setDesktopFileName("leksso-secureboot")
+    w = Ventana()
+    w.resize(560, 300)
+    w.show()
+    return app.exec()
+
+
+if __name__ == "__main__":
+    sys.exit(main())

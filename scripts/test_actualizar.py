@@ -1,4 +1,4 @@
-"""Pruebas de lekso-actualizar: nombres de versión y, sobre todo, la verificación de firma y de rama.
+"""Pruebas de leksso-actualizar: nombres de versión y, sobre todo, la verificación de firma y de rama.
 
 Usan repositorios y claves temporales. Requieren git y ssh-keygen. Uso: python3 scripts/test_actualizar.py
 """
@@ -11,8 +11,8 @@ import tempfile
 import unittest
 
 AQUI = os.path.dirname(os.path.abspath(__file__))
-_l = importlib.machinery.SourceFileLoader("lekso_actualizar", os.path.join(AQUI, "lekso-actualizar.py"))
-act = importlib.util.module_from_spec(importlib.util.spec_from_loader("lekso_actualizar", _l))
+_l = importlib.machinery.SourceFileLoader("leksso_actualizar", os.path.join(AQUI, "leksso-actualizar.py"))
+act = importlib.util.module_from_spec(importlib.util.spec_from_loader("leksso_actualizar", _l))
 _l.exec_module(act)
 
 
@@ -44,12 +44,12 @@ class Versiones(unittest.TestCase):
 
 class Verificacion(unittest.TestCase):
     def setUp(self):
-        self.d = tempfile.mkdtemp(prefix="lekso-act-")
+        self.d = tempfile.mkdtemp(prefix="leksso-act-")
         self.oficial = clave_nueva(self.d, "oficial")
         self.otra = clave_nueva(self.d, "otra")
         pub = open(self.oficial + ".pub").read().split()[:2]
         self.firmantes = os.path.join(self.d, "allowed_signers")
-        open(self.firmantes, "w").write(f'lekso-release namespaces="git" {pub[0]} {pub[1]}\n')
+        open(self.firmantes, "w").write(f'leksso-release namespaces="git" {pub[0]} {pub[1]}\n')
         self.repo = os.path.join(self.d, "repo")
         os.makedirs(self.repo)
         sh("git", "init", "-q", "-b", "main", cwd=self.repo)

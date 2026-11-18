@@ -1,0 +1,152 @@
+#!/usr/bin/env python3
+"""Menú de aplicaciones de LeksSO: lista con iconos, buscador y botón de cerrar.
+
+No se cierra solo al mover el ratón. Se cierra con la X, con Esc o al abrir una app.
+Uso: leksso-menu
+"""
+import configparser
+import glob
+import locale
+import os
+import re
+import shlex
+import subprocess
+import sys
+
+from PySide6 import QtCore, QtGui, QtWidgets
+
+sys.path.insert(0, "/usr/local/lib/leksso-ui")
+from leksso_ui import ESTILO, alternar  # noqa: E402
+
+DIRS = ["/usr/share/applications", "/usr/local/share/applications",
+        os.path.expanduser("~/.local/share/applications")]  # el último manda (puede ocultar)
+
+def idioma():
+    try:
+        return (locale.getlocale()[0] or "es")[:2]
+    except Exception:
+        return "es"
+
+
+def leer_apps():
+    lang = idioma()
+    por_id = {}
+    for d in DIRS:
+        for ruta in glob.glob(os.path.join(d, "*.desktop")):
+            por_id[os.path.basename(ruta)] = ruta
+    apps, vistos = [], set()
+    for ident, ruta in por_id.items():
+        cfg = configparser.RawConfigParser(strict=False, interpolation=None)
+        cfg.optionxform = str
+        try:
+            cfg.read(ruta, encoding="utf-8")
+            e = cfg["Desktop Entry"]
+        except Exception:
+            continue
+        if e.get("Type") != "Application" or e.get("NoDisplay", "").lower() == "true" \
+                or e.get("Hidden", "").lower() == "true":
+            continue
+        nombre = e.get(f"Name[{lang}]") or e.get("Name")
+        comando = e.get("Exec")
+        if not nombre or not comando:
+            continue
+        if nombre.lower() in vistos:
+            continue
+        vistos.add(nombre.lower())
+        apps.append((nombre, comando, e.get("Icon", ""), e.get("Terminal", "").lower() == "true"))
+    apps.sort(key=lambda a: a[0].lower())
+    return apps
+
+
+def lanzar(comando, terminal):
+    comando = re.sub(r"%[fFuUdDnNickvm]", "", comando.replace("%%", "\0")).replace("\0", "%").strip()
+    try:
+        args = shlex.split(comando)
+    except ValueError:
+        return
+    if terminal:
+        args = ["leksso-term", "-e"] + args
+    subprocess.Popen(args, start_new_session=True, stdin=subprocess.DEVNULL,
+                     stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+
+
+class Menu(QtWidgets.QWidget):
+    def __init__(self):
+        super().__init__()
+        self.setWindowTitle("Aplicaciones")
+        self.apps = leer_apps()
+        self.setStyleSheet(ESTILO)
+        raiz = QtWidgets.QVBoxLayout(self)
+        raiz.setContentsMargins(14, 10, 14, 14)
+        cab = QtWidgets.QHBoxLayout()
+        t = QtWidgets.QLabel("Aplicaciones")
+        t.setObjectName("titulo")
+        cab.addWidget(t)
+        cab.addStretch()
+        x = QtWidgets.QPushButton("✕")
+        x.setObjectName("cerrar")
+        x.setToolTip("Cerrar (Esc)")
+        x.clicked.connect(self.close)
+        cab.addWidget(x)
+        raiz.addLayout(cab)
+        self.busca = QtWidgets.QLineEdit()
+        self.busca.setPlaceholderText("Buscar…")
+        self.busca.textChanged.connect(self.filtrar)
+        self.busca.returnPressed.connect(self.abrir_actual)
+        raiz.addWidget(self.busca)
+        self.lista = QtWidgets.QListWidget()
+        self.lista.setIconSize(QtCore.QSize(28, 28))
+        self.lista.itemActivated.connect(self.abrir)
+        self.lista.itemClicked.connect(self.abrir)
+        raiz.addWidget(self.lista)
+        self.filtrar("")
+        self.busca.setFocus()
+
+    def filtrar(self, texto):
+        self.lista.clear()
+        q = texto.strip().lower()
+        for nombre, comando, icono, term in self.apps:
+            if q and q not in nombre.lower():
+                continue
+            ic = QtGui.QIcon.fromTheme(icono) if icono else QtGui.QIcon()
+            if ic.isNull():
+                ic = QtGui.QIcon.fromTheme("application-x-executable")
+            it = QtWidgets.QListWidgetItem(ic, nombre)
+            it.setData(QtCore.Qt.UserRole, (comando, term))
+            self.lista.addItem(it)
+        if self.lista.count():
+            self.lista.setCurrentRow(0)
+
+    def abrir(self, item):
+        comando, term = item.data(QtCore.Qt.UserRole)
+        lanzar(comando, term)
+        self.close()
+
+    def abrir_actual(self):
+        it = self.lista.currentItem()
+        if it:
+            self.abrir(it)
+
+    def keyPressEvent(self, ev):
+        if ev.key() == QtCore.Qt.Key_Escape:
+            self.close()
+        elif ev.key() in (QtCore.Qt.Key_Down, QtCore.Qt.Key_Up):
+            self.lista.setFocus()
+            QtWidgets.QApplication.sendEvent(self.lista, ev)
+        else:
+            super().keyPressEvent(ev)
+
+
+def main():
+    if alternar("leksso-menu"):
+        return 0
+    app = QtWidgets.QApplication(sys.argv)
+    app.setDesktopFileName("leksso-menu")  # app_id en Wayland: lo usa sway para colocarla flotante
+    m = Menu()
+    m.resize(480, 620)
+    m.show()
+    return app.exec()
+
+
+if __name__ == "__main__":
+    sys.exit(main())

@@ -1,8 +1,0 @@
-[Desktop Entry]
-Type=Application
-Name=PowerPoint (web)
-Comment=Presentaciones de Microsoft 365 en el navegador (gratis, con cuenta de Microsoft)
-Exec=lekso-office-web powerpoint
-Icon=applications-office
-Terminal=false
-Categories=Office;

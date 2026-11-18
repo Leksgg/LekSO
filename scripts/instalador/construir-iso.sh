@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Construye la imagen de instalación de LeksSO (ISO): el Debian oficial con firmware, más el paquete de LeksSO.
 #
-# Uso: construir-iso.sh --iso DEBIAN.iso --offline CARPETA_REPO --version vX.Y.Z-alpha --salida LEKSO.iso [--prueba CLAVE_PUBLICA_SSH]
+# Uso: construir-iso.sh --iso DEBIAN.iso --offline CARPETA_REPO --version vX.Y.Z-alpha --salida LEKSSO.iso [--prueba CLAVE_PUBLICA_SSH]
 #   --iso      imagen oficial «netinst con firmware» de Debian 13 (ya comprobada con su suma de Debian)
 #   --offline  repositorio local de paquetes (lo crea construir-repo-offline.sh)
 #   --version  versión de LeksSO que lleva, con su etiqueta firmada (v0.1.4-alpha)
@@ -26,11 +26,11 @@ cd "$RAIZ"
 git rev-parse -q --verify "refs/tags/$VERSION" >/dev/null || { echo "La etiqueta $VERSION no existe en este repositorio." >&2; exit 1; }
 
 TMP="$(mktemp -d)"; trap 'rm -rf "$TMP"' EXIT
-PAQ="$TMP/lekso"; mkdir -p "$PAQ"
+PAQ="$TMP/leksso"; mkdir -p "$PAQ"
 
 # 1. El paquete de LeksSO: el repositorio con sus etiquetas (se verifica al instalar), el instalador de ESA versión
 #    y los archivos de instalación automática.
-git bundle create "$PAQ/lekso.bundle" --all >/dev/null 2>&1
+git bundle create "$PAQ/leksso.bundle" --all >/dev/null 2>&1
 git show "$VERSION:scripts/instalar.sh" > "$PAQ/instalar.sh"
 git show "$VERSION:scripts/instalador/preseed.cfg" > "$PAQ/preseed.cfg"
 git show "$VERSION:scripts/instalador/receta.sh" > "$PAQ/receta.sh"
@@ -48,7 +48,7 @@ CLAVE_EN_SCRIPT="$(sed -n "s/^CLAVE_PUBLICA='\(.*\)'\$/\1/p" "$PAQ/instalar.sh")
 sed 's#^d-i partman-auto/method string crypto#d-i partman-auto/method string lvm#' "$PAQ/preseed.cfg" > "$PAQ/preseed-sin-cifrado.cfg"
 for par in "preseed:preseed-sin-contrasena" "preseed-sin-cifrado:preseed-sin-cifrado-sin-contrasena"; do
   origen="${par%%:*}"; destino="${par##*:}"
-  sed 's#^\(  in-target sh /opt/lekso-instalacion/postinstalar.sh\)$#\1 --sin-contrasena#' "$PAQ/$origen.cfg" > "$PAQ/$destino.cfg"
+  sed 's#^\(  in-target sh /opt/leksso-instalacion/postinstalar.sh\)$#\1 --sin-contrasena#' "$PAQ/$origen.cfg" > "$PAQ/$destino.cfg"
   printf '\n# --- Sin contraseña de usuario: la deja bloqueada y postinstalar.sh la quita ---\nd-i passwd/user-password-crypted password !\n' >> "$PAQ/$destino.cfg"
 done
 
@@ -69,7 +69,7 @@ d-i partman/confirm boolean true
 d-i partman/confirm_nooverwrite boolean true
 d-i partman/choose_partition select finish
 d-i passwd/user-fullname string LeksSO
-d-i passwd/username string lekso
+d-i passwd/username string leksso
 d-i passwd/user-password password Lks15
 d-i passwd/user-password-again password Lks15
 d-i user-setup/allow-password-weak boolean true
@@ -81,13 +81,13 @@ ORIGEN_GRUB="$TMP/grub.orig"
 xorriso -osirrox on -indev "$ISO" -extract /boot/grub/grub.cfg "$ORIGEN_GRUB" >/dev/null 2>&1
 ENTRADA="menuentry --hotkey=l 'Instalar LeksSO (disco cifrado y contraseña; borra el disco que elijas)' {
     set background_color=black
-    linux    /install.amd/vmlinuz auto=true priority=high file=/cdrom/lekso/preseed.cfg vga=788 --- quiet
+    linux    /install.amd/vmlinuz auto=true priority=high file=/cdrom/leksso/preseed.cfg vga=788 --- quiet
     initrd   /install.amd/initrd.gz
 }"
 # Variantes (no en las imágenes de pruebas, que llevan respuestas fijas solo en la primera): cifrado sí/no, contraseña sí/no.
 if [ -z "$PRUEBA" ]; then
   variante() {  # título, preseed
-    printf "menuentry '%s' {\n    set background_color=black\n    linux    /install.amd/vmlinuz auto=true priority=high file=/cdrom/lekso/%s vga=788 --- quiet\n    initrd   /install.amd/initrd.gz\n}\n" "$1" "$2"
+    printf "menuentry '%s' {\n    set background_color=black\n    linux    /install.amd/vmlinuz auto=true priority=high file=/cdrom/leksso/%s vga=788 --- quiet\n    initrd   /install.amd/initrd.gz\n}\n" "$1" "$2"
   }
   ENTRADA="$ENTRADA
 $(variante 'Instalar LeksSO sin cifrar el disco (borra el disco que elijas)' preseed-sin-cifrado.cfg)
@@ -107,7 +107,7 @@ PY
 
 # 4. La imagen: la original más el paquete y el menú nuevo (el arranque se conserva).
 rm -f "$SALIDA"
-xorriso -indev "$ISO" -outdev "$SALIDA" -map "$PAQ" /lekso -map "$TMP/grub.cfg" /boot/grub/grub.cfg -boot_image any replay 2>&1 \
+xorriso -indev "$ISO" -outdev "$SALIDA" -map "$PAQ" /leksso -map "$TMP/grub.cfg" /boot/grub/grub.cfg -boot_image any replay 2>&1 \
   | grep -iE 'fail|error|written|wrote' || true
 echo
 ls -la "$SALIDA"
