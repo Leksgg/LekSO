@@ -25,13 +25,14 @@ fi
 bash "$(dirname "${BASH_SOURCE[0]}")/migrar-nombre.sh" "$USUARIO" || true
 HOME_USR="$(getent passwd "$USUARIO" | cut -d: -f6)"
 
+RAIZ="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+
 # Registro de instalaciones (leksso-auditoria): se instala lo primero, para anotar también lo que instala esta misma
 # ejecución. El gancho de apt nunca impide instalar. Los datos (registro, sellos) los crea el propio programa y esta
 # instalación no los toca.
 install -m 0755 "$RAIZ/scripts/leksso-auditoria.py" /usr/local/bin/leksso-auditoria
 install -d /etc/apt/apt.conf.d
 install -m 0644 "$RAIZ/config/apt/99leksso-auditoria" /etc/apt/apt.conf.d/99leksso-auditoria
-RAIZ="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
 # Paquetes por capa. Todos existen en Debian 13 (trixie); winetricks necesita la sección contrib.
 ESCRITORIO=(labwc sway swaybg waybar kitty fuzzel grim pcmanfm-qt qt6-wayland qt6-svg-plugins qt6ct xwayland fonts-font-awesome seatd xdg-desktop-portal-wlr micro imv zathura zathura-pdf-poppler mpv vlc xarchiver udisks2 udiskie gvfs gvfs-backends polkitd ntfs-3g exfatprogs usbutils v4l-utils bluez pavucontrol-qt swaylock wl-clipboard mako-notifier libnotify-bin swayidle brightnessctl slurp cliphist wdisplays blueman cups fonts-noto-color-emoji fonts-liberation ffmpegthumbnailer power-profiles-daemon playerctl wlr-randr network-manager streamdeck-ui python3-pyside6.qtwidgets python3-pyside6.qtgui python3-pyside6.qtcore python3-pyside6.qtsvg)
