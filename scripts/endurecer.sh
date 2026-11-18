@@ -18,13 +18,17 @@ apt-get install -y --no-install-recommends nftables unattended-upgrades
 
 # 1. Cortafuegos: todo lo entrante se bloquea salvo lo que responde a lo que tú abres.
 REGLA_SSH=""
-[ "$SSH" -eq 1 ] && REGLA_SSH="tcp dport 22 accept"
+# --ssh (máquinas de prueba): solo desde redes privadas, no desde cualquier origen alcanzable.
+[ "$SSH" -eq 1 ] && REGLA_SSH='ip saddr { 10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16 } tcp dport 22 accept comment "leksso-acceso-remoto"'
 # Si el acceso remoto está encendido (leksso-acceso-remoto on), se conserva su regla: solo red local.
 [ "$SSH" -eq 0 ] && [ -f /etc/leksso/acceso-remoto ] &&   REGLA_SSH='ip saddr { 10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16 } tcp dport 22 accept comment "leksso-acceso-remoto"'
 cat > /etc/nftables.conf <<NFT
 #!/usr/sbin/nft -f
 # LeksSO: entrante bloqueado por defecto. Saliente libre.
-flush ruleset
+# Solo se reemplaza NUESTRA tabla: las reglas de otros programas (Docker, VPN…) y la tabla de bloqueos del usuario
+# (leksso_usuario) se respetan. «table» + «delete table» es la forma de reemplazar sin fallar si aún no existía.
+table inet leksso
+delete table inet leksso
 
 table inet leksso {
   chain entrada {

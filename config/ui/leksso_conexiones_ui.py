@@ -193,7 +193,11 @@ class Conexiones(QtWidgets.QWidget):
         mia = c["ident"] in self.datos.d["confiables"]
         self.b_confiar.setText("Dejar de confiar" if mia else "Confiar en esto")
         self.b_confiar.setEnabled(not (c["confianza"] == "validada" and not mia))
-        self.b_bloquear.setEnabled(c["categoria"] in ("internet", "entrante") and not c.get("bloqueada") and c["destino"] not in ("", "*"))
+        # El bloqueo es de SALIDA (a esa IP y puerto): no impide que otro equipo se conecte hacia aquí, así que
+        # no se ofrece para conexiones entrantes (para eso: «Parar ahora», o cerrar el servicio que escucha).
+        self.b_bloquear.setEnabled(c["categoria"] == "internet" and not c.get("bloqueada") and c["destino"] not in ("", "*"))
+        self.b_bloquear.setToolTip("Bloquea que este equipo se conecte a ese destino." if c["categoria"] == "internet" else
+                                   "Solo se bloquean conexiones que salen a Internet. Una conexión entrante no se frena así: usa «Parar ahora» o cierra el servicio que escucha.")
         self.b_carpeta.setEnabled(bool(c.get("exe")))
         self.b_parar.setEnabled(bool(c.get("pid")))
         partes = [f"Programa: {c['nombre']}" + (f" · paquete {c['paquete']}" if c.get("paquete") else " · no viene de un paquete de Debian"),

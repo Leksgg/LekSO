@@ -20,6 +20,7 @@ import os
 import re
 import shutil
 import subprocess
+import tempfile
 import sys
 import time
 
@@ -36,11 +37,12 @@ VENDEDORES = {"10de": "nvidia", "1002": "amd", "8086": "intel"}
 ESPACIO_MINIMO = 3 * 1024 ** 3     # bytes libres en / antes de instalar NVIDIA
 
 
-def ejecutar(cmd, tiempo=60):
-    """Ejecuta una orden (lista, sin shell). Devuelve (código, salida). Sin traducir, para poder leerla."""
+def ejecutar(cmd, tiempo=60, entrada=None):
+    """Ejecuta una orden (lista, sin shell). Devuelve (código, salida). Sin traducir, para poder leerla.
+    «entrada» va por la entrada estándar: lo secreto no debe ir en los argumentos (se ven con ps)."""
     env = dict(os.environ, LC_ALL="C", DEBIAN_FRONTEND="noninteractive")
     try:
-        r = subprocess.run(cmd, capture_output=True, text=True, timeout=tiempo, env=env)
+        r = subprocess.run(cmd, capture_output=True, text=True, timeout=tiempo, env=env, input=entrada)
         return r.returncode, r.stdout
     except (OSError, subprocess.SubprocessError):
         return 127, ""
@@ -111,6 +113,48 @@ def parsear_pendientes(salida):
         if m and PAQUETE.match(m.group(1)):
             res.append({"nombre": m.group(1), "de": (m.group(2) or "").strip(), "a": m.group(3)})
     return res
+
+
+def hosts_de_fuente(texto):
+    """Los servidores que usa un archivo de fuentes de apt (formato clásico «deb …» o deb822 «URIs: …»)."""
+    hosts = set()
+    for linea in texto.splitlines():
+        linea = linea.strip()
+        if linea.startswith("#") or not linea:
+            continue
+        if linea.lower().startswith("uris:"):
+            urls = linea.split(":", 1)[1].split()
+        elif re.match(r"^deb(-src)?\s", linea):
+            urls = [p for p in linea.split() if "://" in p]
+        else:
+            continue
+        for u in urls:
+            m = re.match(r"^(?:[a-z+]+)://(?:[^/@]*@)?([^/:]+)", u)
+            hosts.add(m[1].lower() if m else u.lower())
+    return hosts
+
+
+def es_fuente_de_debian(texto):
+    hosts = hosts_de_fuente(texto)
+    return bool(hosts) and all(h == "debian.org" or h.endswith(".debian.org") for h in hosts)
+
+
+def fuentes_debian():
+    """Carpeta temporal con una copia de las fuentes de apt que son SOLO de debian.org (las demás quedan fuera)."""
+    carpeta = tempfile.mkdtemp(prefix="leksso-fuentes-")
+    candidatos = ["/etc/apt/sources.list"] + [os.path.join("/etc/apt/sources.list.d", n)
+                                              for n in sorted(os.listdir("/etc/apt/sources.list.d"))
+                                              if n.endswith((".list", ".sources"))] if os.path.isdir("/etc/apt/sources.list.d") else ["/etc/apt/sources.list"]
+    for i, ruta in enumerate(candidatos):
+        try:
+            texto = open(ruta, encoding="utf-8").read()
+        except OSError:
+            continue
+        if es_fuente_de_debian(texto):
+            ext = ".sources" if ruta.endswith(".sources") else ".list"
+            with open(os.path.join(carpeta, f"debian-{i}{ext}"), "w", encoding="utf-8") as f:
+                f.write(texto)
+    return carpeta
 
 
 def pendientes_apt():
@@ -314,7 +358,12 @@ def auto():
     nombres = sorted({p["nombre"] for p in pend if SEGURO.match(p["nombre"]) and version_instalada(p["nombre"])})
     aplicados = []
     if nombres:
-        rc, _ = ejecutar(["apt-get", "install", "-y", "-qq", "--only-upgrade", "-o", "DPkg::Lock::Timeout=120", "--"] + nombres, 900)
+        carpeta = fuentes_debian()      # solo los repositorios de Debian: un repositorio externo no puede colar un «candidato»
+        try:
+            rc, _ = ejecutar(["apt-get", "install", "-y", "-qq", "--only-upgrade", "-o", "DPkg::Lock::Timeout=120",
+                              "-o", "Dir::Etc::SourceList=/dev/null", "-o", f"Dir::Etc::SourceParts={carpeta}", "--"] + nombres, 900)
+        finally:
+            shutil.rmtree(carpeta, ignore_errors=True)
         if rc == 0:
             aplicados = nombres
     est = estado_actual()
@@ -442,8 +491,8 @@ def preparar_mok(si=False):
         print("✕ No se pudo crear la clave de firma. Revisa que dkms esté instalado.")
         return 1
     clave = generar_contrasena()
-    hash_pw = ejecutar(["mokutil", f"--generate-hash={clave}"])[1].strip()
-    if not hash_pw:
+    hash_pw = ejecutar(["openssl", "passwd", "-6", "-stdin"], entrada=clave + "\n")[1].strip()     # formato crypt, el que acepta mokutil
+    if not hash_pw.startswith("$6$"):
         print("✕ No se pudo preparar la contraseña de un solo uso.")
         return 1
     ruta_hash = MOK_CONTRASENA + ".hash"

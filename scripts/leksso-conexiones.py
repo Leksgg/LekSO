@@ -42,6 +42,7 @@ import pwd
 import re
 import signal
 import socket
+import stat
 import subprocess
 import sys
 import time
@@ -259,13 +260,26 @@ def dueno_paquete(ruta):
     return pkg
 
 
+def leer_normal(ruta, n):
+    """Lee hasta n bytes de un ARCHIVO NORMAL sin poder quedarse colgado: se abre sin bloquear y se comprueba, ya
+    abierto, que no es una tubería, un dispositivo o similar (estos programas corren como root sobre rutas que
+    el usuario puede cambiar). Devuelve (tipo_de_stat, datos)."""
+    fd = os.open(ruta, os.O_RDONLY | os.O_NONBLOCK | os.O_CLOEXEC)
+    try:
+        st = os.fstat(fd)
+        if not stat.S_ISREG(st.st_mode):
+            raise OSError("no es un archivo normal")
+        return st, os.read(fd, n)
+    finally:
+        os.close(fd)
+
+
 def huella(ruta):
     try:
         st = os.stat(ruta)
         clave = (ruta, st.st_mtime_ns, st.st_size)
         if clave not in _HUELLAS:
-            with open(ruta, "rb") as f:
-                _HUELLAS[clave] = hashlib.sha256(f.read(4_000_000)).hexdigest()[:16]
+            _HUELLAS[clave] = hashlib.sha256(leer_normal(ruta, 4_000_000)[1]).hexdigest()[:16]
         return _HUELLAS[clave]
     except OSError:
         return ""

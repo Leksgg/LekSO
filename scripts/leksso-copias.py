@@ -177,8 +177,10 @@ def guardar_estado(resultado, mensaje, inicio=None, **extra):
     e["version"] = VERSION_CONFIG
     e["ultima"] = {"fecha": ahora, "resultado": resultado, "mensaje": mensaje,
                    "duracion_s": round((dt.datetime.now().astimezone() - inicio).total_seconds()) if inicio else 0}
-    if resultado in ("ok", "aviso"):
+    if resultado == "ok":                 # una copia con archivos saltados NO cuenta como copia correcta
         e["ultima_ok"] = ahora
+    elif resultado == "aviso":
+        e["ultima_aviso"] = ahora
     e.update(extra)
     escribir_json(ESTADO, e)
 
@@ -318,7 +320,7 @@ def ejecutar(ahora=False):
             raise Error("No se pudo hacer la copia: " + " ".join(ultimas)[:260])
         aviso = "Algunos archivos no se pudieron leer y se saltaron." if r.returncode == 3 else ""
         # solo si el repositorio está sano se borran las copias que sobran
-        restic("check")
+        restic("check", "--read-data-subset=10%")      # estructura y, además, una parte al azar de los datos
         restic("forget", "--group-by", "", "--keep-last", str(MAX_COPIAS), "--prune")
         lista = copias()
         espacio = sum(os.path.getsize(os.path.join(d, f)) for d, _, fs in os.walk(REPO) for f in fs)

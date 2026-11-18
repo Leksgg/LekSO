@@ -148,13 +148,29 @@ def descargar(url, destino):
 
 
 def instalar_deb(url, simular):
-    d = tempfile.mkdtemp(prefix="leksso-apps-")
-    ruta = os.path.join(d, "paquete.deb")
+    """Descarga el .deb, lo lee UNA vez a memoria, enseña su SHA-256 y lo entrega a root desde esa copia: lo que se
+    instala es exactamente lo que se descargó (un proceso del usuario no puede cambiar el archivo entre medias)."""
+    import hashlib
     print(c("  descarga directa del proveedor (sin firma verificada por apt): ", "33") + url)
-    if not simular:
+    if simular:
+        return sudo(["apt-get", "install", "-y", "/var/cache/leksso-descargas/paquete.deb"], simular)
+    d = tempfile.mkdtemp(prefix="leksso-apps-")
+    try:
+        ruta = os.path.join(d, "paquete.deb")
         descargar(url, ruta)
-    r = sudo(["apt-get", "install", "-y", ruta], simular)
-    shutil.rmtree(d, ignore_errors=True)
+        with open(ruta, "rb") as f:
+            datos = f.read()
+        print(c("  SHA-256 del paquete: ", "2") + hashlib.sha256(datos).hexdigest())
+    finally:
+        shutil.rmtree(d, ignore_errors=True)
+    destino = "/var/cache/leksso-descargas/paquete.deb"
+    if sudo(["install", "-d", "-m", "0755", "-o", "root", "-g", "root", "/var/cache/leksso-descargas"], False) != 0:
+        return 1
+    if subprocess.run(["sudo", "tee", destino], input=datos, stdout=subprocess.DEVNULL).returncode != 0:
+        return 1
+    sudo(["chmod", "0644", destino], False)
+    r = sudo(["apt-get", "install", "-y", destino], False)
+    sudo(["rm", "-f", destino], False)
     return r
 
 
@@ -169,13 +185,58 @@ def url_github(repo, patron):
     raise SystemExit(f"No hay un .deb que encaje en {repo}")
 
 
+# Huellas de las claves de los repositorios de terceros. Se descarga la clave, se calcula su huella y solo se
+# instala si TODAS las claves del archivo están en esta lista: una clave sustituida o añadida no pasa.
+# (Si el proveedor rota su clave, hay que actualizar esta lista a propósito.)
+HUELLAS = {
+    "brave-browser": {"DBF1A116C220B8C7164F98230686B78420038257",
+                      "47D32A74E9A9E013A4B4926C68D513D36A73CD96",
+                      "B2A3DCA350E67256740DF904DE4EC67BE4B0DCA0"},
+    "microsoft": {"BC528686B50D79E339D3721CEB3E94ADBE1229CF"},
+}
+
+
+def huellas_de(datos):
+    """Huellas de las claves PRINCIPALES de un archivo de claves (binario o armado), con gpg --show-keys."""
+    r = subprocess.run(["gpg", "--show-keys", "--with-colons", "--fingerprint"], input=datos, capture_output=True, timeout=30)
+    if r.returncode != 0:
+        return None
+    huellas, esperando = set(), False
+    for linea in r.stdout.decode("utf-8", "replace").splitlines():
+        campos = linea.split(":")
+        if campos[0] == "pub":
+            esperando = True
+        elif campos[0] == "sub":
+            esperando = False
+        elif campos[0] == "fpr" and esperando:
+            huellas.add(campos[9].upper())
+            esperando = False
+    return huellas
+
+
 def repo_clave(nombre, url_clave, linea, simular, dearmor=False):
     llave = f"/usr/share/keyrings/{nombre}.gpg"
-    if dearmor:
-        sudo(["apt-get", "install", "-y", "gnupg", "curl"], simular)
-        correr(f"curl -fsSL {url_clave} | sudo gpg --dearmor --yes -o {llave}", simular, shell=True)
+    if not simular:
+        sudo(["apt-get", "install", "-y", "gnupg"], False)
+        req = urllib.request.Request(url_clave, headers={"User-Agent": "leksso-apps"})
+        with urllib.request.urlopen(req, timeout=60) as r:
+            clave = r.read(1_000_000)
+        huellas = huellas_de(clave)
+        esperadas = HUELLAS.get(nombre)
+        if not esperadas or not huellas or not huellas <= esperadas:
+            raise SystemExit(f"La clave del repositorio {nombre} no es la esperada (huellas: {sorted(huellas or [])}). No se instala nada.")
+        print(c("  clave comprobada por su huella: ", "2") + ", ".join(sorted(huellas)))
+        if dearmor:
+            d = subprocess.run(["gpg", "--dearmor"], input=clave, capture_output=True, timeout=30)
+            if d.returncode != 0 or not d.stdout:
+                raise SystemExit("No se pudo preparar la clave del repositorio.")
+            clave = d.stdout
+        sudo(["install", "-d", "-m", "0755", "/usr/share/keyrings"], False)
+        if subprocess.run(["sudo", "tee", llave], input=clave, stdout=subprocess.DEVNULL).returncode != 0:
+            raise SystemExit("No se pudo guardar la clave del repositorio.")
+        sudo(["chmod", "0644", llave], False)
     else:
-        sudo(["curl", "-fsSLo", llave, url_clave], simular)
+        print(c("  $ ", "2") + f"(descargar la clave, comprobar su huella e instalarla en {llave})")
     correr(f"echo '{linea.format(llave=llave)}' | sudo tee /etc/apt/sources.list.d/{nombre}.list >/dev/null",
            simular, shell=True)
     return sudo(["apt-get", "update"], simular)

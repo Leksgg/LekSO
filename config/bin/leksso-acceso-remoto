@@ -35,6 +35,7 @@ case "${1:-estado}" in
     sed -i "/udp sport 547 udp dport 546 accept/a\\    $REGLA" /etc/nftables.conf
     touch "$MARCA"
     systemctl enable -q --now ssh
+    systemctl try-reload-or-restart ssh      # si ya estaba en marcha, que lea la configuración nueva
     echo "Acceso remoto ENCENDIDO (solo red local). Dirección de este equipo:"
     ip -4 -o addr show scope global | awk '{print "  ssh '"${SUDO_USER:-usuario}"'@" $4}' | sed 's#/[0-9]*$##'
     echo "Para apagarlo: sudo leksso-acceso-remoto off"

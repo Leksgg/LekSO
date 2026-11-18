@@ -32,6 +32,7 @@ import json
 import os
 import pwd
 import re
+import stat
 import subprocess
 import sys
 
@@ -268,6 +269,20 @@ def rutas_a_vigilar():
     return rutas
 
 
+def leer_normal(ruta, n):
+    """Lee hasta n bytes de un ARCHIVO NORMAL sin poder quedarse colgado: se abre sin bloquear y se comprueba, ya
+    abierto, que no es una tubería, un dispositivo o similar (estos programas corren como root sobre rutas que
+    el usuario puede cambiar). Devuelve (tipo_de_stat, datos)."""
+    fd = os.open(ruta, os.O_RDONLY | os.O_NONBLOCK | os.O_CLOEXEC)
+    try:
+        st = os.fstat(fd)
+        if not stat.S_ISREG(st.st_mode):
+            raise OSError("no es un archivo normal")
+        return st, os.read(fd, n)
+    finally:
+        os.close(fd)
+
+
 def escanear():
     """{ruta: {tam, mtime, hash}} de los ejecutables y AppImage de las carpetas vigiladas. Los comandos de LeksSO no cuentan."""
     visto = {}
@@ -286,9 +301,8 @@ def escanear():
         if not (os.access(ruta, os.X_OK) or nombre.endswith(".AppImage")):
             continue
         try:
-            st = os.stat(ruta)
-            with open(ruta, "rb") as f:
-                h = hashlib.sha256(f.read(4_000_000)).hexdigest()[:16]
+            st, datos = leer_normal(ruta, 4_000_000)
+            h = hashlib.sha256(datos).hexdigest()[:16]
         except OSError:
             continue
         visto[ruta] = {"tam": st.st_size, "mtime": int(st.st_mtime), "hash": h, "uid": st.st_uid}
