@@ -3,7 +3,7 @@
 Formato: `+` nuevo · `-` eliminado o retirado · `~` modificado · `*` otros.
 Lo más reciente, arriba.
 
-## Sin publicar
+## Alpha 0.1.19 · 2026-11-18
 
 ~ Apariencia ya cambia todo el escritorio de verdad: además de barra, avisos y bordes, ahora también el terminal (se recarga sin cerrarlo), el panel de la IA, Archivos (incluidos «Lugares» y el árbol de carpetas) y el resto de ventanas de LeksSO, que se repintan solas con el tema nuevo sin cerrarlas ni abrirlas de nuevo. La pantalla de bloqueo estrena también el color del tema.
 ~ «Lugares» en Archivos ahora muestra Descargas, Documentos, Imágenes, Vídeos y Música además de Inicio y Escritorio: se crean al instalar, porque solo salían las que existían.
