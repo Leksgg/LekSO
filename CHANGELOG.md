@@ -3,7 +3,7 @@
 Formato: `+` nuevo · `-` eliminado o retirado · `~` modificado · `*` otros.
 Lo más reciente, arriba.
 
-## Sin publicar
+## Beta 0.1.22 · 2026-11-18
 
 Revisión de seguridad de la 0.1.21. Todo lo que sigue sale de una revisión externa del código; cada punto se comprobó antes de arreglarlo.
 
