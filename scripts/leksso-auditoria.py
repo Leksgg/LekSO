@@ -355,11 +355,26 @@ def barra():
     print(json.dumps({"text": texto, "tooltip": tip, "class": "novedad" if n else ""}, ensure_ascii=False))
 
 
+def riel():
+    """El botón de seguridad del rail: siempre se ve; se ilumina si hay novedades de instalaciones o de conexiones."""
+    d = json.loads(leer(PUBLICO) or "{}")
+    c = json.loads(leer(RAIZ + "/var/lib/leksso/conexiones-estado.json") or "{}")
+    avisos = []
+    if d.get("sin_revisar"):
+        avisos.append(f"{d['sin_revisar']} programa(s) instalado(s) de origen desconocido")
+    if c.get("novedades"):
+        avisos.append(f"{c['novedades']} programa(s) nuevo(s) conectando sin validar")
+    if c.get("envios_altos"):
+        avisos.append(f"{c['envios_altos']} programa(s) enviando más de lo habitual")
+    tip = "Seguridad: conexiones e instalaciones" + ("\n" + "\n".join(avisos) if avisos else "")
+    print(json.dumps({"text": "\uf132", "tooltip": tip, "class": "novedad" if avisos else ""}, ensure_ascii=False))
+
+
 def main(a):
     p = argparse.ArgumentParser(prog="leksso-auditoria", description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     s = p.add_subparsers(dest="orden", required=True)
     x = s.add_parser("listar"); x.add_argument("--ultimos", type=int, default=300); x.add_argument("--no-confirmados", action="store_true")
-    for n in ("verificar", "foto", "estado", "barra"):
+    for n in ("verificar", "foto", "estado", "barra", "riel"):
         s.add_parser(n)
     x = s.add_parser("revisar"); x.add_argument("n", type=int)
     x = s.add_parser("gancho"); x.add_argument("fase", choices=["pre", "post"])
@@ -371,6 +386,7 @@ def main(a):
         gancho(o.fase); return 0
     if o.orden == "estado": estado(); return 0
     if o.orden == "barra": barra(); return 0
+    if o.orden == "riel": riel(); return 0
     exige_root()
     if o.orden == "listar": listar(max(1, min(o.ultimos, 5000)), o.no_confirmados)
     elif o.orden == "verificar": print(json.dumps(verificar(), ensure_ascii=False))

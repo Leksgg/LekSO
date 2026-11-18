@@ -1,0 +1,13 @@
+[Unit]
+Description=Bloqueos de destinos elegidos por el usuario (monitor de conexiones de LeksSO)
+After=nftables.service
+# Si se reinicia el cortafuegos, sus reglas se recargan enteras y las nuestras se perderían: esta unidad se reinicia con él.
+PartOf=nftables.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/local/bin/leksso-conexiones aplicar-bloqueos
+
+[Install]
+WantedBy=multi-user.target

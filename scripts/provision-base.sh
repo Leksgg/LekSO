@@ -238,7 +238,7 @@ printf '%%sudo ALL=(root) NOPASSWD: /usr/local/sbin/leksso-juego-raiz on, /usr/l
 chmod 0440 /etc/sudoers.d/leksso-juego
 visudo -cf /etc/sudoers.d/leksso-juego >/dev/null || rm -f /etc/sudoers.d/leksso-juego
 install -d /usr/local/lib/leksso-ui
-install -m 0644 "$RAIZ/config/ui/leksso_ui.py" /usr/local/lib/leksso-ui/
+install -m 0644 "$RAIZ/config/ui/leksso_ui.py" "$RAIZ/config/ui/leksso_conexiones_ui.py" /usr/local/lib/leksso-ui/
 install -m 0644 "$RAIZ"/config/applications/*.desktop /usr/share/applications/
 install -m 0755 "$RAIZ/scripts/asociar-archivos.py" /usr/local/bin/leksso-asociar
 install -m 0755 "$RAIZ/scripts/leksso-apps.py" /usr/local/bin/leksso-apps
@@ -285,6 +285,18 @@ install -m 0755 "$RAIZ/config/bin/leksso-seguridad" /usr/local/bin/leksso-seguri
 systemctl daemon-reload >/dev/null 2>&1 || true
 systemctl enable --now leksso-auditoria-foto.timer >/dev/null 2>&1 || true
 /usr/local/bin/leksso-auditoria foto >/dev/null 2>&1 || true
+
+# Monitor de conexiones: sin procesos residentes (un temporizador cada minuto), con la lista de confianza de fábrica aparte
+# de la del usuario (/var/lib/leksso-conexiones, que esta instalación nunca toca) y los bloqueos recargados al arrancar.
+install -m 0755 "$RAIZ/scripts/leksso-conexiones.py" /usr/local/bin/leksso-conexiones
+install -d /usr/local/share/leksso
+install -m 0644 "$RAIZ/config/conexiones/confiables-de-fabrica.json" /usr/local/share/leksso/confiables-de-fabrica.json
+install -m 0644 "$RAIZ/config/systemd/leksso-conexiones-foto.service" "$RAIZ/config/systemd/leksso-conexiones-foto.timer" \
+  "$RAIZ/config/systemd/leksso-bloqueos.service" /etc/systemd/system/
+systemctl daemon-reload >/dev/null 2>&1 || true
+systemctl enable --now leksso-conexiones-foto.timer >/dev/null 2>&1 || true
+systemctl enable --now leksso-bloqueos.service >/dev/null 2>&1 || true
+/usr/local/bin/leksso-conexiones foto >/dev/null 2>&1 || true
 
 # Ya instalado lo nuevo: borrar lo que quedó con el nombre antiguo
 bash "$(dirname "${BASH_SOURCE[0]}")/migrar-nombre.sh" "$USUARIO" limpiar || true

@@ -1,0 +1,8 @@
+[Unit]
+Description=Foto de las conexiones de red (monitor de conexiones de LeksSO)
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/leksso-conexiones foto
+Nice=19
+IOSchedulingClass=idle

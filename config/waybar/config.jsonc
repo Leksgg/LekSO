@@ -8,12 +8,19 @@
     "modules-left": [
       "custom/apps",
       "custom/archivos",
+      "custom/seguridad",
       "custom/portapapeles",
       "custom/modelos",
       "custom/asistente",
       "custom/juego",
       "custom/config"
     ],
+    "custom/seguridad": {
+      "exec": "leksso-auditoria riel",
+      "return-type": "json",
+      "interval": 120,
+      "on-click": "leksso-seguridad --conexiones"
+    },
     "custom/archivos": {
       "format": "",
       "tooltip-format": "Plegar o desplegar las carpetas (Súper+E)",
@@ -87,7 +94,6 @@
       "custom/version",
       "custom/actualizacion",
       "custom/copias",
-      "custom/seguridad",
       "custom/ia",
       "cpu",
       "memory",
@@ -169,13 +175,6 @@
       "interval": 60,
       "tooltip-format": "Versión instalada de LeksSO (clic: actualizaciones)",
       "on-click": "leksso-actualizaciones"
-    },
-    "custom/seguridad": {
-      "exec": "leksso-auditoria barra",
-      "return-type": "json",
-      "interval": 300,
-      "hide-empty-text": true,
-      "on-click": "leksso-seguridad"
     },
     "custom/copias": {
       "exec": "leksso-copias barra",

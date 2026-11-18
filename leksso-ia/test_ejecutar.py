@@ -77,6 +77,22 @@ class Ordenes(unittest.TestCase):
                     self.ia("claude", op="ejecutar", orden=orden, admin=admin)
         self.assertEqual(self.hechas, [])
 
+    def test_monitor_de_conexiones_leer_pide_permiso_y_actuar_nunca(self):
+        fijar(claude={"activo": True, "comandos": True, "admin": "libre"})
+        for orden in ("leksso-conexiones listar", "sudo -n leksso-conexiones estado"):
+            for admin in (False, True):
+                r = self.ia("claude", op="ejecutar", orden=orden, admin=admin)
+                self.assertEqual((r["estado"], r["motivo"]), ("pendiente", "registro de seguridad"), orden)
+        self.assertEqual(self.hechas, [])
+        for orden in ("sudo leksso-conexiones confiar pkg:malware", "leksso-conexiones bloquear 1.2.3.4", "leksso-conexiones desbloquear ab12cd34",
+                      "sudo leksso-conexiones parar x 1 /bin/x", "nft flush table inet leksso_usuario", "nft delete table inet leksso_usuario",
+                      "cat /var/lib/leksso-conexiones/confiables.json", "rm /var/lib/leksso-conexiones/bloqueos.json",
+                      "systemctl stop leksso-conexiones-foto.timer"):
+            for admin in (False, True):
+                with self.assertRaises(Denegado, msg=orden):
+                    self.ia("claude", op="ejecutar", orden=orden, admin=admin)
+        self.assertEqual(self.hechas, [])
+
     def test_regla_de_copias_sin_falsos_positivos(self):
         for ok in ("ls ~/Documentos", "apt update", "git status", "echo hola"):
             self.assertFalse(asistentes.toca_copias(ok), ok)

@@ -32,7 +32,8 @@ class Pruebas(unittest.TestCase):
     def test_instala_lo_que_las_ventanas_y_el_registro_necesitan(self):
         texto = "\n".join(self.lineas)
         for esperado in ("leksso-auditoria", "99leksso-auditoria", "leksso-seguridad", "leksso-copias", "leksso-copias-ui",
-                         "leksso-auditoria-foto.timer", "leksso-tema", "leksso-apariencia"):
+                         "leksso-auditoria-foto.timer", "leksso-tema", "leksso-apariencia", "leksso-conexiones", "leksso-conexiones-foto.timer",
+                         "leksso-bloqueos.service", "leksso_conexiones_ui.py", "confiables-de-fabrica.json"):
             self.assertIn(esperado, texto, esperado)
 
 

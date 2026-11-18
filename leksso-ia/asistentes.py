@@ -120,8 +120,8 @@ def toca_copias(orden):
 # El registro de instalaciones y de conexiones: la IA puede LEERLO solo si el usuario lo aprueba en el panel, y no puede
 # tocarlo nunca (ni el programa, ni los datos, ni los sellos). Igual que las copias, es una barrera de texto en el
 # permisor y en el servicio de administración; la real es que los datos son de root, con permisos 0600 y de solo añadir.
-_AUDITORIA = re.compile(r"leksso[-_]auditoria|/var/lib/leksso-auditoria|/etc/leksso/auditoria|/var/lib/leksso/seguridad|/run/leksso-auditoria|99leksso-auditoria", re.I)
-_AUDITORIA_LEER = re.compile(r"^\s*(?:sudo\s+(?:-n\s+)?)?leksso-auditoria\s+(?:listar|estado|verificar)(?:\s+--[a-z-]+(?:\s+\d+)?)*\s*$")
+_AUDITORIA = re.compile(r"leksso[-_]auditoria|leksso[-_]conexiones|leksso_usuario|/var/lib/leksso-auditoria|/var/lib/leksso-conexiones|/etc/leksso/auditoria|/var/lib/leksso/seguridad|/var/lib/leksso/conexiones|/run/leksso-auditoria|99leksso-auditoria", re.I)
+_AUDITORIA_LEER = re.compile(r"^\s*(?:sudo\s+(?:-n\s+)?)?leksso-(?:auditoria|conexiones)\s+(?:listar|estado|verificar)(?:\s+--[a-z-]+(?:\s+\d+)?)*\s*$")
 
 
 def toca_auditoria(orden):

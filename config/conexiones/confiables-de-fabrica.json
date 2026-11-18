@@ -1,0 +1,9 @@
+{
+  "nota": "Programas de Debian en los que se confía de fábrica: sistema, red, actualizaciones y las aplicaciones que LeksSO instala. No incluye lenguajes como python o node (cualquier script los usaría) ni nada que llegue fuera de un paquete. El usuario añade o quita lo suyo en Ajustes, Seguridad.",
+  "identidades": [
+    "pkg:apt", "pkg:network-manager", "pkg:systemd-timesyncd", "pkg:systemd-resolved", "pkg:systemd", "pkg:chrony",
+    "pkg:unattended-upgrades", "pkg:fwupd", "pkg:wpasupplicant", "pkg:isc-dhcp-client", "pkg:dhcpcd-base", "pkg:avahi-daemon",
+    "pkg:cups-daemon", "pkg:cups-browsed", "pkg:bluez", "pkg:plocate", "pkg:restic",
+    "pkg:steam-launcher", "pkg:steam", "pkg:brave-browser", "pkg:discord", "pkg:obsidian"
+  ]
+}
