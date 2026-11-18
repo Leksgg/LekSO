@@ -307,7 +307,7 @@ class Explorador(QtCore.QObject):
             self.e_pie.setText(f"{min(len(rutas), 200)} resultados{mas}. El índice se renueva cada día.")
 
     def cerrar_busqueda(self):
-        if self.res.isVisible():
+        if not self.res.isHidden():
             self.res.hide()
             self.lista.show()
             self.ir(self.ruta)
