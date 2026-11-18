@@ -88,7 +88,7 @@ preparar_clon() {
 # Comprueba la versión con la clave incluida en ESTE script (no con la del repositorio descargado).
 # Devuelve por variables globales: COMMIT, FIRMA
 verificar_version() {
-  local tag="$1" tmp huella salida
+  local tag="$1" tmp huella salida cab
   tmp="$(mktemp -d)"
   trap "rm -rf '$tmp'" RETURN      # se expande ahora: el trap RETURN se repite al salir de otras funciones
   printf '%s\n' "$CLAVE_PUBLICA" > "$tmp/allowed_signers"
@@ -101,6 +101,13 @@ $salida"
   case "$salida" in *'Good "git" signature for '*) ;; *) die "La firma de $tag no es de un firmante autorizado. No se instala nada." ;; esac
   COMMIT="$(git -C "$CLON" rev-list -n 1 "$tag")"
   [[ "$COMMIT" =~ ^[0-9a-f]{40}$ ]] || die "No se pudo identificar el commit de $tag."
+  # El nombre firmado dentro de la etiqueta debe ser el de la etiqueta usada (si no, una versión antigua
+  # firmada podría hacerse pasar por una nueva).
+  cab="$(git -C "$CLON" cat-file tag "$tag" 2>/dev/null | sed '/^$/q')"
+  [ "$(printf '%s\n' "$cab" | sed -n 's/^tag //p' | head -1)" = "$tag" ] \
+    && [ "$(printf '%s\n' "$cab" | sed -n 's/^object //p' | head -1)" = "$COMMIT" ] \
+    && [ "$(printf '%s\n' "$cab" | sed -n 's/^type //p' | head -1)" = "commit" ] \
+    || die "La etiqueta $tag no es una etiqueta firmada con ese mismo nombre. No se instala nada."
   git -C "$CLON" merge-base --is-ancestor "$COMMIT" "$RAMA" \
     || die "La versión $tag no pertenece a la rama principal del repositorio. No se instala nada."
   FIRMA="$HUELLA_ESPERADA"
@@ -126,7 +133,7 @@ main() {
   preparar_clon
   git -C "$CLON" rev-parse -q --verify "refs/tags/$tag" >/dev/null || die "La versión $tag no existe en el repositorio."
   verificar_version "$tag"
-  local nombre; nombre="$(git -C "$CLON" show "$tag:VERSION" 2>/dev/null | tr -d '[:space:]' || true)"
+  local nombre; nombre="$(git -C "$CLON" show "$COMMIT:VERSION" 2>/dev/null | tr -d '[:space:]' || true)"
   echo
   echo "Se va a instalar LeksSO ${nombre:-$tag} para el usuario «$USUARIO»."
   echo "Cambiará la configuración del sistema (escritorio, cortafuegos, red, actualizaciones)."
@@ -137,8 +144,11 @@ main() {
     read -r -p "¿Continuar? [s/N] " r
     [[ "$r" =~ ^[sS]$ ]] || { echo "Cancelado."; return 1; }
   fi
-  git -C "$CLON" checkout --force --detach "$tag" >/dev/null 2>&1 || die "No se pudo preparar la versión."
+  # Se instala EXACTAMENTE el commit que se verificó, no lo que el nombre de la etiqueta señale ahora.
+  git -C "$CLON" checkout --force --detach "$COMMIT" >/dev/null 2>&1 || die "No se pudo preparar la versión."
   git -C "$CLON" clean -fdxq
+  [ "$(git -C "$CLON" rev-parse HEAD)" = "$COMMIT" ] && [ -z "$(git -C "$CLON" status --porcelain)" ] \
+    || die "La copia preparada no coincide con la versión verificada. No se instala nada."
   info "Instalando (puede tardar unos minutos)"
   bash "$CLON/scripts/provision-base.sh" "$USUARIO"
   install -d -m 0755 /var/lib/leksso
@@ -151,5 +161,10 @@ main() {
 
 # Para las pruebas se puede cargar el script sin ejecutarlo.
 if [ "${LEKSSO_INSTALAR_SOLO_FUNCIONES:-}" != "1" ]; then
+  # Una sola instalación o actualización a la vez: comparten la copia del repositorio.
+  if [ "$(id -u)" -eq 0 ] && [ -d /run/lock ]; then
+    exec 9>/run/lock/leksso-actualizar.lock
+    flock -n 9 || die "Ya hay otra instalación o actualización de LeksSO en marcha."
+  fi
   main "$@"
 fi

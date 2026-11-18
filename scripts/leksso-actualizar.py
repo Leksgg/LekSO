@@ -30,6 +30,7 @@ ANTERIOR = "/var/lib/leksso/version-anterior"
 SIN_FIRMA = "/etc/leksso/sin-firma"                # fase de pruebas: si existe, no se exige firma (lo crea el USB de pruebas)
 INSTALADA = "/var/lib/leksso/instalada.json"      # versión, commit y firmante de lo instalado
 RAMA_PRINCIPAL = "origin/main"
+BLOQUEO = "/run/lock/leksso-actualizar.lock"
 CACHE = os.path.expanduser("~/.cache/leksso/actualizacion.json")
 AVISADO = os.path.expanduser("~/.cache/leksso/avisado")
 
@@ -203,6 +204,12 @@ def verificar(tag):
     commit = c.stdout.strip()
     if c.returncode != 0 or not re.fullmatch(r"[0-9a-f]{40}", commit):
         sys.exit(f"No se pudo identificar el commit de {tag}.")
+    # El nombre que lleva DENTRO la etiqueta firmada debe ser el de la etiqueta que se usa: si no, alguien con
+    # acceso al repositorio podría poner una versión antigua firmada bajo el nombre de una más nueva.
+    cab = git("cat-file", "tag", tag, cwd=CLON)
+    campos = dict(l.split(" ", 1) for l in cab.stdout.split("\n\n", 1)[0].splitlines() if " " in l)
+    if cab.returncode != 0 or campos.get("tag") != tag or campos.get("type") != "commit" or campos.get("object") != commit:
+        sys.exit(f"La etiqueta {tag} no es una etiqueta firmada con ese mismo nombre. No se instala nada.")
     anc = git("merge-base", "--is-ancestor", commit, RAMA_PRINCIPAL, cwd=CLON)
     if anc.returncode != 0:
         sys.exit(f"La versión {tag} no pertenece a la rama principal del repositorio. No se instala nada.")
@@ -216,10 +223,15 @@ def verificar(tag):
 
 
 def instalar_version(tag, usuario, commit="", huella=""):
-    r = git("checkout", "--force", "--detach", tag, cwd=CLON)
+    # Se instala EXACTAMENTE el commit que se verificó, no lo que el nombre de la etiqueta señale ahora.
+    if not re.fullmatch(r"[0-9a-f]{40}", commit or ""):
+        sys.exit("Falta el commit verificado: no se instala.")
+    r = git("checkout", "--force", "--detach", commit, cwd=CLON)
     if r.returncode != 0:
         sys.exit("No se pudo preparar la versión: " + r.stderr.strip()[:200])
     git("clean", "-fdx", cwd=CLON)
+    if git("rev-parse", "HEAD", cwd=CLON).stdout.strip() != commit or git("status", "--porcelain", cwd=CLON).stdout.strip():
+        sys.exit("La copia preparada no coincide con la versión verificada. No se instala nada.")
     script = os.path.join(CLON, "scripts", "provision-base.sh")
     print(f"Instalando LeksSO {bonita(tag.lstrip('v'))} (puede tardar unos minutos)…")
     p = subprocess.run(["bash", script, usuario])
@@ -241,8 +253,21 @@ def usuario_real():
     return u
 
 
+def bloquear():
+    """Una sola instalación o actualización a la vez: dos a la vez compartirían la misma copia del repositorio."""
+    import fcntl
+    os.makedirs(os.path.dirname(BLOQUEO), exist_ok=True)
+    f = open(BLOQUEO, "w")
+    try:
+        fcntl.flock(f, fcntl.LOCK_EX | fcntl.LOCK_NB)
+    except OSError:
+        sys.exit("Ya hay otra instalación o actualización de LeksSO en marcha.")
+    return f
+
+
 def aplicar(tag=None):
     raiz_o_salir()
+    _cerrojo = bloquear()
     usuario = usuario_real()
     actual = version_actual()
     destino = (tag or "").lstrip("v") or ultima_mayor(actual)
@@ -264,6 +289,7 @@ def aplicar(tag=None):
 
 def volver():
     raiz_o_salir()
+    _cerrojo = bloquear()
     usuario = usuario_real()
     try:
         previa = open(ANTERIOR, encoding="utf-8").read().strip()

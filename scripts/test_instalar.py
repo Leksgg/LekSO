@@ -96,6 +96,14 @@ class Verificacion(Base):
         self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
         self.assertIn("Firma válida", r.stdout)
 
+    def test_nombre_firmado_distinto_del_usado(self):
+        self.etiqueta("v0.1.1-alpha", self.oficial)
+        objeto = sh("git", "rev-parse", "v0.1.1-alpha", cwd=self.repo)
+        sh("git", "update-ref", "refs/tags/v0.9.0-alpha", objeto, cwd=self.repo)     # firma buena, nombre ajeno
+        r = self.verificar("v0.9.0-alpha")
+        self.assertNotEqual(r.returncode, 0)
+        self.assertIn("mismo nombre", r.stdout + r.stderr)
+
     def test_firmada_con_otra_clave(self):
         self.etiqueta("v0.1.1-alpha", self.otra)
         r = self.verificar("v0.1.1-alpha")

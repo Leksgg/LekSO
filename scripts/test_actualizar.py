@@ -42,6 +42,13 @@ class Versiones(unittest.TestCase):
             self.assertIsNone(act.ETIQUETA.match(malo or ""), repr(malo))
 
 
+def escribir_y_ok(lista, cmd, original, *a, **k):
+    if cmd and cmd[0] == "bash":                  # solo la provisión se simula; git sigue siendo git
+        lista.append(cmd)
+        return subprocess.CompletedProcess(cmd, 0)
+    return original(cmd, *a, **k)
+
+
 class Verificacion(unittest.TestCase):
     def setUp(self):
         self.d = tempfile.mkdtemp(prefix="leksso-act-")
@@ -75,6 +82,38 @@ class Verificacion(unittest.TestCase):
         commit, huella = act.verificar("v0.1.1-alpha")
         self.assertEqual(commit, sh("git", "rev-parse", "HEAD", cwd=self.repo))
         self.assertTrue(huella.startswith("SHA256:"))
+
+    def test_version_antigua_firmada_con_nombre_de_otra_mas_nueva(self):
+        """Una etiqueta firmada v0.1.1 que alguien publica como v0.9.0: la firma es válida pero el nombre no coincide."""
+        self.etiqueta("v0.1.1-alpha", self.oficial)
+        objeto = sh("git", "rev-parse", "v0.1.1-alpha", cwd=self.repo)
+        sh("git", "update-ref", "refs/tags/v0.9.0-alpha", objeto, cwd=self.repo)
+        with self.assertRaises(SystemExit) as e:
+            act.verificar("v0.9.0-alpha")
+        self.assertIn("mismo nombre", str(e.exception))
+        act.verificar("v0.1.1-alpha")                      # la verdadera sigue pasando
+
+    def test_se_instala_el_commit_verificado_aunque_la_etiqueta_se_mueva(self):
+        self.etiqueta("v0.1.1-alpha", self.oficial)
+        commit, huella = act.verificar("v0.1.1-alpha")
+        open(os.path.join(self.repo, "a"), "w").write("2")
+        sh("git", "commit", "-qam", "dos", cwd=self.repo)
+        sh("git", "tag", "-f", "v0.1.1-alpha", "HEAD", cwd=self.repo)        # la etiqueta ahora señala otro commit
+        escrito = []
+        viejos = (act.subprocess.run, act.FICHERO_VERSION, act.INSTALADA)
+        tmp = tempfile.mkdtemp()
+        act.FICHERO_VERSION, act.INSTALADA = os.path.join(tmp, "v"), os.path.join(tmp, "i")
+        act.subprocess.run = lambda cmd, *a, **k: escribir_y_ok(escrito, cmd, viejos[0], *a, **k)
+        try:
+            act.instalar_version("v0.1.1-alpha", "u", commit, huella)
+        finally:
+            act.subprocess.run, act.FICHERO_VERSION, act.INSTALADA = viejos
+        self.assertEqual(sh("git", "rev-parse", "HEAD", cwd=self.repo), commit)
+        self.assertEqual(open(os.path.join(self.repo, "a")).read(), "1")
+
+    def test_sin_commit_verificado_no_instala(self):
+        with self.assertRaises(SystemExit):
+            act.instalar_version("v0.1.1-alpha", "u", "", "")
 
     def test_firmada_con_otra_clave(self):
         self.etiqueta("v0.1.1-alpha", self.otra)
