@@ -64,7 +64,7 @@ window#waybar.raiz {
   border-right: 1px solid #25393c;
   border-top: none;
 }
-#custom-juego, #custom-portapapeles, #custom-apps, #custom-asistente, #custom-archivos, #custom-modelos, #custom-config, #custom-vista, #custom-flotantes, #custom-energia, #custom-streamdeck {
+#custom-juego, #custom-portapapeles, #custom-apps, #custom-asistente, #custom-archivos, #custom-modelos, #custom-config, #custom-vista, #custom-flotantes, #custom-energia {
   font-family: "FontAwesome", "DejaVu Sans";
   font-size: 20px;
   padding: 14px 0;
@@ -72,7 +72,7 @@ window#waybar.raiz {
   color: #94a1a3;
   background: transparent;
 }
-#custom-juego:hover, #custom-portapapeles:hover, #custom-apps:hover, #custom-asistente:hover, #custom-archivos:hover, #custom-modelos:hover, #custom-config:hover, #custom-vista:hover, #custom-flotantes:hover, #custom-streamdeck:hover {
+#custom-juego:hover, #custom-portapapeles:hover, #custom-apps:hover, #custom-asistente:hover, #custom-archivos:hover, #custom-modelos:hover, #custom-config:hover, #custom-vista:hover, #custom-flotantes:hover {
   color: #00c4bf;
   background: #003635;
 }

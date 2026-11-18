@@ -11,7 +11,6 @@
       "custom/portapapeles",
       "custom/modelos",
       "custom/asistente",
-      "custom/streamdeck",
       "custom/juego",
       "custom/config"
     ],
@@ -46,11 +45,6 @@
       "format": "",
       "tooltip-format": "Restaurar la vista por defecto",
       "on-click": "sh -c 'leksso-zonas --restaurar >/tmp/leksso-zonas.log 2>&1'"
-    },
-    "custom/streamdeck": {
-      "format": "",
-      "tooltip-format": "Stream Deck",
-      "on-click": "streamdeck"
     },
     "custom/apps": {
       "format": "",

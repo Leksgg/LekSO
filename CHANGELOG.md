@@ -6,6 +6,7 @@ Lo más reciente, arriba.
 ## Sin publicar
 
 + Tercer tema de color, **Waves** (azul marino con acento celeste), en Ajustes → Apariencia. Cambia todo el escritorio igual que Marea y Pizarra.
+- Se quita de la barra lateral el botón del Stream Deck: aparecía siempre, haya o no dispositivo, y sin él no hacía nada. El programa sigue instalado y se abre desde Aplicaciones; al conectar un Stream Deck, su servicio se sigue iniciando solo.
 - Se quita de Apariencia el botón «Letra e iconos», que abría la herramienta de configuración de Qt (qt6ct): solo servía para elegir esquemas de colores sueltos que no seguían el tema y confundía con la ventana de Apariencia. Las apps Qt siguen la paleta del tema.
 
 ## Alpha 0.1.19 · 2026-11-18
