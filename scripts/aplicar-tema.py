@@ -6,12 +6,13 @@ calculan en OKLCH para que acentos y estados tengan el mismo peso visual en todo
 matices. Este script cambia, en cada archivo, los colores del tema activo por los del
 nuevo tema, y apunta cuál queda activo en config/tema/activo.
 
-Temas: marea (por defecto), pizarra.  Solo modo oscuro por ahora.
+Temas: marea (por defecto), pizarra, waves.  Solo modo oscuro por ahora.
 
 Uso:
   python3 aplicar-tema.py marea            aplica y deja los .json de tokens al día
   python3 aplicar-tema.py pizarra
   python3 aplicar-tema.py --comprobar      verifica contrastes y matices de todos los temas
+  python3 aplicar-tema.py --json           escribe config/tema/<tema>.json de todos los temas sin tocar nada más
 """
 import json
 import math
@@ -38,6 +39,7 @@ HEREDADO = {
 TEMAS = {
     "marea":   {"nh": 205, "nc": .022, "ah": 192, "sh": 245, "magenta": 320},
     "pizarra": {"nh": 75,  "nc": .010, "ah": 238, "sh": 195, "magenta": 320},
+    "waves":   {"nh": 265, "nc": .050, "ah": 240, "sh": 200, "magenta": 320},
 }
 ESTADOS = {"ok": (138, 148, 158), "warn": (80, 88, 96), "bad": (20, 26, 32)}
 
@@ -229,6 +231,12 @@ def aplicar(destino):
 if __name__ == "__main__":
     if len(sys.argv) != 2:
         sys.exit(__doc__)
+    if sys.argv[1] == "--json":
+        for nombre in TEMAS:
+            (ACTIVO.parent / f"{nombre}.json").write_text(
+                json.dumps({"tema": nombre, "modo": "oscuro", "colores": {k: "#" + v for k, v in tokens(nombre)[0].items()}},
+                           indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+        sys.exit(0)
     if sys.argv[1] == "--comprobar":
         sys.exit(1 if comprobar() else 0)
     aplicar(sys.argv[1])

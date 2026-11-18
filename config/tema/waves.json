@@ -1,0 +1,31 @@
+{
+  "tema": "waves",
+  "modo": "oscuro",
+  "colores": {
+    "bg": "#040b22",
+    "s1": "#0b152c",
+    "s2": "#121d36",
+    "line": "#263454",
+    "off": "#071027",
+    "alt": "#081129",
+    "base2": "#0a142b",
+    "mid": "#19243e",
+    "dark": "#010317",
+    "text": "#e3ebfd",
+    "faint": "#66728a",
+    "soft": "#00314d",
+    "muted": "#949fb5",
+    "acc": "#39b5ff",
+    "acc_hi": "#85cdff",
+    "acc_dim": "#3a78a1",
+    "sec": "#46c6cd",
+    "magenta": "#d398e0",
+    "ok": "#85ce6c",
+    "warn": "#fdc357",
+    "bad": "#ff735a",
+    "ok_soft": "#1a2c13",
+    "warn_soft": "#332305",
+    "warn_soft2": "#2d1f05",
+    "bad_soft": "#3f1a13"
+  }
+}

@@ -3,6 +3,11 @@
 Formato: `+` nuevo · `-` eliminado o retirado · `~` modificado · `*` otros.
 Lo más reciente, arriba.
 
+## Sin publicar
+
++ Tercer tema de color, **Waves** (azul marino con acento celeste), en Ajustes → Apariencia. Cambia todo el escritorio igual que Marea y Pizarra.
+~ Si se elige un esquema de colores suelto en «Letra e iconos» (qt6ct), el tema de Apariencia lo vuelve a poner en su sitio al cambiar de tema, para que las apps Qt sigan el tema elegido.
+
 ## Alpha 0.1.19 · 2026-11-18
 
 ~ Apariencia ya cambia todo el escritorio de verdad: además de barra, avisos y bordes, ahora también el terminal (se recarga sin cerrarlo), el panel de la IA, Archivos (incluidos «Lugares» y el árbol de carpetas) y el resto de ventanas de LeksSO, que se repintan solas con el tema nuevo sin cerrarlas ni abrirlas de nuevo. La pantalla de bloqueo estrena también el color del tema.

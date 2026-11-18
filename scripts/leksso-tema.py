@@ -116,6 +116,29 @@ def imagen_de_bloqueo(nombre):
         os.replace(ruta + ".nuevo", ruta)
 
 
+def fijar_qt6ct():
+    """qt6ct deja elegir otro esquema de colores suelto (p. ej. «waves») y entonces las apps Qt dejan de seguir el tema.
+    Se vuelve a apuntar a la paleta del tema, que es la que este comando mantiene al día."""
+    ruta = os.path.join(CASA, ".config", "qt6ct", "qt6ct.conf")
+    paleta = os.path.join(CASA, ".config", "qt6ct", "colors", "leksso.conf")
+    try:
+        lineas = open(ruta, encoding="utf-8", newline="").read().splitlines(keepends=True)
+    except OSError:
+        return
+    nuevo = []
+    for l in lineas:
+        fin = "\r\n" if l.endswith("\r\n") else "\n"
+        if l.startswith("color_scheme_path="):
+            l = "color_scheme_path=" + paleta + fin
+        elif l.startswith("custom_palette="):
+            l = "custom_palette=true" + fin
+        nuevo.append(l)
+    texto = "".join(nuevo)
+    if texto != "".join(lineas):
+        open(ruta + ".nuevo", "w", encoding="utf-8", newline="").write(texto)
+        os.replace(ruta + ".nuevo", ruta)
+
+
 def guardar(nombre):
     os.makedirs(os.path.dirname(ESTADO), exist_ok=True)
     # atómico (archivo nuevo + renombrar): así las ventanas abiertas, que vigilan la carpeta, se enteran del cambio
@@ -129,6 +152,7 @@ def aplicar(destino, desde):
     mapa = {} if desde == destino else mapa_de_colores(desde, destino)
     n = recolorear_archivos(mapa) if mapa else 0
     imagen_de_bloqueo(destino)
+    fijar_qt6ct()
     guardar(destino)
     if n:
         recargar()

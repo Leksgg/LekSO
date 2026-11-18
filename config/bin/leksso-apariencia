@@ -13,7 +13,8 @@ from PySide6 import QtCore, QtGui, QtWidgets
 sys.path.insert(0, "/usr/local/lib/leksso-ui")
 from leksso_ui import ESTILO_BASE, alternar, pintar, tema_activo, tokens  # noqa: E402
 
-NOMBRES = {"marea": ("Marea", "Petróleo oscuro con acento turquesa"), "pizarra": ("Pizarra", "Grafito cálido con acento azul")}
+NOMBRES = {"marea": ("Marea", "Petróleo oscuro con acento turquesa"), "pizarra": ("Pizarra", "Grafito cálido con acento azul"),
+           "waves": ("Waves", "Azul marino con acento celeste")}
 MUESTRA = ("bg", "s2", "line", "acc", "sec", "ok", "warn", "bad")
 
 
@@ -104,7 +105,7 @@ def main():
     app = QtWidgets.QApplication(sys.argv)
     app.setDesktopFileName("leksso-apariencia")
     w = Apariencia()
-    w.resize(460, 420)
+    w.resize(460, 520)
     w.show()
     return app.exec()
 
