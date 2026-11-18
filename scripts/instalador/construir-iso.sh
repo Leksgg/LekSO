@@ -94,7 +94,7 @@ $(variante 'Instalar LeksSO sin cifrar el disco (borra el disco que elijas)' pre
 $(variante 'Instalar LeksSO sin contraseña de usuario, disco cifrado (entra solo al escritorio)' preseed-sin-contrasena.cfg)
 $(variante 'Instalar LeksSO sin cifrar y sin contraseña (el más simple; borra el disco que elijas)' preseed-sin-cifrado-sin-contrasena.cfg)"
 fi
-python3 - "$ORIGEN_GRUB" "$TMP/grub.cfg" "$ENTRADA" <<'PY'
+python3 -I - "$ORIGEN_GRUB" "$TMP/grub.cfg" "$ENTRADA" <<'PY'
 import sys
 orig = open(sys.argv[1], encoding="utf-8").read()
 entrada = sys.argv[3]

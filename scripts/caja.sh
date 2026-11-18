@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Ejecuta un programa dentro de una caja (Bubblewrap) donde solo ve lo que se le concede.
-# Sin red, sin acceso a tu carpeta personal y con el sistema en solo lectura.
+# Sin red (o con red PROPIA vía pasta si se pide --red), sin acceso a tu carpeta personal y con el sistema en solo lectura.
 #
 # Uso:
 #   caja.sh [--rw CARPETA]... [--ro CARPETA]... [--env VAR=VALOR]... [--red] [--gui] [--audio] [--gpu]
@@ -53,7 +53,18 @@ ARGS=(
   --ro-bind /etc /etc --proc /proc --dev /dev --tmpfs /tmp --tmpfs /home --dir /home/caja
   --unshare-all --die-with-parent --new-session --cap-drop ALL
 )
-[ "$RED" -eq 1 ] && ARGS+=(--share-net)
+# Con --red la caja tiene su PROPIA red (pasta: sale a Internet, pero no ve los sockets locales ni los servicios
+# en localhost del equipo). Compartir la red del equipo daría acceso a los sockets «abstractos» (por ejemplo el de
+# instancia única de kitty) y a todo lo que escuche en 127.0.0.1. Sin pasta se avisa y se comparte, como antes.
+PREFIJO_RED=()
+if [ "$RED" -eq 1 ]; then
+  ARGS+=(--share-net)                     # dentro de la red que prepara pasta (o la del equipo si no hay pasta)
+  if [ "${LEKSSO_CAJA_RED_COMPARTIDA:-0}" != 1 ] && command -v pasta >/dev/null 2>&1; then
+    PREFIJO_RED=(pasta --config-net --quiet --)
+  else
+    echo "AVISO: sin pasta, la caja comparte la red del equipo (sockets locales y servicios en localhost incluidos)." >&2
+  fi
+fi
 
 # Pantalla, audio y GPU, solo si se piden. Dentro hay un /run/user/UID nuevo y vacío al que
 # se añaden únicamente estos sockets. Los sockets del permisor de IA (leksso-ia.sock y
@@ -96,4 +107,4 @@ if [ "$ESTRICTA" -eq 1 ]; then
   exec 9< <(python3 "$SC")
   ARGS+=(--seccomp 9)
 fi
-exec bwrap "${ARGS[@]}" "$@"
+exec "${PREFIJO_RED[@]}" bwrap "${ARGS[@]}" "$@"

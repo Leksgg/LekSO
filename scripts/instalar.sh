@@ -65,7 +65,7 @@ elegir_version() {
   tags="$(git ls-remote --tags --refs "$REPO" 'refs/tags/v*' 2>/dev/null | sed 's#.*refs/tags/##' | grep -E "$ETIQUETA" || true)"
   [ -n "$tags" ] || die "No encuentro versiones publicadas en $REPO (¿hay conexión?)."
   # orden por número de versión: 0.9.0 < 0.10.0; a igual número, alpha < beta < rc
-  echo "$tags" | python3 -c '
+  echo "$tags" | python3 -I -c '
 import re, sys
 rango = {"alpha": 0, "beta": 1, "rc": 2}
 def clave(t):

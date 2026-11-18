@@ -64,15 +64,21 @@ done
   [ -d /run/systemd/system ] && systemctl daemon-reload >/dev/null 2>&1
 fi
 
-# 4. Datos del usuario
+# 4. Datos del usuario. Se mueven COMO el usuario (no como root): un enlace simbólico en su carpeta no puede llevar
+#    el movimiento o el borrado a rutas del sistema.
 if [ -n "$HOME_USR" ] && [ -d "$HOME_USR" ]; then
-  mover "$HOME_USR/.config/lekso" "$HOME_USR/.config/leksso"
-  mover "$HOME_USR/.cache/lekso" "$HOME_USR/.cache/leksso"
-  mover "$HOME_USR/.local/share/lekso" "$HOME_USR/.local/share/leksso"
-  for f in "$HOME_USR"/.local/share/applications/lekso-*.desktop "$HOME_USR/.local/share/themes/LekSO"; do
-    [ -e "$f" ] && { rm -rf "$f"; hecho=1; }
-  done
-  chown -R "$USUARIO": "$HOME_USR/.config/leksso" "$HOME_USR/.cache/leksso" "$HOME_USR/.local/share/leksso" 2>/dev/null || true
+  movido="$(runuser -u "$USUARIO" -- bash -c '
+    H="$1"; hecho=0
+    mover() { [ -e "$1" ] || [ -L "$1" ] || return 0
+      if [ -e "$2" ]; then rm -rf "$1"; else mkdir -p "$(dirname "$2")"; mv "$1" "$2"; fi; hecho=1; }
+    mover "$H/.config/lekso" "$H/.config/leksso"
+    mover "$H/.cache/lekso" "$H/.cache/leksso"
+    mover "$H/.local/share/lekso" "$H/.local/share/leksso"
+    for f in "$H"/.local/share/applications/lekso-*.desktop "$H/.local/share/themes/LekSO"; do
+      [ -e "$f" ] && { rm -rf "$f"; hecho=1; }
+    done
+    echo "$hecho"' _ "$HOME_USR" 2>/dev/null || echo 0)"
+  [ "$movido" = 1 ] && hecho=1
 fi
 
 # 5. Compatibilidad durante UNA actualización: el actualizador antiguo, al terminar de instalar, todavía escribe en las

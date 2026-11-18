@@ -32,6 +32,7 @@ import re
 import shutil
 import subprocess
 import sys
+import tempfile
 
 MAX_COPIAS = 5
 VERSION_CONFIG = 1
@@ -368,6 +369,22 @@ def usuario_que_pide():
     return pwd.getpwnam(nombre)
 
 
+COPIAR = ("import os, shutil, sys\n"
+          "o, d = sys.argv[1:]\n"
+          "os.makedirs(d, exist_ok=True)\n"
+          "shutil.copytree(o, d, symlinks=True, dirs_exist_ok=True)\n")
+
+
+def _copiar_como_usuario(u, origen, destino):
+    """Copia lo recuperado a la carpeta del usuario CON los permisos del usuario (como root solo si no hay otro)."""
+    orden = [sys.executable, "-I", "-c", COPIAR, origen, destino]
+    if os.geteuid() == 0 and u.pw_uid != 0:
+        orden = ["runuser", "-u", u.pw_name, "--"] + orden
+    r = subprocess.run(orden, capture_output=True, text=True, timeout=3600)
+    if r.returncode != 0:
+        raise Error("No se pudo dejar lo recuperado en tu carpeta: " + (r.stderr.strip().splitlines() or ["error"])[-1][:200])
+
+
 def restaurar(copia, ruta):
     if not re.fullmatch(r"[0-9a-f]{6,64}", copia):
         raise Error("Copia no válida.")
@@ -378,15 +395,21 @@ def restaurar(copia, ruta):
     if not fecha:
         raise Error("Esa copia ya no existe.")
     destino = os.path.join(u.pw_dir, "Recuperado", dt.datetime.fromisoformat(fecha).strftime("%Y-%m-%d_%H%M"))
-    os.makedirs(destino, exist_ok=True)
-    restic("restore", copia, "--target", destino, "--include", ruta)
-    for d, ds, fs in os.walk(os.path.join(u.pw_dir, "Recuperado")):
-        for n in ds + fs:
-            try:
-                os.chown(os.path.join(d, n), u.pw_uid, u.pw_gid, follow_symlinks=False)
-            except OSError:
-                pass
-    os.chown(os.path.join(u.pw_dir, "Recuperado"), u.pw_uid, u.pw_gid)
+    # Restic restaura (como root) en una carpeta privada que crea root. Nada de root toca la carpeta del usuario:
+    # el paso final lo hace el propio usuario, así un enlace simbólico en «Recuperado» o por encima no puede
+    # llevar escrituras ni cambios de propietario a rutas del sistema.
+    preparacion = tempfile.mkdtemp(prefix="leksso-recuperar-")
+    try:
+        restic("restore", copia, "--target", preparacion, "--include", ruta)
+        for d, ds, fs in os.walk(preparacion):
+            for n in [""] + ds + fs:
+                try:
+                    os.chown(os.path.join(d, n) if n else d, u.pw_uid, u.pw_gid, follow_symlinks=False)
+                except OSError:
+                    pass
+        _copiar_como_usuario(u, preparacion, destino)
+    finally:
+        shutil.rmtree(preparacion, ignore_errors=True)
     print(json.dumps({"ok": True, "destino": destino + ruta}))
 
 

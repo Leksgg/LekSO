@@ -243,6 +243,20 @@ class PruebasCopias(unittest.TestCase):
         r = self.corre("restaurar", "00abc001", u.pw_dir + "/../etc/passwd")
         self.assertEqual(r.returncode, 2)
 
+    def test_lo_recuperado_se_copia_sin_seguir_enlaces(self):
+        import importlib.machinery
+        import importlib.util
+        cargador = importlib.machinery.SourceFileLoader("copias_prueba", os.path.join(os.path.dirname(os.path.abspath(__file__)), "leksso-copias.py"))
+        mod = importlib.util.module_from_spec(importlib.util.spec_from_loader("copias_prueba", cargador))
+        cargador.exec_module(mod)
+        prep, dest = tempfile.mkdtemp(), os.path.join(tempfile.mkdtemp(), "Recuperado", "2026-01-01_0000")
+        os.makedirs(os.path.join(prep, "a"))
+        open(os.path.join(prep, "a", "b.txt"), "w").write("hola")
+        os.symlink("/etc/passwd", os.path.join(prep, "a", "enlace"))
+        mod._copiar_como_usuario(pwd.getpwuid(os.getuid()), prep, dest)
+        self.assertEqual(open(os.path.join(dest, "a", "b.txt")).read(), "hola")
+        self.assertTrue(os.path.islink(os.path.join(dest, "a", "enlace")))        # el enlace queda como enlace
+
     def test_listar_solo_muestra_lo_del_usuario(self):
         self.activar()
         self.corre("ejecutar", "--ahora")

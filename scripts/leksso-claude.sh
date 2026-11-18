@@ -23,10 +23,12 @@ except (OSError, ValueError):
 p = d.setdefault("projects", {}).setdefault("/home/caja", {})
 if not p.get("hasTrustDialogAccepted"):
     p["hasTrustDialogAccepted"] = True
-    tmp = ruta + ".nuevo"
-    with open(tmp, "w", encoding="utf-8") as f:
+    # Archivo temporal con nombre único y creado con O_EXCL: la caja puede escribir en esta carpeta y no debe
+    # poder colocar un enlace que haga truncar otro archivo del usuario. os.replace sustituye el nombre, no lo sigue.
+    import tempfile
+    fd, tmp = tempfile.mkstemp(prefix=".claude.json.", dir=os.path.dirname(ruta))
+    with os.fdopen(fd, "w", encoding="utf-8") as f:
         json.dump(d, f)
-    os.chmod(tmp, 0o600)
     os.replace(tmp, ruta)
 PY
 MCP='{"mcpServers":{"leksso":{"command":"python3","args":["/usr/local/lib/leksso-ia/mcp_permisor.py"]}}}'

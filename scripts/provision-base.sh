@@ -27,6 +27,11 @@ HOME_USR="$(getent passwd "$USUARIO" | cut -d: -f6)"
 
 RAIZ="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
+# Todo lo que se escribe en la carpeta personal se hace COMO EL USUARIO, nunca como root: así un enlace simbólico
+# plantado en su carpeta no puede llevar una escritura, un cambio de propietario o un borrado a rutas del sistema.
+U() { runuser -u "$USUARIO" -- "$@"; }
+U test -r "$RAIZ/config/sway/config" || { echo "El usuario $USUARIO no puede leer $RAIZ: la copia de LeksSO debe ser legible (chmod a+rX)." >&2; exit 1; }
+
 # Registro de instalaciones (leksso-auditoria): se instala lo primero, para anotar también lo que instala esta misma
 # ejecución. El gancho de apt nunca impide instalar. Los datos (registro, sellos) los crea el propio programa y esta
 # instalación no los toca.
@@ -37,7 +42,7 @@ install -m 0644 "$RAIZ/config/apt/99leksso-auditoria" /etc/apt/apt.conf.d/99leks
 # Paquetes por capa. Todos existen en Debian 13 (trixie); winetricks necesita la sección contrib.
 ESCRITORIO=(labwc sway swaybg waybar kitty fuzzel grim pcmanfm-qt qt6-wayland qt6-svg-plugins qt6ct xwayland fonts-font-awesome seatd xdg-desktop-portal-wlr micro imv zathura zathura-pdf-poppler mpv vlc xarchiver udisks2 udiskie gvfs gvfs-backends polkitd ntfs-3g exfatprogs usbutils v4l-utils bluez pavucontrol-qt swaylock wl-clipboard mako-notifier libnotify-bin swayidle brightnessctl slurp cliphist wdisplays blueman cups fonts-noto-color-emoji fonts-liberation ffmpegthumbnailer power-profiles-daemon playerctl wlr-randr network-manager streamdeck-ui python3-pyside6.qtwidgets python3-pyside6.qtgui python3-pyside6.qtcore python3-pyside6.qtsvg)
 AUDIO=(pipewire pipewire-pulse wireplumber)
-AISLAMIENTO=(bubblewrap firejail python3-seccomp)
+AISLAMIENTO=(bubblewrap firejail python3-seccomp passt)
 HERRAMIENTAS=(git curl btop lm-sensors python3 bc pciutils mokutil fwupd plocate restic)   # plocate: búsqueda de archivos; restic: copias de seguridad
 GRAFICA=(mesa-vulkan-drivers)
 HYPERV=(hyperv-daemons)       # solo útil dentro de una máquina virtual de Hyper-V
@@ -72,21 +77,19 @@ systemctl enable --now seatd 2>/dev/null || true
 usermod -aG seatd "$USUARIO" 2>/dev/null || true
 
 # Configuración del escritorio.
-install -d -o "$USUARIO" -g "$USUARIO" "$HOME_USR/.config/sway"
-install -o "$USUARIO" -g "$USUARIO" -m 0644 "$RAIZ/config/sway/config" "$HOME_USR/.config/sway/config"
+U install -d "$HOME_USR/.config/sway"
+U install -m 0644 "$RAIZ/config/sway/config" "$HOME_USR/.config/sway/config"
 # En una máquina virtual de Hyper-V, resolución grande (en un equipo real se usa la nativa).
 if [ "$(systemd-detect-virt 2>/dev/null || true)" = "microsoft" ]; then
-  echo "output * resolution 1920x1080" > "$HOME_USR/.config/sway/local.conf"
-  chown "$USUARIO:$USUARIO" "$HOME_USR/.config/sway/local.conf"
+  echo "output * resolution 1920x1080" | U tee "$HOME_USR/.config/sway/local.conf" >/dev/null
 fi
 
 # Barra superior, tema de las aplicaciones Qt y estado de la IA.
-install -d -o "$USUARIO" -g "$USUARIO" "$HOME_USR/.config/waybar" "$HOME_USR/.config/qt6ct/colors" "$HOME_USR/.config/leksso"
-install -o "$USUARIO" -g "$USUARIO" -m 0644 "$RAIZ/config/waybar/config.jsonc" "$HOME_USR/.config/waybar/config.jsonc"
-install -o "$USUARIO" -g "$USUARIO" -m 0644 "$RAIZ/config/waybar/style.css" "$HOME_USR/.config/waybar/style.css"
-install -o "$USUARIO" -g "$USUARIO" -m 0644 "$RAIZ/config/qt6ct/colors/leksso.conf" "$HOME_USR/.config/qt6ct/colors/leksso.conf"
-sed "s|@HOME@|$HOME_USR|g" "$RAIZ/config/qt6ct/qt6ct.conf" > "$HOME_USR/.config/qt6ct/qt6ct.conf"
-chown -R "$USUARIO:$USUARIO" "$HOME_USR/.config"
+U install -d "$HOME_USR/.config/waybar" "$HOME_USR/.config/qt6ct/colors" "$HOME_USR/.config/leksso"
+U install -m 0644 "$RAIZ/config/waybar/config.jsonc" "$HOME_USR/.config/waybar/config.jsonc"
+U install -m 0644 "$RAIZ/config/waybar/style.css" "$HOME_USR/.config/waybar/style.css"
+U install -m 0644 "$RAIZ/config/qt6ct/colors/leksso.conf" "$HOME_USR/.config/qt6ct/colors/leksso.conf"
+sed "s|@HOME@|$HOME_USR|g" "$RAIZ/config/qt6ct/qt6ct.conf" | U tee "$HOME_USR/.config/qt6ct/qt6ct.conf" >/dev/null
 
 # Iconos de tipos de archivo (tema propio, hereda de Adwaita).
 install -d /usr/share/icons
@@ -108,8 +111,8 @@ install -m 0755 "$RAIZ/config/bin/leksso-asistentes" /usr/local/bin/leksso-asist
 # Si el usuario ya había elegido uno con la versión anterior, se conserva activo (solo archivos).
 install -d -m 0755 /etc/leksso
 if [ ! -f /etc/leksso/asistentes.json ]; then
-  ANTERIOR="$(cat "$HOME_USR/.config/leksso/asistente" 2>/dev/null || true)"
-  python3 - "$USUARIO" "$ANTERIOR" <<'PY'
+  ANTERIOR="$(U cat "$HOME_USR/.config/leksso/asistente" 2>/dev/null || true)"
+  python3 -I - "$USUARIO" "$ANTERIOR" <<'PY'
 import sys
 sys.path.insert(0, "/usr/local/lib/leksso-ia")
 import asistentes
@@ -131,11 +134,11 @@ else
 fi
 install -m 0644 "$RAIZ/scripts/seccomp-estricta.py" /usr/local/lib/leksso-ia/seccomp-estricta.py
 chmod 0755 /usr/local/bin/leksso-ia
-install -d -o "$USUARIO" -g "$USUARIO" "$HOME_USR/.config/kitty"
-install -o "$USUARIO" -g "$USUARIO" -m 0644 "$RAIZ/config/kitty/kitty.conf" "$HOME_USR/.config/kitty/kitty.conf"
+U install -d "$HOME_USR/.config/kitty"
+U install -m 0644 "$RAIZ/config/kitty/kitty.conf" "$HOME_USR/.config/kitty/kitty.conf"
 # Explorador: árbol de carpetas y barra de ruta con botones.
-install -d -o "$USUARIO" -g "$USUARIO" "$HOME_USR/.config/pcmanfm-qt/default"
-install -o "$USUARIO" -g "$USUARIO" -m 0644 "$RAIZ/config/pcmanfm-qt/settings.conf" "$HOME_USR/.config/pcmanfm-qt/default/settings.conf"
+U install -d "$HOME_USR/.config/pcmanfm-qt/default"
+U install -m 0644 "$RAIZ/config/pcmanfm-qt/settings.conf" "$HOME_USR/.config/pcmanfm-qt/default/settings.conf"
 # Red: NetworkManager gestiona las interfaces (estado y redes disponibles en la barra).
 if [ -f /etc/network/interfaces ] && grep -qE '^(allow-hotplug|auto|iface) (e|w)' /etc/network/interfaces; then
   cp -n /etc/network/interfaces /etc/network/interfaces.leksso-antes
@@ -144,16 +147,16 @@ if [ -f /etc/network/interfaces ] && grep -qE '^(allow-hotplug|auto|iface) (e|w)
 fi
 
 # Lanzador de aplicaciones con la paleta de LeksSO y sin entradas técnicas.
-install -d -o "$USUARIO" -g "$USUARIO" "$HOME_USR/.config/fuzzel" "$HOME_USR/.local/share/applications"
-install -o "$USUARIO" -g "$USUARIO" -m 0644 "$RAIZ/config/fuzzel/fuzzel.ini" "$HOME_USR/.config/fuzzel/fuzzel.ini"
-install -o "$USUARIO" -g "$USUARIO" -m 0644 "$RAIZ"/config/applications-ocultas/*.desktop "$HOME_USR/.local/share/applications/"
+U install -d "$HOME_USR/.config/fuzzel" "$HOME_USR/.local/share/applications"
+U install -m 0644 "$RAIZ/config/fuzzel/fuzzel.ini" "$HOME_USR/.config/fuzzel/fuzzel.ini"
+U install -m 0644 "$RAIZ"/config/applications-ocultas/*.desktop "$HOME_USR/.local/share/applications/"
 
 # Notificaciones y pantalla de bloqueo con la paleta de LeksSO.
 install -d /usr/share/leksso
 python3 "$RAIZ/scripts/generar-pantalla-bloqueo.py" /usr/share/leksso/bloqueo.png || true
-install -d -o "$USUARIO" -g "$USUARIO" "$HOME_USR/.config/mako" "$HOME_USR/.config/swaylock"
-install -o "$USUARIO" -g "$USUARIO" -m 0644 "$RAIZ/config/mako/config" "$HOME_USR/.config/mako/config"
-install -o "$USUARIO" -g "$USUARIO" -m 0644 "$RAIZ/config/swaylock/config" "$HOME_USR/.config/swaylock/config"
+U install -d "$HOME_USR/.config/mako" "$HOME_USR/.config/swaylock"
+U install -m 0644 "$RAIZ/config/mako/config" "$HOME_USR/.config/mako/config"
+U install -m 0644 "$RAIZ/config/swaylock/config" "$HOME_USR/.config/swaylock/config"
 
 # Versión y actualizaciones: la versión instalada, la clave con la que se comprueban las versiones nuevas
 # y la comprobación diaria. La clave instalada solo cambia con una versión ya firmada por la anterior.
@@ -201,18 +204,17 @@ if [ "$(systemd-detect-virt 2>/dev/null || echo none)" = "none" ] || [ "${LEKSSO
 fi
 
 # Zonas del escritorio (sway) y alternativa labwc: ventanas con título y botones, barra de tareas en la barra superior.
-install -d -o "$USUARIO" -g "$USUARIO" "$HOME_USR/.config/labwc" "$HOME_USR/.local/share/themes"
-install -o "$USUARIO" -g "$USUARIO" -m 0644 "$RAIZ/config/labwc/rc.xml" "$RAIZ/config/labwc/menu.xml" "$HOME_USR/.config/labwc/"
-install -o "$USUARIO" -g "$USUARIO" -m 0755 "$RAIZ/config/labwc/autostart" "$HOME_USR/.config/labwc/autostart"
-cp -r "$RAIZ/config/labwc/tema/LeksSO" "$HOME_USR/.local/share/themes/"
-chown -R "$USUARIO:$USUARIO" "$HOME_USR/.local/share/themes"
+U install -d "$HOME_USR/.config/labwc" "$HOME_USR/.local/share/themes"
+U install -m 0644 "$RAIZ/config/labwc/rc.xml" "$RAIZ/config/labwc/menu.xml" "$HOME_USR/.config/labwc/"
+U install -m 0755 "$RAIZ/config/labwc/autostart" "$HOME_USR/.config/labwc/autostart"
+U cp -r "$RAIZ/config/labwc/tema/LeksSO" "$HOME_USR/.local/share/themes/"
 install -m 0755 "$RAIZ/config/sway/zonas.sh" /usr/local/bin/leksso-zonas
-install -o "$USUARIO" -g "$USUARIO" -m 0644 "$RAIZ/config/bash_profile" "$HOME_USR/.bash_profile"
+U install -m 0644 "$RAIZ/config/bash_profile" "$HOME_USR/.bash_profile"
 # Escritorio con iconos: carpeta Escritorio y accesos.
-install -o "$USUARIO" -g "$USUARIO" -m 0644 "$RAIZ/config/user-dirs.dirs" "$HOME_USR/.config/user-dirs.dirs"
-install -d -o "$USUARIO" -g "$USUARIO" "$HOME_USR/Escritorio" "$HOME_USR/Descargas" "$HOME_USR/Documentos" \
+U install -m 0644 "$RAIZ/config/user-dirs.dirs" "$HOME_USR/.config/user-dirs.dirs"
+U install -d "$HOME_USR/Escritorio" "$HOME_USR/Descargas" "$HOME_USR/Documentos" \
   "$HOME_USR/Imágenes" "$HOME_USR/Vídeos" "$HOME_USR/Música"   # las de «Lugares» en Archivos (solo salen las que existen)
-install -o "$USUARIO" -g "$USUARIO" -m 0755 "$RAIZ"/config/escritorio/*.desktop "$HOME_USR/Escritorio/"
+U install -m 0755 "$RAIZ"/config/escritorio/*.desktop "$HOME_USR/Escritorio/"
 
 # Programas predeterminados por tipo de archivo (no pisa lo que el usuario ya haya elegido).
 install -m 0755 "$RAIZ/config/bin/leksso-info" "$RAIZ/config/bin/leksso-wine" "$RAIZ/config/bin/leksso-menu" "$RAIZ/config/bin/leksso-energia" "$RAIZ/config/bin/leksso-flotantes" "$RAIZ/config/bin/leksso-term" "$RAIZ/config/bin/leksso-medios" "$RAIZ/config/bin/leksso-captura" "$RAIZ/config/bin/leksso-reposo" "$RAIZ/config/bin/leksso-portapapeles" "$RAIZ/config/bin/leksso-ajustes" "$RAIZ/config/bin/leksso-redes" "$RAIZ/config/bin/leksso-actualizaciones" "$RAIZ/config/bin/leksso-panel-ia" "$RAIZ/config/bin/leksso-acceso-remoto" "$RAIZ/config/bin/leksso-archivos" "$RAIZ/config/bin/leksso-juego" "$RAIZ/config/bin/leksso-office-web" "$RAIZ/config/bin/leksso-secureboot" /usr/local/bin/
@@ -256,15 +258,15 @@ sudo -u "$USUARIO" leksso-tema reaplicar || true
 sudo -u "$USUARIO" leksso-tema recargar || true
 
 echo
-# Todo lo que se creó en la carpeta personal es del usuario (los directorios intermedios los crea root).
-chown -R "$USUARIO:$USUARIO" "$HOME_USR/.config" "$HOME_USR/.local" 2>/dev/null || true
+# (Nada de «chown -R» sobre la carpeta personal: todo se creó ya COMO el usuario, ver U más arriba.)
 
 # Teclado de la sesión según el del sistema (por defecto, español).
 DISTRIB="$(. /etc/default/keyboard 2>/dev/null && echo "${XKBLAYOUT%%,*}")"
 LOCAL="$HOME_USR/.config/sway/local.conf"
-{ grep -sv 'xkb_layout' "$LOCAL" || true; echo "input type:keyboard xkb_layout ${DISTRIB:-es}"; } > "$LOCAL.nuevo"
-mv "$LOCAL.nuevo" "$LOCAL"
-chown "$USUARIO:$USUARIO" "$LOCAL"
+# Se reescribe COMO el usuario (sin seguir enlaces como root): se lee el archivo actual y se escribe uno nuevo suyo.
+U bash -c 'LOCAL="$1"; D="$2"; tmp="$(mktemp "$LOCAL.XXXXXX")" || exit 1
+  { grep -sv "xkb_layout" "$LOCAL" || true; echo "input type:keyboard xkb_layout ${D:-es}"; } > "$tmp"
+  mv -f "$tmp" "$LOCAL"' _ "$LOCAL" "${DISTRIB:-es}"
 
 # Cortafuegos, actualizaciones de seguridad y ajustes del núcleo (en Hyper-V deja el SSH abierto).
 if [ "$(systemd-detect-virt 2>/dev/null || true)" = "microsoft" ]; then
