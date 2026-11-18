@@ -14,7 +14,9 @@ set -euo pipefail
 SALIDA="${1:?Indica la carpeta de salida}"
 RAIZ="${2:-$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)}"
 MIRROR="${LEKSSO_MIRROR:-http://deb.debian.org/debian}"
-BASE="/var/tmp/leksso-base-$$"
+# Carpeta de trabajo nueva y privada (no una ruta predecible que otra cuenta pueda preparar de antemano).
+BASE="$(mktemp -d /var/tmp/leksso-base.XXXXXXXX)"
+chmod 0755 "$BASE"
 
 apt-get install -y -qq debootstrap dpkg-dev >/dev/null
 
@@ -34,7 +36,7 @@ echo "Paquetes pedidos: $(echo "$TODOS" | wc -w)"
 
 # 2. Sistema base mínimo, para saber qué falta encima de él.
 echo "Creando el sistema base (debootstrap)…"
-rm -rf "$BASE"
+# (la carpeta acaba de crearse vacía: no se borra ni se vuelve a crear por nombre)
 debootstrap --variant=minbase --components=main,contrib,non-free-firmware trixie "$BASE" "$MIRROR" >/dev/null
 cat > "$BASE/etc/apt/sources.list" <<EOF
 deb $MIRROR trixie main contrib non-free-firmware

@@ -30,7 +30,9 @@ PAQ="$TMP/leksso"; mkdir -p "$PAQ"
 
 # 1. El paquete de LeksSO: el repositorio con sus etiquetas (se verifica al instalar), el instalador de ESA versión
 #    y los archivos de instalación automática.
-git bundle create "$PAQ/leksso.bundle" --all >/dev/null 2>&1
+# Solo la rama principal y las etiquetas: con --all se llevaría también cualquier rama privada o de trabajo.
+git rev-parse -q --verify refs/heads/main >/dev/null || { echo "Falta la rama main en este repositorio." >&2; exit 1; }
+git bundle create "$PAQ/leksso.bundle" refs/heads/main --tags >/dev/null 2>&1 || { echo "No se pudo crear el paquete del repositorio." >&2; exit 1; }
 git show "$VERSION:scripts/instalar.sh" > "$PAQ/instalar.sh"
 git show "$VERSION:scripts/instalador/preseed.cfg" > "$PAQ/preseed.cfg"
 git show "$VERSION:scripts/instalador/receta.sh" > "$PAQ/receta.sh"
@@ -79,7 +81,11 @@ fi
 # 3. Menú de arranque: una entrada nueva (la primera) que lanza la instalación de LeksSO.
 ORIGEN_GRUB="$TMP/grub.orig"
 xorriso -osirrox on -indev "$ISO" -extract /boot/grub/grub.cfg "$ORIGEN_GRUB" >/dev/null 2>&1
-ENTRADA="menuentry --hotkey=l 'Instalar LeksSO (disco cifrado y contraseña; borra el disco que elijas)' {
+# Una imagen de pruebas no debe poder confundirse con una normal: lo dice el título de cada entrada del menú.
+AVISO_PRUEBAS=""
+[ "$FASE" = 1 ] && AVISO_PRUEBAS="[PRUEBAS: actualiza SIN comprobar firma y deja SSH abierto] "
+[ -n "$PRUEBA" ] && AVISO_PRUEBAS="[IMAGEN DE PRUEBAS: claves fijas, SSH y sudo sin contraseña] "
+ENTRADA="menuentry --hotkey=l '${AVISO_PRUEBAS}Instalar LeksSO (disco cifrado y contraseña; borra el disco que elijas)' {
     set background_color=black
     linux    /install.amd/vmlinuz auto=true priority=high file=/cdrom/leksso/preseed.cfg vga=788 --- quiet
     initrd   /install.amd/initrd.gz
@@ -87,7 +93,7 @@ ENTRADA="menuentry --hotkey=l 'Instalar LeksSO (disco cifrado y contraseña; bor
 # Variantes (no en las imágenes de pruebas, que llevan respuestas fijas solo en la primera): cifrado sí/no, contraseña sí/no.
 if [ -z "$PRUEBA" ]; then
   variante() {  # título, preseed
-    printf "menuentry '%s' {\n    set background_color=black\n    linux    /install.amd/vmlinuz auto=true priority=high file=/cdrom/leksso/%s vga=788 --- quiet\n    initrd   /install.amd/initrd.gz\n}\n" "$1" "$2"
+    printf "menuentry '${AVISO_PRUEBAS}%s' {\n    set background_color=black\n    linux    /install.amd/vmlinuz auto=true priority=high file=/cdrom/leksso/%s vga=788 --- quiet\n    initrd   /install.amd/initrd.gz\n}\n" "$1" "$2"
   }
   ENTRADA="$ENTRADA
 $(variante 'Instalar LeksSO sin cifrar el disco (borra el disco que elijas)' preseed-sin-cifrado.cfg)

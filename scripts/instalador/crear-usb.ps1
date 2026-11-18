@@ -21,7 +21,9 @@ if (-not ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdenti
 # 1. La imagen: local o descargada
 if ($Url) {
   if ($Url -notmatch '^https://') { throw 'La dirección debe ser https.' }
-  $Iso = Join-Path $env:TEMP 'leksso-instalador.iso'
+  $carpeta = Join-Path $env:TEMP ('leksso-' + [guid]::NewGuid().ToString('N'))
+  New-Item -ItemType Directory -Path $carpeta | Out-Null
+  $Iso = Join-Path $carpeta 'leksso-instalador.iso'
   Write-Host "Descargando $Url ..."
   Invoke-WebRequest -Uri $Url -OutFile $Iso -UseBasicParsing
   foreach ($ext in '.sha256', '.sha256.sig') {
@@ -32,17 +34,27 @@ if (-not $Iso -or -not (Test-Path -LiteralPath $Iso)) { throw 'Indica -Iso con l
 $Iso = (Resolve-Path -LiteralPath $Iso).Path
 
 # 2. Comprobaciones de la imagen
-$hash = (Get-FileHash -Algorithm SHA256 -LiteralPath $Iso).Hash.ToLower()
+# La imagen se abre UNA vez y se queda abierta sin permitir escrituras de nadie más hasta el final: lo que se
+# comprueba (suma y firma) son exactamente los bytes que luego se graban. Los archivos de suma y firma se leen una
+# vez a memoria y se verifican desde copias propias en una carpeta nueva.
+$flujo = [IO.File]::Open($Iso, [IO.FileMode]::Open, [IO.FileAccess]::Read, [IO.FileShare]::Read)
+$sha = [Security.Cryptography.SHA256]::Create()
+$hash = ([BitConverter]::ToString($sha.ComputeHash($flujo)) -replace '-', '').ToLower()
+$flujo.Position = 0
 $archivoSuma = "$Iso.sha256"
 if (Test-Path $archivoSuma) {
-  $esperado = ((Get-Content $archivoSuma -Raw).Trim() -split '\s+')[0].ToLower()
+  $textoSuma = [IO.File]::ReadAllText($archivoSuma)
+  $esperado = (($textoSuma).Trim() -split '\s+')[0].ToLower()
   if ($esperado -ne $hash) { throw "La suma de la imagen no coincide (esperada $esperado, calculada $hash). No grabo nada." }
   Write-Host 'Suma SHA-256: correcta.'
   if (Test-Path "$archivoSuma.sig") {
     $ssh = (Get-Command ssh-keygen.exe -ErrorAction SilentlyContinue).Source
     if (-not $ssh) { throw 'Falta ssh-keygen (Windows: Configuración > Características opcionales > Cliente OpenSSH) para comprobar la firma.' }
-    $perm = Join-Path $env:TEMP 'leksso_allowed_signers'; Set-Content -Path $perm -Value $ClavePublica -Encoding ascii
-    Get-Content $archivoSuma -Raw | & $ssh -Y verify -f $perm -I leksso-release -n file -s "$archivoSuma.sig" | Out-Null
+    $priv = Join-Path $env:TEMP ('leksso-v-' + [guid]::NewGuid().ToString('N'))
+    New-Item -ItemType Directory -Path $priv | Out-Null
+    $perm = Join-Path $priv 'allowed_signers'; Set-Content -Path $perm -Value $ClavePublica -Encoding ascii
+    $firma = Join-Path $priv 'suma.sig'; [IO.File]::WriteAllBytes($firma, [IO.File]::ReadAllBytes("$archivoSuma.sig"))
+    $textoSuma | & $ssh -Y verify -f $perm -I leksso-release -n file -s $firma | Out-Null
     if ($LASTEXITCODE -ne 0) { throw 'La FIRMA de la imagen no es válida. No grabo nada.' }
     Write-Host 'Firma de LeksSO: válida.'
   } elseif (-not $SinFirma) { throw 'La imagen no trae firma (.sha256.sig). Si es una imagen de pruebas tuya, usa -SinFirma.' }
@@ -57,7 +69,7 @@ $candidatos | ForEach-Object { '  Disco {0}: {1}  {2:N1} GB' -f $_.Number, $_.Fr
 $num = Read-Host "`nNúmero del disco que se va a BORRAR por completo"
 $disco = $candidatos | Where-Object { "$($_.Number)" -eq $num }
 if (-not $disco) { throw 'Ese número no es una de las memorias USB de la lista.' }
-if ((Get-Item -LiteralPath $Iso).Length -gt $disco.Size) { throw 'La imagen no cabe en esa memoria.' }
+if ($flujo.Length -gt $disco.Size) { throw 'La imagen no cabe en esa memoria.' }
 $conf = Read-Host ('Se borrará TODO en "{0}" ({1:N1} GB). Escribe BORRAR para continuar' -f $disco.FriendlyName, ($disco.Size / 1GB))
 if ($conf -ne 'BORRAR') { throw 'Cancelado. No se ha tocado nada.' }
 
@@ -72,11 +84,11 @@ using System; using System.IO; using System.Runtime.InteropServices; using Micro
 public static class RawDisk {
   [DllImport("kernel32.dll", SetLastError=true, CharSet=CharSet.Unicode)]
   static extern SafeFileHandle CreateFile(string n, uint acc, uint share, IntPtr sa, uint disp, uint flags, IntPtr t);
-  public static void Write(string path, string iso, Action<long,long> progreso) {
+  public static void Write(string path, Stream i, Action<long,long> progreso) {
     using (var h = CreateFile(path, 0x40000000, 3, IntPtr.Zero, 3, 0x80000000 /*WRITE_THROUGH*/, IntPtr.Zero)) {
       if (h.IsInvalid) throw new IOException("No se pudo abrir el disco: " + Marshal.GetLastWin32Error());
       using (var o = new FileStream(h, FileAccess.Write, 4 * 1024 * 1024, false))
-      using (var i = File.OpenRead(iso)) {
+      {
         var b = new byte[4 * 1024 * 1024]; long hecho = 0, total = i.Length; int n;
         while ((n = i.Read(b, 0, b.Length)) > 0) {
           int w = (n + 511) / 512 * 512; if (w > n) Array.Clear(b, n, w - n);
@@ -89,7 +101,8 @@ public static class RawDisk {
 }
 '@
 Write-Host "`nGrabando... (unos minutos, no desconectes la memoria)"
-[RawDisk]::Write("\\.\PhysicalDrive$($disco.Number)", $Iso, [Action[long,long]]{ param($h,$t) Write-Progress -Activity 'Grabando LeksSO en la USB' -PercentComplete ([int](100 * $h / $t)) })
+[RawDisk]::Write("\\.\PhysicalDrive$($disco.Number)", $flujo, [Action[long,long]]{ param($h,$t) Write-Progress -Activity 'Grabando LeksSO en la USB' -PercentComplete ([int](100 * $h / $t)) })
+$flujo.Dispose()
 Set-Disk -Number $disco.Number -IsOffline $false -ErrorAction SilentlyContinue
 Write-Progress -Activity 'Grabando LeksSO en la USB' -Completed
 Write-Host @'
