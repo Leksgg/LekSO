@@ -11,6 +11,7 @@ Uso:
   leksso-tema actual            el que está activo
   leksso-tema aplicar <tema>    cambia a ese tema
   leksso-tema reaplicar         vuelve a poner el tema elegido (lo usa la instalación tras copiar la configuración base)
+  leksso-tema recargar          pide a la barra, los avisos y el compositor que lean de nuevo su configuración
 """
 import os
 import subprocess
@@ -58,11 +59,31 @@ def recolorear_archivos(mapa):
     return cambiados
 
 
+def entorno_de_sesion():
+    """Variables para hablar con la sesión gráfica abierta aunque se llame desde fuera de ella (sudo, instalación)."""
+    import glob
+    env = dict(os.environ)
+    uid = os.getuid()
+    env.setdefault("XDG_RUNTIME_DIR", f"/run/user/{uid}")
+    carpeta = env["XDG_RUNTIME_DIR"]
+    if "SWAYSOCK" not in env:
+        socks = sorted(glob.glob(os.path.join(carpeta, "sway-ipc.*.sock")))
+        if socks:
+            env["SWAYSOCK"] = socks[-1]
+    if "WAYLAND_DISPLAY" not in env:
+        socks = sorted(s for s in glob.glob(os.path.join(carpeta, "wayland-*")) if not s.endswith(".lock"))
+        if socks:
+            env["WAYLAND_DISPLAY"] = os.path.basename(socks[0])
+    return env
+
+
 def recargar():
-    ordenes = [["pkill", "-USR2", "waybar"], ["makoctl", "reload"], ["swaymsg", "reload"], ["labwc", "--reconfigure"]]
+    env = entorno_de_sesion()
+    ordenes = [["pkill", "-USR2", "-u", str(os.getuid()), "waybar"], ["makoctl", "reload"], ["swaymsg", "reload"],
+               ["labwc", "--reconfigure"]]
     for o in ordenes:
         try:
-            subprocess.run(o, capture_output=True, timeout=10)
+            subprocess.run(o, capture_output=True, timeout=10, env=env)
         except (OSError, subprocess.SubprocessError):
             pass
 
@@ -93,6 +114,8 @@ def main(a):
     elif a[0] == "aplicar" and len(a) == 2:
         n = aplicar(a[1], tema_activo())
         print(f"Tema {a[1]} aplicado ({n} archivos). Las ventanas ya abiertas lo estrenan al abrirlas de nuevo.")
+    elif a[0] == "recargar":
+        recargar()
     elif a[0] == "reaplicar":
         # la instalación acaba de copiar la configuración base (colores de Marea): se vuelve a poner el tema elegido
         elegido = tema_activo()

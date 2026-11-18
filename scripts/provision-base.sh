@@ -236,6 +236,8 @@ install -m 0644 "$RAIZ"/config/tema/*.json /usr/local/share/leksso/temas/
 install -m 0755 "$RAIZ/scripts/leksso-tema.py" /usr/local/bin/leksso-tema
 install -m 0755 "$RAIZ/config/bin/leksso-apariencia" /usr/local/bin/leksso-apariencia
 sudo -u "$USUARIO" leksso-tema reaplicar || true
+# La sesión abierta sigue con la configuración vieja (barra, atajos): se le pide que lea la nueva sin cerrar sesión.
+sudo -u "$USUARIO" leksso-tema recargar || true
 
 echo
 # Todo lo que se creó en la carpeta personal es del usuario (los directorios intermedios los crea root).

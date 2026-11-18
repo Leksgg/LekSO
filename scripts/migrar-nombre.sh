@@ -10,8 +10,13 @@ USUARIO="${1:-${SUDO_USER:-}}"
 HOME_USR="$(getent passwd "$USUARIO" 2>/dev/null | cut -d: -f6)"
 
 hecho=0
-# el enlace de compatibilidad de una migración anterior ya no hace falta (se crea de nuevo más abajo si toca)
-[ -L /var/lib/lekso ] && rm -f /var/lib/lekso
+if [ "${2:-}" != limpiar ]; then
+  # lo que dejó una migración anterior ya no hace falta (el enlace de compatibilidad se crea de nuevo más abajo si toca)
+  [ -L /var/lib/lekso ] && rm -f /var/lib/lekso
+  for f in /usr/local/bin/lekso-*; do
+    [ -f "$f" ] && grep -q '^exec /usr/local/bin/leksso-' "$f" 2>/dev/null && rm -f "$f"
+  done
+fi
 # mueve un archivo o carpeta al nombre nuevo; si ya existe el nuevo, el antiguo no pisa nada
 mover() { # origen destino
   [ -e "$1" ] || [ -L "$1" ] || return 0
@@ -37,7 +42,20 @@ mover /var/log/lekso-postinstalar.log /var/log/leksso-postinstalar.log
 
 # 3. Solo al final: programas y ficheros sueltos con el nombre antiguo (provision-base.sh ya instaló los nuevos)
 if [ "${2:-}" = limpiar ]; then
-for f in /etc/systemd/system/lekso-* /etc/systemd/user/lekso-* /usr/lib/systemd/user/lekso-* /usr/lib/systemd/system/lekso-* /usr/local/bin/lekso-* /usr/local/lib/lekso-ia /usr/local/lib/lekso-ui /usr/share/applications/lekso-*.desktop \
+# Los comandos antiguos no se borran: se sustituyen por un reenvío al nuevo. La sesión que está abierta durante la
+# actualización (barra, atajos, ventanas) sigue llamando a los nombres de antes hasta que se vuelve a iniciar sesión.
+# La próxima actualización quita los reenvíos.
+for f in /usr/local/bin/lekso-*; do
+  [ -f "$f" ] || continue
+  nuevo="/usr/local/bin/leksso-${f##*/lekso-}"
+  if [ -x "$nuevo" ]; then
+    printf '#!/bin/sh\nexec %s "$@"\n' "$nuevo" > "$f" && chmod 0755 "$f"
+  else
+    rm -f "$f"
+  fi
+  hecho=1
+done
+for f in /etc/systemd/system/lekso-* /etc/systemd/user/lekso-* /usr/lib/systemd/user/lekso-* /usr/lib/systemd/system/lekso-* /usr/local/lib/lekso-ia /usr/local/lib/lekso-ui /usr/share/applications/lekso-*.desktop \
          /etc/sudoers.d/lekso-* /etc/ssh/sshd_config.d/lekso.conf /etc/apt/apt.conf.d/99lekso-sin-recomendados \
          /etc/apt/sources.list.d/lekso-offline.list /usr/share/icons/LekSO /etc/udev/rules.d/70-lekso-streamdeck.rules; do
   [ -e "$f" ] || [ -L "$f" ] || continue
