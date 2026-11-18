@@ -24,30 +24,55 @@ MAX_LINEA = 64 * 1024
 MAX_SALIDA = 400_000
 
 
-def _es_el_permisor(pid):
+SCRIPT_PERMISOR = b"/usr/local/lib/leksso-ia/permisor.py"
+
+
+def parece_el_permisor(grupos, programa, orden, claves_entorno, uid):
+    """Qué debe cumplir el proceso que llama. Todo se compara exacto, no por «contiene»:
+    - su grupo de control es la unidad leksso-permisor.service del gestor de ESTE usuario (mientras la unidad
+      verdadera corre, otra con el mismo nombre no puede existir);
+    - el programa es python3 del sistema y la orden es exactamente «python3 permisor.py» (sin -c, sin módulos);
+    - no lleva variables que cambian lo que Python o el cargador importan (PYTHON*, LD_*)."""
+    ruta = None
+    for linea in grupos.splitlines():
+        if linea.startswith("0::"):
+            ruta = linea[3:]
+    if not ruta:
+        return False
+    partes = [x for x in ruta.split("/") if x]
+    if not partes or partes[-1] != "leksso-permisor.service" or f"user@{uid}.service" not in partes:
+        return False
+    if not (os.path.basename(programa).startswith("python3") and programa.startswith("/usr/bin/")):
+        return False
+    if len(orden) != 2 or not orden[0] or os.path.basename(orden[0].decode("utf-8", "replace")) not in (
+            "python3", os.path.basename(programa)) or orden[1] != SCRIPT_PERMISOR:
+        return False
+    return not any(k.startswith(b"PYTHON") or k.startswith(b"LD_") for k in claves_entorno)
+
+
+def _es_el_permisor(pid, uid):
     try:
         with open(f"/proc/{pid}/cgroup", encoding="utf-8") as f:
             grupos = f.read()
         programa = os.path.realpath(f"/proc/{pid}/exe")
         with open(f"/proc/{pid}/cmdline", "rb") as f:
-            orden = f.read().split(b"\0")
+            orden = f.read().rstrip(b"\0").split(b"\0")
+        with open(f"/proc/{pid}/environ", "rb") as f:
+            claves = [x.split(b"=", 1)[0] for x in f.read().split(b"\0") if x]
     except OSError:
         return False
-    return ("/leksso-permisor.service" in grupos and os.path.basename(programa).startswith("python3")
-            and programa.startswith("/usr/bin/") and b"/usr/local/lib/leksso-ia/permisor.py" in orden)
+    return parece_el_permisor(grupos, programa, orden, claves, uid)
 
 
 def ejecutar(orden, espera, casa):
     entorno = {"PATH": "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin", "HOME": "/root",
                "LANG": os.environ.get("LANG", "C.UTF-8"), "DEBIAN_FRONTEND": "noninteractive", "TERM": "dumb"}
-    try:
-        r = subprocess.run(["/bin/bash", "-c", orden], cwd=casa if os.path.isdir(casa) else "/", env=entorno,
-                           stdin=subprocess.DEVNULL, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
-                           timeout=espera, start_new_session=True)
-        return {"ok": True, "codigo": r.returncode, "salida": r.stdout.decode("utf-8", "replace")[-MAX_SALIDA:]}
-    except subprocess.TimeoutExpired as e:
-        salida = (e.stdout or b"").decode("utf-8", "replace")[-MAX_SALIDA:]
-        return {"ok": True, "codigo": 124, "salida": salida + f"\n[se cortó a los {espera} s]"}
+    codigo, salida, vencio = asistentes.correr_acotado(
+        ["/bin/bash", "-c", orden], espera, MAX_SALIDA, cwd=casa if os.path.isdir(casa) else "/", env=entorno)
+    texto = salida.decode("utf-8", "replace")[-MAX_SALIDA:]
+    if vencio:
+        texto += f"\n[se cortó a los {espera} s]"
+    return {"ok": True, "codigo": codigo, "salida": texto}
 
 
 class H(socketserver.StreamRequestHandler):
@@ -64,7 +89,7 @@ class H(socketserver.StreamRequestHandler):
             pass
 
     def _atender(self, pid, uid):
-        if uid < 1000 or not _es_el_permisor(pid):
+        if uid < 1000 or not _es_el_permisor(pid, uid):
             return {"ok": False, "error": "solo atiende al permisor de LeksSO"}
         usuario = pwd.getpwuid(uid)
         if not asistentes.alguno_administra(usuario.pw_name):

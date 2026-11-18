@@ -5,6 +5,7 @@ alcance concedido. Cada ruta se recorre con openat y O_NOFOLLOW desde un
 descriptor de la carpeta concedida, así que un enlace simbólico no puede sacar
 la acción del alcance ni siquiera si cambia entre la comprobación y el uso.
 """
+import ctypes
 import errno
 import functools
 import hashlib
@@ -24,6 +25,36 @@ MAX_LEER = 2 * 1024 * 1024
 PROHIBIDAS = {"/", "/etc", "/usr", "/bin", "/sbin", "/lib", "/lib64", "/boot",
               "/sys", "/proc", "/dev", "/var", "/root", "/run"}
 FLAGS_DIR = os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW
+
+
+def renombrar_sin_pisar(origen, destino, src_fd, dst_fd):
+    """rename que falla con FileExistsError si el destino existe, en un solo paso del núcleo (renameat2 con
+    RENAME_NOREPLACE): sin el hueco entre «mirar si existe» y «renombrar» por el que se colaría otro archivo."""
+    try:
+        libc = ctypes.CDLL(None, use_errno=True)
+        r = libc.renameat2(src_fd, os.fsencode(origen), dst_fd, os.fsencode(destino), 1)
+    except (OSError, AttributeError):
+        r, err = -1, errno.ENOSYS
+    else:
+        err = ctypes.get_errno()
+    if r == 0:
+        return
+    if err == errno.EEXIST:
+        raise FileExistsError(err, os.strerror(err), destino)
+    if err in (errno.ENOSYS, errno.EINVAL):           # sistema de archivos sin soporte: se vuelve a lo de siempre
+        try:
+            os.stat(destino, dir_fd=dst_fd, follow_symlinks=False)
+        except FileNotFoundError:
+            os.rename(origen, destino, src_dir_fd=src_fd, dst_dir_fd=dst_fd)
+            return
+        raise FileExistsError(errno.EEXIST, os.strerror(errno.EEXIST), destino)
+    raise OSError(err, os.strerror(err), destino)
+
+
+def _objeto(fd, nombre):
+    """Identidad (dispositivo, inodo) de lo que hay con ese nombre, sin seguir enlaces."""
+    st = os.stat(nombre, dir_fd=fd, follow_symlinks=False)
+    return [st.st_dev, st.st_ino]
 
 
 class Denegado(Exception):
@@ -231,13 +262,13 @@ class Nucleo:
                 self._anotar({"id": self._nuevo_id(), "tarea": tid, "accion": "crear_carpeta", "ok": True,
                               "ruta": real, "raiz": padre, "padre": [], "nombre": nombre})
 
-    def conceder(self, titulo, carpetas, destino="local", ttl=3600):
+    def conceder(self, titulo, carpetas, destino="local", ttl=3600, canal=None):
         """carpetas: {ruta: 'rwd'}. Devuelve el id de la tarea."""
         raices = self.comprobar_carpetas(carpetas)
-        tid = "t" + uuid.uuid4().hex[:6]
+        tid = "t" + uuid.uuid4().hex[:16]
         self._crear_nuevas(raices, tid)
         t = type("Tarea", (), {})()
-        t.id, t.titulo, t.destino = tid, titulo, destino
+        t.id, t.titulo, t.destino, t.canal = tid, titulo, destino, canal
         t.raices, t.expira, t.cerrada = raices, time.time() + ttl, False
         self.tareas[tid] = t
         self._anotar({"tarea": tid, "accion": "conceder", "ok": True, "id": self._nuevo_id(),
@@ -442,18 +473,23 @@ class Nucleo:
         try:
             os.stat(nombre, dir_fd=fd, follow_symlinks=False)
             en_papelera = self._a_papelera(fd, nombre, ruta)
+            st = os.lstat(self.papelera / "files" / en_papelera)
+            objeto = [st.st_dev, st.st_ino]
         except FileNotFoundError:
             self._denegar(t, "borrar", ruta, "no existe")
         finally:
             os.close(fd)
         self._anotar({"id": aid, "tarea": tid, "accion": "borrar", "ruta": ruta, "ok": True,
-                      "raiz": raiz, "padre": padre, "nombre": nombre, "papelera": en_papelera})
+                      "raiz": raiz, "padre": padre, "nombre": nombre, "papelera": en_papelera, "obj": objeto})
         return aid
 
     @_serializado
     def mover(self, tid, origen, destino):
         t = self._tarea(tid)
-        fo, no, ro, po = self._resolver(t, "mover", origen, "w")
+        # Sacar un archivo de su carpeta es quitarlo de allí: hace falta poder borrar en el origen.
+        # Renombrar dentro de la misma carpeta solo pide escribir.
+        misma = os.path.dirname(os.path.normpath(origen)) == os.path.dirname(os.path.normpath(destino))
+        fo, no, ro, po = self._resolver(t, "mover", origen, "w" if misma else "d")
         try:
             fd, nd, rd, pd = self._resolver(t, "mover", destino, "w", crear=True)
         except BaseException:
@@ -464,12 +500,10 @@ class Nucleo:
         aid = self._nuevo_id()
         try:
             try:
-                os.stat(nd, dir_fd=fd, follow_symlinks=False)
+                renombrar_sin_pisar(no, nd, fo, fd)
+                objeto = _objeto(fd, nd)
+            except FileExistsError:
                 self._denegar(t, "mover", destino, "el destino ya existe")
-            except FileNotFoundError:
-                pass
-            try:
-                os.rename(no, nd, src_dir_fd=fo, dst_dir_fd=fd)
             except OSError as e:
                 self._denegar(t, "mover", origen, f"no se pudo mover ({e.strerror})")
         finally:
@@ -477,7 +511,7 @@ class Nucleo:
             os.close(fd)
         self._anotar({"id": aid, "tarea": tid, "accion": "mover", "ruta": origen, "ok": True,
                       "destino_ruta": destino, "raiz": ro, "padre": po, "nombre": no,
-                      "raiz2": rd, "padre2": pd, "nombre2": nd})
+                      "raiz2": rd, "padre2": pd, "nombre2": nd, "obj": objeto})
         return aid
 
     # ---------- deshacer ----------
@@ -542,6 +576,8 @@ class Nucleo:
                     origen = self.papelera / "files" / a["papelera"]
                     if not os.path.lexists(origen):
                         raise Denegado("ya no está en la papelera")
+                    if a.get("obj") and (lambda s: [s.st_dev, s.st_ino])(os.lstat(origen)) != a["obj"]:
+                        raise Denegado("lo que hay ahora en la papelera con ese nombre no es lo que se borró; no se restaura")
                     try:
                         os.rename(origen, a["nombre"], dst_dir_fd=fd)
                     except OSError as e:
@@ -570,9 +606,14 @@ class Nucleo:
                 f1 = self._fd_de(a["raiz2"], a["padre2"])
                 f2 = self._fd_de(a["raiz"], a["padre"])
                 try:
-                    if os.path.lexists(f"/proc/self/fd/{f2}/{a['nombre']}"):
+                    try:
+                        if a.get("obj") and _objeto(f1, a["nombre2"]) != a["obj"]:
+                            raise Denegado("lo que hay ahora en el destino no es lo que se movió; no se deshace")
+                        renombrar_sin_pisar(a["nombre2"], a["nombre"], f1, f2)
+                    except FileExistsError:
                         raise Denegado("el origen original ya está ocupado")
-                    os.rename(a["nombre2"], a["nombre"], src_dir_fd=f1, dst_dir_fd=f2)
+                    except FileNotFoundError:
+                        raise Denegado("lo movido ya no está donde se dejó")
                 finally:
                     os.close(f1)
                     os.close(f2)
@@ -619,5 +660,12 @@ class Nucleo:
                 f.seek(ini)
                 datos = f.read(fin - ini) + datos
                 fin = ini
-        lineas = datos.decode("utf-8", errors="replace").splitlines()[-n:]
-        return [json.loads(x) for x in lineas if x.strip()]
+        lineas = datos.decode("utf-8", errors="replace").split("\n")[-(n + 1):]    # solo \n: splitlines() también corta en U+2028…
+        salida = []
+        for x in lineas:
+            if x.strip():
+                try:
+                    salida.append(json.loads(x))
+                except ValueError:
+                    continue            # una línea cortada o dañada no impide leer el resto
+        return salida[-n:]

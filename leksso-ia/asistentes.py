@@ -136,3 +136,43 @@ def lee_auditoria(orden):
 
 def destructivo(orden):
     return any(p.search(orden) for p in _DESTRUCTIVO)
+
+
+def correr_acotado(orden_cmd, espera, max_salida, **kw):
+    """Ejecuta un programa guardando solo el final de su salida (max_salida bytes): una orden que escupe gigas
+    no agota la memoria. Si pasa el tiempo se mata todo su grupo. Devuelve (código, salida, se_cortó)."""
+    import collections
+    import os
+    import signal
+    import subprocess
+    import threading
+    p = subprocess.Popen(orden_cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, stdin=subprocess.DEVNULL,
+                         start_new_session=True, **kw)
+    trozos, tam, vencio = collections.deque(), [0], threading.Event()
+
+    def matar():
+        vencio.set()
+        try:
+            os.killpg(p.pid, signal.SIGKILL)
+        except OSError:
+            pass
+    temporizador = threading.Timer(espera, matar)
+    temporizador.start()
+    try:
+        while True:
+            b = p.stdout.read(65536)
+            if not b:
+                break
+            trozos.append(b)
+            tam[0] += len(b)
+            while tam[0] - len(trozos[0]) >= max_salida:       # se tira lo más antiguo
+                tam[0] -= len(trozos.popleft())
+        p.wait()
+    finally:
+        temporizador.cancel()
+        try:
+            os.killpg(p.pid, signal.SIGKILL)       # lo que haya quedado vivo en su grupo
+        except OSError:
+            pass
+        p.stdout.close()
+    return (124 if vencio.is_set() else p.returncode), b"".join(trozos)[-max_salida:], vencio.is_set()

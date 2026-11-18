@@ -54,6 +54,36 @@ def instantanea():
             "acciones": list(reversed(acciones))[:12]}
 
 
+def visible(texto):
+    """El texto de una orden tal como es: los caracteres de control (retorno de carro, escapes…) se enseñan
+    como secuencias visibles, para que nada pueda esconderse o reescribir lo que se ve en pantalla."""
+    salida = []
+    for c in texto:
+        if c == "\n":
+            salida.append("\n")
+        elif c == "\t":
+            salida.append("    ")
+        elif c.isprintable():
+            salida.append(c)
+        else:
+            salida.append("\\x%02x" % ord(c) if ord(c) < 256 else "\\u%04x" % ord(c))
+    return "".join(salida)
+
+
+def trozos_orden(texto, ancho):
+    """Toda la orden, partida al ancho de la pantalla, sin perder ni un carácter."""
+    ancho = max(ancho, 10)
+    lineas = []
+    for linea in visible(texto).split("\n"):
+        lineas += [linea[i:i + ancho] for i in range(0, len(linea), ancho)] or [""]
+    return lineas
+
+
+def cabe_orden(q, h, w):
+    """¿Se puede ver la orden entera en esta ventana? Si no, no se deja aprobar (se ve 'a ciegas' lo que falta)."""
+    return len(trozos_orden(q["titulo"], w - 6)) <= max(h - 14, 3)
+
+
 def dibujar(p, s, sel, mensaje):
     p.erase()
     h, w = p.getmaxyx()
@@ -72,8 +102,14 @@ def dibujar(p, s, sel, mensaje):
                 como = " como ADMINISTRADOR" if q.get("admin") else ""
                 p.addstr(y, 1, f"{quien} quiere ejecutar{como}:"[: w - 2], curses.A_BOLD | curses.color_pair(2))
                 y += 1
-                for trozo in [q["titulo"][i:i + w - 6] for i in range(0, min(len(q["titulo"]), (w - 6) * 6), w - 6)]:
+                todos = trozos_orden(q["titulo"], w - 6)
+                cabe = cabe_orden(q, h, w)
+                for trozo in (todos if cabe else todos[:max(h - 14, 3)]):
                     p.addstr(y, 3, trozo)
+                    y += 1
+                if not cabe:
+                    p.addstr(y, 3, f"… la orden tiene {len(todos)} líneas y no cabe: agranda la ventana para poder permitirla."[: w - 4],
+                             curses.color_pair(3))
                     y += 1
                 if q.get("motivo") == "destructiva":
                     p.addstr(y, 3, "Puede borrar o cambiar algo importante. Léela antes de permitir."[: w - 4], curses.color_pair(3))
@@ -150,6 +186,9 @@ def bucle(p):
             sel = min(sel + 1, max(len(s["acciones"]) - 1, 0))
         elif k == curses.KEY_UP:
             sel = max(sel - 1, 0)
+        elif k in (ord("a"), ord("r")) and pid and s["pendientes"][pid].get("tipo") == "orden" \
+                and not cabe_orden(s["pendientes"][pid], *p.getmaxyx()):
+            mensaje = "La orden no cabe entera en la ventana: agrándala para poder permitirla."
         elif k in (ord("a"), ord("r")) and pid:
             r = llamar(op="aprobar", pid=pid, recordar=(k == ord("r")))
             mensaje = "Permitido." if r.get("ok") else r.get("error", "")

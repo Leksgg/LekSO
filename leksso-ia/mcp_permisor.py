@@ -35,9 +35,12 @@ def _ruta_canal():
 
 
 def hablar(msg, ruta=None, espera=30):
+    destino = str(ruta or _ruta_canal())
+    if os.stat(destino).st_uid != os.getuid():          # un socket de otro usuario no es el permisor
+        raise OSError("el socket del permisor no es de este usuario")
     with socket.socket(socket.AF_UNIX) as s:
         s.settimeout(espera)
-        s.connect(str(ruta or _ruta_canal()))
+        s.connect(destino)
         s.sendall((json.dumps(msg) + "\n").encode())
         linea = s.makefile().readline(MAX_LINEA + 1)
     if not linea:

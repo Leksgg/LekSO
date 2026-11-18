@@ -10,6 +10,7 @@ import json
 import os
 import socket
 import socketserver
+import stat
 import struct
 import subprocess
 import threading
@@ -26,6 +27,10 @@ MAX_ESCRIBIR = 8 * 1024 * 1024      # una escritura no pasa de 8 MB
 MAX_PENDIENTES = 10                 # peticiones sin responder a la vez
 MAX_TAREAS = 50                     # tareas abiertas a la vez
 MAX_ORDEN = 8000                    # caracteres de una orden
+MAX_ORDEN_PREGUNTAR = 1500          # una orden que hay que aprobar debe poder leerse entera en el panel
+CADUCA_PENDIENTE = 600              # una petición sin responder se descarta a los 10 minutos
+CADUCA_ORDEN = 120                  # una orden aprobada hay que ejecutarla en 2 minutos
+MAX_CONEXIONES = 16                 # conexiones simultáneas por socket
 MAX_SALIDA_ORDEN = 400_000          # caracteres de salida que se guardan de una orden
 ADMIN_SOCK = "/run/leksso-admin.sock"
 
@@ -39,13 +44,9 @@ def correr_usuario(orden, espera, casa):
     """Ejecuta la orden con el usuario, FUERA del endurecimiento del permisor (unidad temporal de systemd)."""
     base = ["systemd-run", "--user", "--pipe", "--wait", "--collect", "--quiet",
             f"--working-directory={casa}", "/bin/bash", "-lc", orden]
-    try:
-        r = subprocess.run(base, stdin=subprocess.DEVNULL, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
-                           timeout=espera)
-        return {"codigo": r.returncode, "salida": r.stdout.decode("utf-8", "replace")[-MAX_SALIDA_ORDEN:]}
-    except subprocess.TimeoutExpired as e:
-        return {"codigo": 124, "salida": (e.stdout or b"").decode("utf-8", "replace")[-MAX_SALIDA_ORDEN:]
-                + f"\n[se cortó a los {espera} s]"}
+    codigo, salida, vencio = asistentes.correr_acotado(base, espera, MAX_SALIDA_ORDEN)
+    texto = salida.decode("utf-8", "replace")[-MAX_SALIDA_ORDEN:]
+    return {"codigo": codigo, "salida": texto + (f"\n[se cortó a los {espera} s]" if vencio else "")}
 
 
 def correr_admin(orden, espera, casa):
@@ -69,7 +70,7 @@ class Permisor:
         self.pendientes = {}          # pid -> petición
         self.aprobadas = {}           # pid -> id de tarea
         self.rechazadas = set()
-        self.ordenes = {}             # pid -> orden aprobada, a la espera de ejecutarse
+        self.ordenes = {}             # pid -> orden aprobada, a la espera de ejecutarse (con caducidad)
         self.usuario = _usuario()
         self.correr = {False: correr_usuario, True: correr_admin}   # las pruebas lo sustituyen
         self.fichero_recordadas = self.n.datos / "recordadas.json"
@@ -78,6 +79,15 @@ class Permisor:
             self.recordadas = json.loads(self.fichero_recordadas.read_text())
         # Las pruebas (LEKSSO_SIN_AVISOS=1) no deben llenar el escritorio de notificaciones.
         self.avisar = (lambda *a: None) if os.environ.get("LEKSSO_SIN_AVISOS") == "1" else self._avisar_escritorio
+
+    def _purgar(self):
+        """Descarta lo que caducó: peticiones sin responder y órdenes aprobadas que nadie ejecutó."""
+        ahora = time.time()
+        for pid in [k for k, q in self.pendientes.items() if ahora - q.get("t", ahora) > CADUCA_PENDIENTE]:
+            del self.pendientes[pid]
+            self.rechazadas.add(pid)
+        for pid in [k for k, o in self.ordenes.items() if ahora > o["hasta"]]:
+            del self.ordenes[pid]
 
     def _avisar_escritorio(self, titulo, carpetas, nuevas, destino):
         """Notificación de escritorio: la petición espera en el panel de la IA y, si no, nadie la ve.
@@ -102,8 +112,9 @@ class Permisor:
                 return False
         return True
 
-    def pedir(self, titulo, carpetas, destino):
-        """destino lo fija el canal por el que entra la petición, nunca el contenido del mensaje."""
+    def pedir(self, titulo, carpetas, destino, asistente=None):
+        """destino y asistente los fija el canal por el que entra la petición, nunca el contenido del mensaje."""
+        self._purgar()
         if not isinstance(titulo, str) or not 0 < len(titulo) <= 200 or not imprimible(titulo):
             raise Denegado("título no válido")
         if not isinstance(carpetas, dict) or not 0 < len(carpetas) <= 10:
@@ -122,11 +133,12 @@ class Permisor:
             raise Denegado("hay demasiadas peticiones sin responder")
         if len(self.n.tareas) >= MAX_TAREAS:
             raise Denegado("hay demasiadas tareas abiertas")
-        pid = "p" + uuid.uuid4().hex[:6]
+        pid = "p" + uuid.uuid4().hex[:16]
         if self._cubre_recordada(carpetas) and destino == "local":
-            self.aprobadas[pid] = self.n.conceder(titulo, carpetas, destino, self.ttl)
+            self.aprobadas[pid] = self.n.conceder(titulo, carpetas, destino, self.ttl, canal=(destino, asistente))
             return {"pid": pid, "estado": "aprobada", "tarea": self.aprobadas[pid]}
-        self.pendientes[pid] = {"titulo": titulo, "carpetas": carpetas, "destino": destino, "nuevas": nuevas}
+        self.pendientes[pid] = {"titulo": titulo, "carpetas": carpetas, "destino": destino, "nuevas": nuevas,
+                                "canal": [destino, asistente], "t": time.time()}
         threading.Thread(target=self.avisar, args=(titulo, dict(carpetas), nuevas, destino), daemon=True).start()
         return {"pid": pid, "estado": "pendiente"}
 
@@ -145,21 +157,8 @@ class Permisor:
         except (OSError, subprocess.SubprocessError):
             pass
 
-    def ejecutar(self, asistente, m):
-        """Ejecuta una orden en el equipo real si el asistente tiene permiso. Lo destructivo y la administración
-        «preguntando» pasan antes por el panel: se devuelve una petición pendiente y se ejecuta al aprobarla."""
-        if asistente not in asistentes.NOMBRES:
-            raise Denegado("este canal no puede ejecutar órdenes")
-        espera = m.get("espera", 120)
-        espera = 120 if isinstance(espera, bool) or not isinstance(espera, int) else min(max(espera, 1), 1800)
-        if "pid" in m:                                   # segunda llamada: la orden ya aprobada por el usuario
-            o = self.ordenes.pop(m["pid"], None)
-            if not o or o["asistente"] != asistente:
-                raise Denegado("no hay una orden aprobada con ese identificador")
-            return self._correr(asistente, o["orden"], o["admin"], espera)
-        orden, admin = m.get("orden"), m.get("admin") is True
-        if not isinstance(orden, str) or not 0 < len(orden) <= MAX_ORDEN or "\0" in orden:
-            raise Denegado("orden no válida")
+    def _comprobar_orden(self, asistente, orden, admin):
+        """Las reglas que debe cumplir una orden, al pedirla y otra vez al ejecutarla tras la aprobación."""
         if asistentes.toca_auditoria(orden) and not asistentes.lee_auditoria(orden):
             raise Denegado("el registro de seguridad no se puede tocar desde la IA: solo se puede leer si el usuario lo aprueba")
         if asistentes.toca_copias(orden):
@@ -173,22 +172,48 @@ class Permisor:
         if not admin and not p["comandos"]:
             raise Denegado("este asistente no tiene permiso para ejecutar órdenes en el equipo. El usuario puede "
                            "dárselo en Ajustes de asistentes (leksso-asistentes).")
+        return p
+
+    def ejecutar(self, asistente, m):
+        """Ejecuta una orden en el equipo real si el asistente tiene permiso. Lo destructivo y la administración
+        «preguntando» pasan antes por el panel: se devuelve una petición pendiente y se ejecuta al aprobarla."""
+        if asistente not in asistentes.NOMBRES:
+            raise Denegado("este canal no puede ejecutar órdenes")
+        espera = m.get("espera", 120)
+        espera = 120 if isinstance(espera, bool) or not isinstance(espera, int) else min(max(espera, 1), 1800)
+        self._purgar()
+        if "pid" in m:                                   # segunda llamada: la orden ya aprobada por el usuario
+            o = self.ordenes.pop(m["pid"], None)
+            if not o or o["asistente"] != asistente or time.time() > o["hasta"]:
+                raise Denegado("no hay una orden aprobada con ese identificador (o ya caducó)")
+            # Entre la aprobación y ahora el usuario pudo apagar el asistente o quitarle el permiso.
+            self._comprobar_orden(asistente, o["orden"], o["admin"])
+            return self._correr(asistente, o["orden"], o["admin"], espera)
+        orden, admin = m.get("orden"), m.get("admin") is True
+        if not isinstance(orden, str) or not 0 < len(orden) <= MAX_ORDEN or "\0" in orden:
+            raise Denegado("orden no válida")
+        p = self._comprobar_orden(asistente, orden, admin)
         motivo = "destructiva" if asistentes.destructivo(orden) else \
                  ("administración" if admin and p["admin"] == "preguntar" else
                   ("registro de seguridad" if asistentes.lee_auditoria(orden) else ""))
         if not motivo:
             return self._correr(asistente, orden, admin, espera)
+        if len(orden) > MAX_ORDEN_PREGUNTAR:
+            raise Denegado(f"esta orden hay que aprobarla y es demasiado larga para mostrártela entera "
+                           f"({len(orden)} caracteres; el máximo es {MAX_ORDEN_PREGUNTAR}). Pon la orden en un script "
+                           "corto o divídela en varias.")
         if len(self.pendientes) >= MAX_PENDIENTES:
             raise Denegado("hay demasiadas peticiones sin responder")
-        pid = "p" + uuid.uuid4().hex[:6]
+        pid = "p" + uuid.uuid4().hex[:16]
         self.pendientes[pid] = {"tipo": "orden", "titulo": orden, "admin": admin, "asistente": asistente,
-                                "motivo": motivo, "carpetas": {}, "destino": "nube", "nuevas": []}
+                                "motivo": motivo, "carpetas": {}, "destino": "nube", "nuevas": [], "t": time.time()}
         threading.Thread(target=self._avisar_orden, args=(asistente, orden, admin), daemon=True).start() \
             if os.environ.get("LEKSSO_SIN_AVISOS") != "1" else None
         return {"pid": pid, "estado": "pendiente", "motivo": motivo}
 
     def _correr(self, asistente, orden, admin, espera):
         accion = "orden_admin" if admin else "orden"
+        self.n.anotar_consulta(accion, f"[{asistente}] {orden[:300]} → se va a ejecutar")      # antes de correr, no solo después
         try:
             r = self.correr[admin](orden, espera, str(self.n.casa))
         except (OSError, ValueError) as e:
@@ -197,10 +222,14 @@ class Permisor:
         self.n.anotar_consulta(accion, f"[{asistente}] {orden[:300]} → código {r['codigo']}")
         return r
 
-    def estado(self, pid):
+    def estado(self, pid, canal=None):
+        self._purgar()
         if pid in self.ordenes:
             return {"estado": "aprobada", "orden": True}
         if pid in self.aprobadas:
+            t = self.n.tareas.get(self.aprobadas[pid])
+            if canal is not None and t is not None and getattr(t, "canal", None) not in (None, canal):
+                raise Denegado("petición desconocida")
             return {"estado": "aprobada", "tarea": self.aprobadas[pid]}
         if pid in self.rechazadas:
             return {"estado": "rechazada"}
@@ -208,11 +237,14 @@ class Permisor:
             return {"estado": "pendiente"}
         raise Denegado("petición desconocida")
 
-    def accion_ia(self, m):
+    def accion_ia(self, m, canal=None):
         op, t = m["op"], m.get("tarea")
         for campo in ("tarea", "ruta", "origen", "destino"):
             if campo in m and (not isinstance(m[campo], str) or len(m[campo]) > 4096):
                 raise Denegado(f"'{campo}' no es válido")
+        tarea = self.n.tareas.get(t) if isinstance(t, str) else None
+        if canal is not None and tarea is not None and getattr(tarea, "canal", None) not in (None, canal):
+            raise Denegado("esa tarea no es de este canal")
         if op == "listar":
             return {"entradas": self.n.listar(t, m["ruta"])}
         if op == "leer":
@@ -232,6 +264,21 @@ class Permisor:
             return {}
         raise Denegado("operación desconocida")
 
+    def _libre(self, asistente, q):
+        """«Archivos sin preguntar»: solo con el asistente activo y solo dentro de la carpeta personal del usuario,
+        sin carpetas ocultas. Lo demás se pregunta como siempre."""
+        p = self.permisos(asistente)
+        if not p["activo"] or p["archivos"] != "libre":
+            return False
+        casa = os.path.realpath(self.n.casa)
+        for ruta in q["carpetas"]:
+            real = os.path.realpath(ruta)
+            if real != casa and not real.startswith(casa + "/"):
+                return False
+            if any(x.startswith(".") for x in real[len(casa):].split("/") if x):
+                return False
+        return True
+
     def manejar_ia(self, m, destino="local", asistente=None):
         """asistente lo fija el canal (cada asistente tiene su socket), nunca el contenido del mensaje."""
         if not isinstance(m, dict):
@@ -244,18 +291,19 @@ class Permisor:
             if op == "ejecutar":
                 return self.ejecutar(asistente, m)
             if op == "pedir":
-                r = self.pedir(m["titulo"], m["carpetas"], destino)   # el campo 'destino' del mensaje se ignora
-                if r["estado"] == "pendiente" and asistente and self.permisos(asistente)["archivos"] == "libre":
+                r = self.pedir(m["titulo"], m["carpetas"], destino, asistente)   # destino y asistente los fija el canal
+                if r["estado"] == "pendiente" and asistente and self._libre(asistente, self.pendientes[r["pid"]]):
                     q = self.pendientes.pop(r["pid"])                 # archivos sin preguntar: se concede ya
-                    self.aprobadas[r["pid"]] = self.n.conceder(q["titulo"], q["carpetas"], q["destino"], self.ttl)
+                    self.aprobadas[r["pid"]] = self.n.conceder(q["titulo"], q["carpetas"], q["destino"], self.ttl,
+                                                               canal=(destino, asistente))
                     return {"pid": r["pid"], "estado": "aprobada", "tarea": self.aprobadas[r["pid"]]}
                 return r
             if op == "estado":
-                return self.estado(m["pid"])
+                return self.estado(m["pid"], (destino, asistente))
             if op == "equipo":            # foto de solo lectura del equipo (cifras, sin archivos ni datos del usuario)
                 self.n.anotar_consulta("medir_equipo", "memoria, disco, CPU, batería y procesos")
                 return equipo.estado()
-            return self.accion_ia(m)
+            return self.accion_ia(m, (destino, asistente))
         except KeyError as e:
             raise Denegado(f"falta el campo {e}")
 
@@ -263,16 +311,20 @@ class Permisor:
     def manejar_control(self, m):
         op = m.get("op")
         if op == "pendientes":
+            self._purgar()
             return {"pendientes": self.pendientes}
         if op == "aprobar":
+            self._purgar()
             p = self.pendientes.pop(m["pid"], None)
             if not p:
                 raise Denegado("no hay tal petición pendiente")
             if p.get("tipo") == "orden":          # una orden: queda lista para que el asistente la ejecute
-                self.ordenes[m["pid"]] = {"orden": p["titulo"], "admin": p["admin"], "asistente": p["asistente"]}
+                self.ordenes[m["pid"]] = {"orden": p["titulo"], "admin": p["admin"], "asistente": p["asistente"],
+                                          "hasta": time.time() + CADUCA_ORDEN}
                 return {"orden": True}
             carpetas = m.get("carpetas") or p["carpetas"]
-            tarea = self.n.conceder(p["titulo"], carpetas, p["destino"], self.ttl)
+            tarea = self.n.conceder(p["titulo"], carpetas, p["destino"], self.ttl,
+                                    canal=tuple(p.get("canal") or ()) or None)
             self.aprobadas[m["pid"]] = tarea
             if m.get("recordar") and p["destino"] == "local":
                 for ruta, perms in carpetas.items():
@@ -304,6 +356,8 @@ class Permisor:
 
 
 def _servidor(ruta, funcion):
+    cupo = threading.BoundedSemaphore(MAX_CONEXIONES)
+
     class H(socketserver.StreamRequestHandler):
         def handle(self):
             # Defensa en profundidad: el socket ya es 0600, pero se comprueba también el usuario.
@@ -311,7 +365,15 @@ def _servidor(ruta, funcion):
                 socket.SOL_SOCKET, socket.SO_PEERCRED, struct.calcsize("3i")))
             if uid != os.getuid():
                 return
-            self.request.settimeout(1900)           # una conexión muda no ocupa un hilo para siempre (una orden puede tardar)
+            if not cupo.acquire(blocking=False):    # demasiadas conexiones a la vez: se rechaza la nueva
+                return
+            try:
+                self._atender()
+            finally:
+                cupo.release()
+
+        def _atender(self):
+            self.request.settimeout(60)             # una conexión muda no ocupa un hilo para siempre
             while True:
                 try:
                     linea = self.rfile.readline(MAX_LINEA + 1)   # sin tope, una línea enorme llenaría la RAM
@@ -349,10 +411,26 @@ def _servidor(ruta, funcion):
     return s
 
 
+def _carpeta_sockets():
+    """Carpeta de los sockets. Si no hay XDG_RUNTIME_DIR se usa una privada del usuario, y se comprueba que de
+    verdad es suya y que nadie más puede entrar: una carpeta ajena o con enlaces no se acepta."""
+    base = os.environ.get("XDG_RUNTIME_DIR")
+    if base:
+        return Path(base)
+    base = f"/tmp/leksso-{os.getuid()}"
+    try:
+        os.mkdir(base, 0o700)
+    except FileExistsError:
+        pass
+    st = os.lstat(base)
+    if not stat.S_ISDIR(st.st_mode) or st.st_uid != os.getuid() or st.st_mode & 0o077:
+        raise OSError(f"{base} no es una carpeta privada de este usuario: no se usa")
+    return Path(base)
+
+
 def rutas(casa=None):
-    base = os.environ.get("XDG_RUNTIME_DIR") or f"/tmp/leksso-{os.getuid()}"
-    Path(base).mkdir(mode=0o700, exist_ok=True)
-    return Path(base) / "leksso-ia.sock", Path(base) / "leksso-control.sock"
+    base = _carpeta_sockets()
+    return base / "leksso-ia.sock", base / "leksso-control.sock"
 
 
 def ruta_nube():
