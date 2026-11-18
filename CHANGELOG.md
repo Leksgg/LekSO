@@ -3,7 +3,7 @@
 Formato: `+` nuevo · `-` eliminado o retirado · `~` modificado · `*` otros.
 Lo más reciente, arriba.
 
-## Sin publicar
+## Alpha 0.1.17 · 2026-11-18
 
 + Ajustes → Apariencia permite elegir el tema de color (Marea o Pizarra) y lo aplica al momento a todo el escritorio: barra, menús, avisos, bordes de ventana, bloqueo y las ventanas de LeksSO. Antes solo cambiaba Archivos. El terminal y las ventanas ya abiertas estrenan el tema al abrirlos de nuevo. «Letra e iconos» sigue en un botón aparte.
 + Con Secure Boot, la clave de firma de controladores y su contraseña de un solo uso se crean solas tras aceptar un aviso una vez, y la contraseña se consulta en Ajustes → Secure Boot, oculta hasta pulsar Ver.
