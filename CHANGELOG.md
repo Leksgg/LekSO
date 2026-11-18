@@ -3,6 +3,25 @@
 Formato: `+` nuevo · `-` eliminado o retirado · `~` modificado · `*` otros.
 Lo más reciente, arriba.
 
+## Sin publicar
+
+Revisión de seguridad de la 0.1.21. Todo lo que sigue sale de una revisión externa del código; cada punto se comprobó antes de arreglarlo.
+
+~ **Aprobaciones de la IA**. El panel enseña la orden entera (sin cortarla y con los caracteres de control a la vista) y no deja permitir lo que no cabe en la ventana. Una orden que hay que aprobar no puede pasar de 1500 caracteres. Una orden aprobada caduca a los dos minutos y, al ejecutarla, se vuelve a comprobar que el asistente sigue activo y con permiso; quitar un permiso ahora frena también lo ya aprobado. Las peticiones sin responder caducan a los diez minutos. Las tareas quedan ligadas al canal que las pidió y los identificadores son más largos. «Archivos sin preguntar» solo vale con el asistente activo y dentro de tu carpeta personal, sin carpetas ocultas.
+~ **Servicio de administración**: reconoce al permisor por coincidencia exacta de su unidad, su programa y su orden, y rechaza variables que cambian lo que Python importa.
+~ **Solidez del permisor**: la salida de una orden se acota en memoria (solo se guarda el final), hay un tope de conexiones por socket, y la carpeta de sockets se comprueba (propia y privada). El registro aguanta separadores raros en una ruta y anota la orden también antes de ejecutarla.
+~ **Mover y deshacer**: sacar un archivo de su carpeta exige poder borrar allí; mover no pisa un destino que aparezca en ese instante, y deshacer un movimiento o un borrado comprueba que el objeto sigue siendo el mismo.
+~ **Actualizaciones**: se instala exactamente el commit que se verificó (no lo que el nombre de la versión señale después), el nombre que lleva dentro la etiqueta firmada debe ser el de la versión (una versión antigua firmada ya no puede hacerse pasar por una nueva), y solo corre una instalación o actualización a la vez.
+~ **Cajas de IA con red propia**: con `--red` la caja sale a Internet por una red suya (pasta) y ya no comparte la del equipo: no ve los sockets locales (como el de instancia única de kitty) ni los servicios en localhost. Si falta pasta, avisa y comparte la red como antes. El lanzador de Claude usa un archivo temporal único para no seguir enlaces plantados desde la caja.
+~ **Instalación y copias**: lo que se escribe en tu carpeta personal lo hace tu usuario y no root, y la recuperación de copias restaura en una carpeta privada y la copia a tu carpeta como tú. Así un enlace simbólico no puede llevar escrituras o cambios de propietario a rutas del sistema. Python se ejecuta aislado en los pasos de instalación.
+~ **Instalador USB**: la imagen se abre una sola vez, sin permitir que nadie la modifique, y esos mismos bytes son los que se comprueban y se graban. El paquete de la ISO lleva solo `main` y las etiquetas (antes, todas las ramas). Las imágenes de pruebas lo dicen en el título de cada entrada del menú. El repositorio de paquetes se construye en una carpeta de trabajo nueva y privada.
+~ **Programas de terceros**: las claves de los repositorios de Brave y Microsoft se comprueban por su huella antes de instalarlas. Un `.deb` descargado se lee una vez, se enseña su SHA-256 y se entrega a root desde esa copia. El firmware automático solo toma paquetes de los repositorios de debian.org.
+~ **Red**: el SSH que deja abierto una máquina virtual de Hyper-V se limita a redes privadas. El cortafuegos de LeksSO sustituye solo su propia tabla y respeta las reglas de otros programas. Al encender el acceso remoto, el servicio lee la configuración nueva en el momento.
+~ **Copias de seguridad**: una copia con archivos saltados ya no cuenta como «última copia correcta», y la comprobación incluye una parte al azar de los datos (10 %), no solo la estructura.
+~ **Monitores de conexiones e instalaciones**: no se cuelgan si alguien pone una tubería donde esperaban un programa. El botón «Bloquear este destino» solo se ofrece en conexiones que salen a Internet (el bloqueo es de salida). La contraseña de un solo uso del registro de clave de arranque ya no aparece en los argumentos de ningún proceso.
+
+* Límites que se mantienen y ahora están dichos: el origen que anota el registro de instalaciones es una atribución por contexto (un proceso de tu cuenta podría aparentar otro); un programa de Windows en Wine ve tu sesión gráfica (no hay todavía una forma de darle una conexión restringida con este Sway); los scripts de instalación de terceros (Ollama, paquetes npm) no tienen una huella fija contra la que comprobarlos; kitty permite por defecto que los programas escriban en el portapapeles mediante el terminal (se mantiene porque lo usan tmux y SSH); el USB confía en la ISO que se comprobó al grabarlo.
+
 ## Beta 0.1.21 · 2026-11-18
 
 + Tema claro **Alba** (papel cálido con acento azul), en Ajustes → Apariencia. Los iconos de archivos y carpetas y el blanco brillante del terminal siguen el tema, para que también se lea bien en claro.
