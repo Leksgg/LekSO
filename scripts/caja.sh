@@ -60,7 +60,7 @@ PREFIJO_RED=()
 if [ "$RED" -eq 1 ]; then
   ARGS+=(--share-net)                     # dentro de la red que prepara pasta (o la del equipo si no hay pasta)
   if [ "${LEKSSO_CAJA_RED_COMPARTIDA:-0}" != 1 ] && command -v pasta >/dev/null 2>&1; then
-    PREFIJO_RED=(pasta --config-net --quiet --)
+    PREFIJO_RED=(pasta --config-net --quiet -t none -u none -T none -U none --no-map-gw --)   # sin reenvío de puertos en ningún sentido
   else
     echo "AVISO: sin pasta, la caja comparte la red del equipo (sockets locales y servicios en localhost incluidos)." >&2
   fi
