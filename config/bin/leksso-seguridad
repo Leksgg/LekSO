@@ -5,7 +5,7 @@ Pestaña «Instalaciones»: el registro que anotan los ganchos de apt y el catá
 Cada línea dice qué pasó, cómo se hizo y de dónde vino, con su certeza:
   confirmado   lo prueba quien lo hizo (catálogo, actualizaciones, la IA, una sesión SSH)
   inferido     se deduce del contexto (p. ej. «desde un terminal local»); un script podría haberlo lanzado
-  desconocido  nadie lo anotó: revísalo
+  desconocido  nadie lo anotó: revísalo (es lo único que enciende el aviso de la barra)
 El registro lo escribe el sistema y es de solo añadir; quien tenga permisos de administrador podría borrarlo (el sello lo delata).
 Se cierra con la X o con Esc.
 """
@@ -17,7 +17,7 @@ import sys
 from PySide6 import QtCore, QtGui, QtWidgets
 
 sys.path.insert(0, "/usr/local/lib/leksso-ui")
-from leksso_ui import ESTILO_BASE, alternar, estilo, pintar  # noqa: E402
+from leksso_ui import ESTILO_BASE, alternar, estilo, olvidar_clave, pedir_permiso, pintar, sudo_cmd  # noqa: E402
 
 EXTRA = """
 QLabel#ok { color: #85ce6c; } QLabel#aviso { color: #fdc357; } QLabel#mal { color: #ff735a; }
@@ -47,9 +47,10 @@ def bonita(iso):
 
 
 def orden(*args, root=True, espera=60):
-    cmd = (["sudo", "-n"] if root else []) + ["leksso-auditoria", *args]
+    if root:
+        return sudo_cmd(["leksso-auditoria", *args], espera=espera)
     try:
-        r = subprocess.run(cmd, capture_output=True, text=True, timeout=espera)
+        r = subprocess.run(["leksso-auditoria", *args], capture_output=True, text=True, timeout=espera)
     except (OSError, subprocess.SubprocessError) as e:
         return 1, "", str(e)
     return r.returncode, r.stdout, r.stderr
@@ -121,6 +122,11 @@ class Instalaciones(QtWidgets.QWidget):
         self.cargar()
 
     def cargar(self):
+        if not pedir_permiso(self, "Para ver el registro de instalaciones hace falta el permiso de administrador: el registro es de root, "
+                                   "para que ni un programa ni la IA puedan leerlo ni cambiarlo."):
+            self.msg.setObjectName("aviso")
+            self.msg.setText("Sin el permiso de administrador no se puede leer el registro. Pulsa Actualizar para volver a intentarlo.")
+            return
         rc, out, err = orden("listar", "--ultimos", "500")
         if rc != 0:
             self.registros = []
@@ -232,6 +238,10 @@ class Seguridad(QtWidgets.QWidget):
             self.close()
         else:
             super().keyPressEvent(ev)
+
+    def closeEvent(self, ev):
+        olvidar_clave()
+        super().closeEvent(ev)
 
 
 def main():

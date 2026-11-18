@@ -15,7 +15,7 @@ import sys
 from PySide6 import QtCore, QtWidgets
 
 sys.path.insert(0, "/usr/local/lib/leksso-ui")
-from leksso_ui import ESTILO_BASE, alternar, estilo  # noqa: E402
+from leksso_ui import ESTILO_BASE, alternar, estilo, olvidar_clave, pedir_permiso, sudo_cmd  # noqa: E402
 
 EXTRA = """
 QLabel#estado { font-size: 17px; font-weight: bold; }
@@ -61,7 +61,9 @@ def tamano(n):
 
 def orden(*args, entrada=None, root=False, espera=3600):
     """Ejecuta leksso-copias (con sudo -n si hace falta ser administrador). Devuelve (código, salida, error)."""
-    cmd = (["sudo", "-n"] if root else []) + ["leksso-copias", *args]
+    if root:
+        return sudo_cmd(["leksso-copias", *args], entrada, espera)
+    cmd = ["leksso-copias", *args]
     try:
         r = subprocess.run(cmd, input=entrada, capture_output=True, text=True, timeout=espera)
     except (OSError, subprocess.SubprocessError) as e:
@@ -351,6 +353,9 @@ class Copias(QtWidgets.QWidget):
 
     # ----- acciones -----
     def lanzar(self, args, entrada, ocupado, al_terminar=None):
+        if not pedir_permiso(self, "Las copias las hace el administrador del sistema: hace falta tu permiso."):
+            self.msg.setText("Sin el permiso de administrador no se puede hacer.")
+            return
         self.msg.setText(ocupado)
         for b in (self.activar, self.ahora, self.recuperar):
             b.setEnabled(False)
@@ -401,6 +406,8 @@ class Copias(QtWidgets.QWidget):
         self.lanzar(["ejecutar", "--ahora"], None, "Haciendo la copia… puede tardar unos minutos.", "Copia terminada.")
 
     def abrir_recuperar(self):
+        if not pedir_permiso(self, "Para recuperar archivos hace falta el permiso de administrador (las copias son de root)."):
+            return
         rc, out, err = orden("listar", root=True, espera=60)
         if rc != 0:
             self.msg.setText("No se pudo leer las copias: " + error_de(out, err))
@@ -412,6 +419,10 @@ class Copias(QtWidgets.QWidget):
             self.close()
         else:
             super().keyPressEvent(ev)
+
+    def closeEvent(self, ev):
+        olvidar_clave()
+        super().closeEvent(ev)
 
 
 def main():

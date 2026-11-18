@@ -191,11 +191,13 @@ def verificar():
 
 
 def publicar():
-    """Resumen sin datos sensibles, legible por todos: sirve a la barra y a la ventana (cuántas novedades hay)."""
+    """Resumen sin datos sensibles, legible por todos: sirve a la barra y a la ventana (cuántas novedades hay).
+    Solo cuenta lo de origen DESCONOCIDO: lo «inferido» (p. ej. un apt install desde tu terminal) se ve en la ventana, pero no
+    enciende la barra, o avisaría con cada instalación normal."""
     regs = lineas()
     revisadas = {r.get("ref") for r in regs if r.get("tipo") == "revision"}
     pendientes = [r for r in regs if r.get("tipo") in ("paquete", "fuera_de_apt") and r.get("accion") in ("instalado", "apareció")
-                  and r.get("nivel") != "confirmado" and r.get("n") not in revisadas]
+                  and r.get("nivel") == "desconocido" and r.get("n") not in revisadas]
     ultimo = regs[-1] if regs else {}
     datos = {"version": VERSION, "total": len(regs), "sin_revisar": len(pendientes),
              "sello": {"n": ultimo.get("n", 0), "h": (ultimo.get("h") or "")[:12]},
@@ -349,7 +351,7 @@ def barra():
     d = json.loads(leer(PUBLICO) or "{}")
     n = d.get("sin_revisar", 0)
     texto = "▲ Seguridad" if n else ""
-    tip = (f"{n} programa(s) nuevo(s) sin origen confirmado. Ábrelos en Ajustes, Seguridad." if n else "")
+    tip = (f"{n} programa(s) nuevo(s) de origen desconocido. Ábrelos en Ajustes, Seguridad." if n else "")
     print(json.dumps({"text": texto, "tooltip": tip, "class": "novedad" if n else ""}, ensure_ascii=False))
 
 

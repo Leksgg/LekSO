@@ -153,6 +153,14 @@ class Pruebas(unittest.TestCase):
         m.foto()
         self.assertEqual(m.lineas()[-1]["accion"], "desapareció")
 
+    def test_lo_inferido_no_enciende_la_barra_solo_lo_desconocido(self):
+        m = self.m
+        m.anotar_registro(tipo="paquete", accion="instalado", nombre="a", version="1", modo="terminal local", origen="terminal", nivel="inferido", detalle={})
+        m.anotar_registro(tipo="paquete", accion="instalado", nombre="b", version="1", modo="sesión remota (ssh)", origen="SSH desde 1.2.3.4", nivel="confirmado", detalle={})
+        self.assertEqual(json.loads(open(m.PUBLICO).read())["sin_revisar"], 0)
+        m.anotar_registro(tipo="paquete", accion="instalado", nombre="c", version="1", modo="comando desconocido", origen="desconocido", nivel="desconocido", detalle={})
+        self.assertEqual(json.loads(open(m.PUBLICO).read())["sin_revisar"], 1)
+
     def test_appimage_en_la_carpeta_personal(self):
         m = self.m
         m.foto()

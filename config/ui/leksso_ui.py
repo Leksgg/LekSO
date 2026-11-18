@@ -144,3 +144,69 @@ def alternar(nombre):
     with open(ruta, "w") as f:
         f.write(str(os.getpid()))
     return False
+
+
+# ---- permiso de administrador para las ventanas ------------------------------------------------------------------
+# Una ventana gráfica no tiene terminal: `sudo -n` solo funciona si sudo no pide contraseña. Hay tres casos y se detecta
+# cuál es el de este equipo: sudo sin contraseña (-n), sudo que no la pide por PAM (-S la deja pasar sin leer nada) o
+# sudo con contraseña (se pide en un diálogo y se recuerda solo en memoria mientras la ventana siga abierta).
+_SUDO = {"modo": None, "clave": None}
+
+
+def _sudo_correr(cmd, entrada=None, espera=60):
+    import subprocess
+    try:
+        r = subprocess.run(cmd, input=entrada, capture_output=True, text=True, timeout=espera)
+        return r.returncode, r.stdout, r.stderr
+    except (OSError, subprocess.SubprocessError) as e:
+        return 1, "", str(e)
+
+
+def sudo_modo():
+    """'n' (sin contraseña), 'S' (PAM no la pide) o 'clave' (hay que pedirla)."""
+    if _SUDO["modo"]:
+        return _SUDO["modo"]
+    if _sudo_correr(["sudo", "-n", "true"], espera=15)[0] == 0:
+        _SUDO["modo"] = "n"
+    elif _sudo_correr(["sudo", "-S", "-p", "", "true"], entrada="", espera=15)[0] == 0:
+        _SUDO["modo"] = "S"
+    else:
+        _SUDO["modo"] = "clave"
+    return _SUDO["modo"]
+
+
+def olvidar_clave():
+    _SUDO["clave"] = None
+
+
+def pedir_permiso(padre, motivo):
+    """Deja listo el permiso de administrador (hilo principal). True si ya se puede usar sudo_cmd."""
+    if sudo_modo() != "clave" or _SUDO["clave"]:
+        return True
+    from PySide6 import QtWidgets
+    for intento in range(3):
+        texto, ok = QtWidgets.QInputDialog.getText(
+            padre, "Permiso de administrador", motivo + "\n\nEscribe tu contraseña (solo se recuerda mientras esta ventana siga abierta):",
+            QtWidgets.QLineEdit.Password)
+        if not ok:
+            return False
+        if _sudo_correr(["sudo", "-S", "-p", "", "-v"], entrada=texto + "\n", espera=30)[0] == 0:
+            _SUDO["clave"] = texto
+            return True
+    return False
+
+
+def sudo_cmd(args, entrada=None, espera=3600):
+    """Ejecuta `sudo ARGS` según el modo detectado. Devuelve (código, salida, error). Seguro para hilos; la contraseña, si
+    hace falta, hay que pedirla antes con pedir_permiso()."""
+    modo = sudo_modo()
+    if modo == "n":
+        return _sudo_correr(["sudo", "-n", *args], entrada, espera)
+    if modo == "S":
+        return _sudo_correr(["sudo", "-S", "-p", "", *args], entrada, espera)
+    if not _SUDO["clave"]:
+        return 1, "", "sudo: a password is required"
+    rc, out, err = _sudo_correr(["sudo", "-S", "-p", "", *args], _SUDO["clave"] + "\n" + (entrada or ""), espera)
+    if rc != 0 and "try again" in err.lower():     # la contraseña ya no vale
+        _SUDO["clave"] = None
+    return rc, out, err
