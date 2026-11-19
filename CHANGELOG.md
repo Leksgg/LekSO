@@ -3,7 +3,7 @@
 Formato: `+` nuevo · `-` eliminado o retirado · `~` modificado · `*` otros.
 Lo más reciente, arriba.
 
-## Sin publicar
+## Beta 0.1.28 · 2026-11-20
 
 ~ **Micrófono y altavoz del portátil**: el micrófono grababa silencio total (el audio usaba el perfil genérico `stereo-fallback`, que no enruta los micrófonos digitales). Ahora la base instala `alsa-ucm-conf` y `alsa-utils`; con eso aparecen «Digital Microphone» y «Speaker» y se graba con voz. Hallado en la validación del A04 con Discord.
 ~ **Auriculares Bluetooth**: faltaba `libspa-0.2-bluetooth`, así que PipeWire no admitía audio Bluetooth; se instala en la base.
