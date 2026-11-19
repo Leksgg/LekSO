@@ -189,7 +189,9 @@ systemctl daemon-reload >/dev/null 2>&1 || true
 # Stream Deck: se inicia al conectarlo (el acceso a USB lo da la regla del paquete).
 install -m 0644 "$RAIZ/config/systemd/leksso-streamdeck.service" "$RAIZ/config/systemd/leksso-permisor.service" /etc/systemd/user/
 install -m 0644 "$RAIZ/config/udev/70-leksso-streamdeck.rules" /etc/udev/rules.d/
+install -m 0644 "$RAIZ/config/udev/70-leksso-brillo.rules" /etc/udev/rules.d/      # brillo cambiable por el grupo video (teclas de brillo)
 udevadm control --reload 2>/dev/null || true
+udevadm trigger --subsystem-match=backlight --action=add 2>/dev/null || true
 
 # Firmware y microcódigo según el hardware real (Wi-Fi, sonido, gráficos...). En una máquina virtual no hace falta
 # (LEKSSO_HARDWARE=1 lo fuerza). isenkram detecta qué dispositivos hay y qué paquete de firmware necesitan.

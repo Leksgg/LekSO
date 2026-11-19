@@ -3,6 +3,10 @@
 Formato: `+` nuevo · `-` eliminado o retirado · `~` modificado · `*` otros.
 Lo más reciente, arriba.
 
+## Sin publicar
+
+~ **Teclas de brillo**: no funcionaban (el archivo del brillo era solo de root y Debian no trae la regla de brightnessctl). Nueva regla udev `70-leksso-brillo.rules` que da permiso al grupo `video`; se instala con el resto y se aplica al momento. Hallado en la validación del A04.
+
 ## Beta 0.1.27 · 2026-11-19
 
 + **Extensiones de VS Code en el catálogo**: 93 extensiones en 9 grupos (`vscode-ia`, `vscode-python`, `vscode-js`, `vscode-cpp-net`, `vscode-java`, `vscode-git`, `vscode-markdown`, `vscode-nube`, `vscode-otros`). Se instalan para tu usuario con `code --install-extension` (también cuando se lanza con `sudo leksso-instalador`) y entran en `--todo` y `--completo`. Se pueden instalar por grupo: `leksso-apps instalar vscode-java`.
