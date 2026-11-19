@@ -80,6 +80,31 @@ def info():
             f"Memoria: {mem}\nDisco: {disco}\nEquipo: {sal('hostname')}")
 
 
+class Tarjeta(QtWidgets.QPushButton):
+    """Botón de ajuste: título y descripción en etiquetas que se ajustan al ancho, para que nunca queden cortadas."""
+    ALTO = 96
+
+    def __init__(self, nombre, desc):
+        super().__init__()
+        self.setObjectName("accion")
+        self.setMinimumHeight(self.ALTO)
+        self.setSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Preferred)
+        lay = QtWidgets.QVBoxLayout(self)
+        lay.setContentsMargins(14, 10, 14, 10)
+        lay.setSpacing(4)
+        t = QtWidgets.QLabel(nombre)
+        t.setStyleSheet("background: transparent; font-weight: bold;")
+        d = QtWidgets.QLabel(desc)
+        d.setObjectName("nota")
+        d.setWordWrap(True)
+        d.setStyleSheet("background: transparent;")
+        for e in (t, d):
+            e.setAttribute(QtCore.Qt.WA_TransparentForMouseEvents)   # el clic llega al botón
+        lay.addWidget(t)
+        lay.addWidget(d)
+        lay.addStretch()
+
+
 class Ajustes(QtWidgets.QWidget):
     def __init__(self):
         super().__init__()
@@ -108,8 +133,11 @@ class Ajustes(QtWidgets.QWidget):
         x.clicked.connect(self.close)
         cab.addWidget(x)
         raiz.addLayout(cab)
-        rejilla = QtWidgets.QGridLayout()
-        n = 0
+        self.rejilla = QtWidgets.QGridLayout()
+        rejilla = self.rejilla
+        rejilla.setSpacing(10)
+        self.tarjetas = []
+        self.columnas = 0
         for nombre, desc, orden, prog in AJUSTES:
             ssh = desc == "__SSH__"
             if ssh:
@@ -123,9 +151,9 @@ class Ajustes(QtWidgets.QWidget):
             if not ok:
                 b.setToolTip("No está instalado")
             b.clicked.connect(lambda _=False, o=orden, e=ssh: self.abrir(orden_ssh(self) if e else o))
-            rejilla.addWidget(b, n // 2, n % 2)
-            n += 1
+            self.tarjetas.append(b)
         raiz.addLayout(rejilla)
+        self.colocar(2)
         if shutil.which("powerprofilesctl"):
             raiz.addWidget(QtWidgets.QLabel("Modo de energía"))
             fila = QtWidgets.QHBoxLayout()
@@ -141,6 +169,23 @@ class Ajustes(QtWidgets.QWidget):
         sobre.setTextInteractionFlags(QtCore.Qt.TextSelectableByMouse)
         raiz.addWidget(sobre)
         raiz.addStretch()
+
+    def colocar(self, columnas):
+        """Reparte las tarjetas en `columnas` columnas (se rehace al cambiar el ancho de la ventana)."""
+        if columnas == self.columnas:
+            return
+        self.columnas = columnas
+        for b in self.tarjetas:
+            self.rejilla.removeWidget(b)
+        for i, b in enumerate(self.tarjetas):
+            self.rejilla.addWidget(b, i // columnas, i % columnas)
+        for c in range(4):
+            self.rejilla.setColumnStretch(c, 1 if c < columnas else 0)
+
+    def resizeEvent(self, ev):
+        super().resizeEvent(ev)
+        # una columna cada ~340 px: 1 en pantallas estrechas, hasta 3 en las anchas
+        self.colocar(max(1, min(3, self.width() // 340)))
 
     def abrir(self, orden):
         if orden is None:      # el usuario canceló el diálogo
@@ -162,9 +207,12 @@ def main():
     app = QtWidgets.QApplication(sys.argv)
     app.setDesktopFileName("leksso-ajustes")
     w = Ajustes()
-    # Alto: lo que necesita el contenido, pero sin pasar de la pantalla (si no cabe, aparece la barra de desplazamiento).
+    # Tamaño según la pantalla: ancho del 55 % (entre 720 y 1000 px) y alto del 80 %, sin pasar nunca de la pantalla.
+    # Lo que no quepa se ve con la barra de desplazamiento; las columnas de botones se adaptan al ancho.
     disp = app.primaryScreen().availableGeometry()
-    w.resize(min(640, disp.width() - 40), min(760, disp.height() - 40))
+    ancho = max(720, min(1000, int(disp.width() * 0.55)))
+    alto = max(560, min(900, int(disp.height() * 0.8)))
+    w.resize(min(ancho, disp.width() - 40), min(alto, disp.height() - 40))
     w.show()
     return app.exec()
 

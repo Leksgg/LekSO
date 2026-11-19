@@ -3,6 +3,10 @@
 Formato: `+` nuevo · `-` eliminado o retirado · `~` modificado · `*` otros.
 Lo más reciente, arriba.
 
+## Sin publicar
+
+~ **Ajustes, más ancha**: la ventana se abre al 55 % del ancho de la pantalla (entre 720 y 1000 px) y los botones se reparten en 1, 2 o 3 columnas según el ancho. El texto de cada botón se ajusta a su ancho en vez de cortarse.
+
 ## Beta 0.1.24 · 2026-11-19
 
 + **Instalador de una orden**: `sudo leksso-instalador` instala todo el catálogo (los programas de Linux y sus equivalentes) y enciende el SSH solo para la red local. Opciones `--sin-ssh` y `--simular`. `leksso-apps instalar --completo` hace lo mismo con los programas.
