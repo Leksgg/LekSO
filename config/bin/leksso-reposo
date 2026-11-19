@@ -1,6 +1,52 @@
 #!/bin/sh
-# Suspende el equipo por inactividad solo si funciona con batería (en un sobremesa o enchufado, no).
-for b in /sys/class/power_supply/BAT*; do
-  [ -e "$b/status" ] && grep -q Discharging "$b/status" && exec systemctl suspend
-done
-exit 0
+# Reposo de LeksSO: bloqueo de pantalla, apagado de pantalla y suspensión por inactividad.
+#
+# Uso: leksso-reposo            suspende el equipo solo si funciona con batería (lo llama swayidle)
+#      leksso-reposo iniciar    arranca swayidle con los tiempos de ~/.config/leksso/reposo (lo lanza sway al iniciar)
+#      leksso-reposo aplicar    reinicia swayidle para que use los tiempos nuevos (lo usa Ajustes, Bloqueo y reposo)
+#      leksso-reposo mostrar    escribe los tiempos en uso (minutos; 0 = nunca)
+#
+# ~/.config/leksso/reposo:   bloqueo=10  pantalla=15  suspension=30     (minutos; 0 = nunca)
+# Por defecto: bloquear a los 10 min, apagar la pantalla a los 15 y suspender a los 30 (solo con batería).
+# Si el bloqueo está en 0, tampoco se bloquea antes de suspender.
+
+ARCHIVO="$HOME/.config/leksso/reposo"
+
+leer() {
+  BLOQUEO=10; PANTALLA=15; SUSPENSION=30
+  [ -r "$ARCHIVO" ] || return 0
+  while IFS='=' read -r k v; do
+    case "$v" in ''|*[!0-9]*) continue ;; esac
+    [ "$v" -le 600 ] || continue
+    case "$k" in bloqueo) BLOQUEO=$v ;; pantalla) PANTALLA=$v ;; suspension) SUSPENSION=$v ;; esac
+  done < "$ARCHIVO"
+}
+
+case "${1:-}" in
+  iniciar)
+    leer
+    set -- -w
+    [ "$BLOQUEO" -gt 0 ] && set -- "$@" timeout $((BLOQUEO * 60)) 'swaylock -f'
+    [ "$PANTALLA" -gt 0 ] && set -- "$@" timeout $((PANTALLA * 60)) 'swaymsg "output * power off"' resume 'swaymsg "output * power on"'
+    [ "$SUSPENSION" -gt 0 ] && set -- "$@" timeout $((SUSPENSION * 60)) 'leksso-reposo'
+    [ "$BLOQUEO" -gt 0 ] && set -- "$@" before-sleep 'swaylock -f'
+    # si no queda ninguna regla, swayidle no tendría nada que hacer
+    [ $# -gt 1 ] || exec sleep infinity
+    exec swayidle "$@"
+    ;;
+  aplicar)
+    pkill -x -u "$(id -u)" swayidle 2>/dev/null
+    sleep 0.3
+    swaymsg exec "leksso-reposo iniciar" >/dev/null 2>&1
+    ;;
+  mostrar)
+    leer
+    echo "bloqueo=$BLOQUEO pantalla=$PANTALLA suspension=$SUSPENSION"
+    ;;
+  *)
+    for b in /sys/class/power_supply/BAT*; do
+      [ -e "$b/status" ] && grep -q Discharging "$b/status" && exec systemctl suspend
+    done
+    exit 0
+    ;;
+esac
