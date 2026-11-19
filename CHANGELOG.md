@@ -3,7 +3,7 @@
 Formato: `+` nuevo · `-` eliminado o retirado · `~` modificado · `*` otros.
 Lo más reciente, arriba.
 
-## Sin publicar
+## Beta 0.1.24 · 2026-11-19
 
 + **Instalador de una orden**: `sudo leksso-instalador` instala todo el catálogo (los programas de Linux y sus equivalentes) y enciende el SSH solo para la red local. Opciones `--sin-ssh` y `--simular`. `leksso-apps instalar --completo` hace lo mismo con los programas.
 + **Ajustes, Acceso remoto (SSH)**: botón que muestra si el SSH está apagado, solo en red local o también público, y permite elegir. El modo público solo admite clave SSH (la contraseña se desactiva), exige una clave autorizada del usuario y limita las conexiones nuevas; `sudo leksso-acceso-remoto on local|publico`.
