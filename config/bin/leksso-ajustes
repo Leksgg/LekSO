@@ -33,6 +33,7 @@ AJUSTES = [
     ("Copias", "Copias de seguridad de tus archivos", ["leksso-copias-ui"], "leksso-copias-ui"),
     ("Acceso remoto (SSH)", "__SSH__", None, "leksso-acceso-remoto"),
     ("Bloqueo y reposo", "Cuándo se bloquea la pantalla, se apaga y se suspende", "__REPOSO__", "leksso-reposo"),
+    ("Disco cifrado", "Pedir la clave al arrancar o desbloquear solo con el TPM", "__DISCO__", "leksso-disco"),
     ("Seguridad", "Qué se ha instalado y de dónde viene", ["leksso-seguridad"], "leksso-seguridad"),
     ("Archivos y papelera", "Recuperar lo borrado", ["pcmanfm-qt", "trash:///"], "pcmanfm-qt"),
 ]
@@ -182,6 +183,40 @@ def dialogo_reposo(parent):
     _aviso(parent, "Bloqueo y reposo", "Guardado. Ya está en uso.")
 
 
+def dialogo_disco(parent):
+    """Disco cifrado: pedir la clave al arrancar o desbloquearlo solo con el TPM. Se hace en una terminal (pide la clave
+    del disco una vez para autorizar el cambio)."""
+    r = subprocess.run(["leksso-disco", "estado", "--corto"], capture_output=True, text=True)
+    modo = r.stdout.strip() or "no se pudo leer"
+    if modo == "sin disco cifrado":
+        _aviso(parent, "Disco cifrado", "Este equipo no tiene el disco cifrado.")
+        return
+    caja = QtWidgets.QMessageBox(parent)
+    caja.setWindowTitle("Disco cifrado")
+    caja.setText("Ahora: " + modo)
+    caja.setInformativeText(
+        "Desbloqueo automático: el equipo abre el disco solo con su TPM; no hay que teclear la clave al arrancar. "
+        "Protege el disco si lo sacan o se llevan el equipo y lo abren en otro. NO protege contra quien encienda este "
+        "equipo tal cual: llegará al escritorio sin clave.\n\n"
+        "Pedir clave al arrancar: la más segura; la clave se teclea en cada arranque.\n\n"
+        "Tu clave del disco no se borra nunca: es el respaldo. Si cambia la BIOS o las claves de arranque, el equipo "
+        "la pedirá una vez y se renueva con «sudo leksso-disco renovar».")
+    auto = caja.addButton("Desbloqueo automático", QtWidgets.QMessageBox.AcceptRole)
+    clave = caja.addButton("Pedir clave al arrancar", QtWidgets.QMessageBox.AcceptRole)
+    caja.addButton("Cancelar", QtWidgets.QMessageBox.RejectRole)
+    caja.exec()
+    sel = caja.clickedButton()
+    if sel is auto:
+        accion = "on"
+    elif sel is clave:
+        accion = "off"
+    else:
+        return
+    subprocess.Popen(["leksso-term", "-T", "Disco cifrado", "-e", "sh", "-c",
+                      f"sudo leksso-disco automatico {accion}; printf '\\nPulsa Intro para cerrar.'; read -r _"],
+                     start_new_session=True, stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+
+
 def orden_ssh(parent):
     """Pregunta qué modo de SSH quiere y devuelve la orden (en una terminal, que pide la contraseña y enseña el
     progreso), o None si cancela."""
@@ -297,6 +332,8 @@ class Ajustes(QtWidgets.QWidget):
                 b.setToolTip("No está instalado")
             if orden == "__REPOSO__":
                 b.clicked.connect(lambda _=False: dialogo_reposo(self))
+            elif orden == "__DISCO__":
+                b.clicked.connect(lambda _=False: dialogo_disco(self))
             else:
                 b.clicked.connect(lambda _=False, o=orden, e=ssh: self.abrir(orden_ssh(self) if e else o))
             self.tarjetas.append(b)

@@ -3,6 +3,10 @@
 Formato: `+` nuevo · `-` eliminado o retirado · `~` modificado · `*` otros.
 Lo más reciente, arriba.
 
+## Sin publicar
+
++ **Disco cifrado con desbloqueo automático (TPM2)**: `leksso-disco automatico on|off`, `renovar` y `estado`, y la tarjeta **Disco cifrado** en Ajustes. Si el equipo tiene TPM2, el disco se abre solo en cada arranque, sin teclear la clave, mientras el estado de Secure Boot (PCR 7) sea el de siempre; si cambia (BIOS, base de firmas), pide la clave normal una vez y se renueva con `renovar`. La clave del disco **no se borra**: es el respaldo. Pide confirmar que la tienes guardada y avisa de que protege el disco extraído o robado, pero no contra quien encienda el equipo tal cual. Activarlo requiere teclear la clave del disco una vez. Revisión de equipo y ensayo en un LUKS de prueba: enlazar, abrir sin clave, respaldo y caída al prompt tras cambiar el arranque.
+
 ## Beta 0.1.29 · 2026-11-20
 
 + **Ajustes, Bloqueo y reposo**: se elige cuándo se bloquea la pantalla, se apaga y se suspende (Nunca, 1, 5, 10, 15, 30 minutos, 1 o 2 horas); se guarda en `~/.config/leksso/reposo` y se aplica al momento. Por defecto sigue igual: 10, 15 y 30 minutos (la suspensión solo con batería). Con el bloqueo en «Nunca» tampoco se bloquea al suspender. `leksso-reposo iniciar|aplicar|mostrar`.

@@ -1,0 +1,101 @@
+#!/usr/bin/env bash
+# Disco cifrado de LeksSO: pedir la clave al arrancar, o desbloquearlo solo con el TPM2 de este equipo.
+#
+# Uso: leksso-disco estado [--corto]       dice cómo está (pide permisos de administrador para ver el enlace)
+#      sudo leksso-disco automatico on     enlaza el disco al TPM2 (te pide la clave del disco UNA vez)
+#      sudo leksso-disco automatico off    quita el enlace: vuelve a pedir la clave al arrancar
+#      sudo leksso-disco renovar           vuelve a enlazar tras un cambio de BIOS o de claves de arranque
+#
+# Cómo funciona: la clave del disco NO se borra ni se cambia; sigue siendo el respaldo. El TPM guarda una segunda
+# clave que solo entrega si el estado de Secure Boot (PCR 7) es el de siempre. Si cambia (actualización de BIOS o de
+# la base de firmas, otro arranque), el TPM no la entrega y el arranque pide la clave normal. Entonces: escríbela
+# una vez y, ya dentro, `sudo leksso-disco renovar`.
+#
+# Qué protege y qué NO (importa): protege el disco si lo sacan del equipo o se llevan el equipo y lo abren en otro.
+# NO protege contra quien encienda ESTE equipo tal cual: llegará al escritorio sin clave (con autologin, igual que hoy).
+set -uo pipefail
+PCR='{"pcr_bank":"sha256","pcr_ids":"7"}'
+
+dispositivo() {   # partición LUKS según /etc/crypttab (UUID=... o ruta)
+  local fuente
+  fuente="$(awk '!/^#/ && NF>=2 {print $2; exit}' /etc/crypttab 2>/dev/null)"
+  case "$fuente" in
+    UUID=*) readlink -f "/dev/disk/by-uuid/${fuente#UUID=}" ;;
+    /dev/*) echo "$fuente" ;;
+    *) return 1 ;;
+  esac
+}
+enlace() {        # número de keyslot enlazado a clevis/tpm2, o vacío
+  clevis luks list -d "$1" 2>/dev/null | awk -F: '/tpm2/ {print $1; exit}'
+}
+solo_root() { [ "$(id -u)" -eq 0 ] || { echo "Ejecuta con sudo: sudo $0 $*" >&2; exit 1; }; }
+con_clevis() {
+  command -v clevis >/dev/null 2>&1 && return 0
+  echo "Instalando las herramientas de enlace con el TPM (clevis)…"
+  DEBIAN_FRONTEND=noninteractive apt-get install -y clevis clevis-luks clevis-tpm2 clevis-initramfs tpm2-tools || return 1
+}
+
+DEV="$(dispositivo)" || { [ "${1:-}" = estado ] && { echo "sin disco cifrado"; exit 0; }; echo "Este equipo no tiene el disco cifrado (no hay LUKS en /etc/crypttab)." >&2; exit 1; }
+
+case "${1:-estado}" in
+  estado)
+    if [ "$(id -u)" -ne 0 ]; then
+      sudo -n "$0" estado "${2:-}" 2>/dev/null || echo "cifrado: pide clave (estado del TPM: hace falta sudo para verlo)"
+      exit 0
+    fi
+    tpm="no"; [ -e /dev/tpmrm0 ] && tpm="sí"
+    if command -v clevis >/dev/null 2>&1 && [ -n "$(enlace "$DEV")" ]; then modo="desbloqueo automático con el TPM"; else modo="pide la clave al arrancar"; fi
+    if [ "${2:-}" = "--corto" ]; then echo "$modo"; exit 0; fi
+    echo "Disco cifrado: $DEV"
+    echo "Modo: $modo"
+    echo "TPM2 en este equipo: $tpm"
+    echo "Secure Boot: $(mokutil --sb-state 2>/dev/null | head -1)"
+    ;;
+  automatico)
+    solo_root "$@"
+    case "${2:-}" in
+      on)
+        [ -e /dev/tpmrm0 ] || { echo "Este equipo no tiene TPM2: no se puede desbloquear solo." >&2; exit 1; }
+        con_clevis || { echo "No se pudieron instalar las herramientas." >&2; exit 1; }
+        if [ -n "$(enlace "$DEV")" ]; then echo "El desbloqueo automático ya está activado."; exit 0; fi
+        cat <<'MSG'
+Antes de activar el desbloqueo automático:
+  - Tu clave del disco NO se borra: sigue siendo el respaldo. Si algún día el arranque cambia (BIOS, claves de
+    arranque), el equipo volverá a pedirla UNA vez; después se renueva con «sudo leksso-disco renovar».
+  - Protege el disco si lo sacan o se llevan el equipo y lo abren en otro. NO protege contra quien encienda ESTE
+    equipo tal cual: llegará al escritorio sin clave.
+MSG
+        if [ "${3:-}" != "--si" ]; then
+          printf '¿Tienes guardada la clave del disco fuera de este equipo o la sabes de memoria? Escribe SI para seguir: '
+          read -r r; [ "$r" = "SI" ] || { echo "No se ha cambiado nada."; exit 1; }
+        fi
+        echo "Escribe la clave del disco (una vez) para autorizar el enlace con el TPM:"
+        clevis luks bind -d "$DEV" tpm2 "$PCR" || { echo "No se pudo enlazar. No se ha cambiado nada en el arranque." >&2; exit 1; }
+        update-initramfs -u -k all || { echo "AVISO: falló update-initramfs; quita el enlace con: sudo leksso-disco automatico off" >&2; exit 1; }
+        n="$(lsinitramfs "/boot/initrd.img-$(uname -r)" 2>/dev/null | grep -c clevis)"
+        echo "Hecho. (El arranque lleva el desbloqueo: $n archivos de clevis.) Reinicia para comprobarlo: no debe pedir clave."
+        ;;
+      off)
+        con_clevis || exit 1
+        s="$(enlace "$DEV")"
+        if [ -z "$s" ]; then echo "El desbloqueo automático no estaba activado."; exit 0; fi
+        clevis luks unbind -d "$DEV" -s "$s" -f || { echo "No se pudo quitar el enlace." >&2; exit 1; }
+        update-initramfs -u -k all
+        echo "Hecho. A partir del próximo arranque se pide la clave del disco."
+        ;;
+      *) echo "Uso: sudo leksso-disco automatico on|off" >&2; exit 2 ;;
+    esac
+    ;;
+  renovar)
+    solo_root "$@"
+    con_clevis || exit 1
+    s="$(enlace "$DEV")"
+    [ -z "$s" ] && { echo "El desbloqueo automático no está activado. Usa: sudo leksso-disco automatico on"; exit 1; }
+    echo "Escribe la clave del disco (una vez) para volver a enlazarlo con el estado actual del arranque:"
+    clevis luks bind -d "$DEV" tpm2 "$PCR" || { echo "No se pudo renovar; el enlace anterior sigue como estaba." >&2; exit 1; }
+    clevis luks unbind -d "$DEV" -s "$s" -f
+    update-initramfs -u -k all
+    echo "Hecho: el desbloqueo automático vuelve a coincidir con el arranque actual."
+    ;;
+  *) echo "Uso: leksso-disco estado | sudo leksso-disco automatico on|off | sudo leksso-disco renovar" >&2; exit 2 ;;
+esac
