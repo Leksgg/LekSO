@@ -1,0 +1,25 @@
+#!/usr/bin/env bash
+# Instalador de una sola orden: programas del catálogo (los de Linux o sus equivalentes) y acceso remoto SSH.
+#
+# Uso: sudo leksso-instalador              instala todo y enciende el SSH (solo red local)
+#      sudo leksso-instalador --sin-ssh    solo los programas
+#      sudo leksso-instalador --simular    muestra lo que haría, sin tocar nada
+#
+# Equivale a: leksso-apps instalar --completo --si  +  leksso-acceso-remoto on
+set -uo pipefail
+[ "$(id -u)" -eq 0 ] || { echo "Ejecuta con sudo: sudo $0" >&2; exit 1; }
+SSH=1; SIM=""
+for a in "$@"; do
+  case "$a" in
+    --sin-ssh) SSH=0 ;;
+    --simular) SIM="--simular" ;;
+    *) echo "Opción desconocida: $a" >&2; exit 2 ;;
+  esac
+done
+rc=0
+leksso-apps instalar --completo --si $SIM || rc=1
+if [ "$SSH" -eq 1 ] && [ -z "$SIM" ]; then
+  leksso-acceso-remoto on || rc=1
+fi
+[ "$rc" -eq 0 ] && echo "Todo listo." || echo "Terminado con errores: revisa arriba." >&2
+exit "$rc"

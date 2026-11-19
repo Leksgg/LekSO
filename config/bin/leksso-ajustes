@@ -27,10 +27,23 @@ AJUSTES = [
      "leksso-apps"),
     ("Actualizaciones", "Versión y novedades", ["leksso-actualizaciones"], "leksso-actualizaciones"),
     ("Copias", "Copias de seguridad de tus archivos", ["leksso-copias-ui"], "leksso-copias-ui"),
+    ("Acceso remoto (SSH)", "__SSH__", None, "leksso-acceso-remoto"),
     ("Seguridad", "Qué se ha instalado y de dónde viene", ["leksso-seguridad"], "leksso-seguridad"),
     ("Archivos y papelera", "Recuperar lo borrado", ["pcmanfm-qt", "trash:///"], "pcmanfm-qt"),
 ]
 PERFILES = [("Ahorro", "power-saver"), ("Equilibrado", "balanced"), ("Rendimiento", "performance")]
+
+
+def estado_ssh():
+    r = subprocess.run(["leksso-acceso-remoto", "estado"], capture_output=True, text=True)
+    return r.stdout.strip() == "encendido"
+
+
+def orden_ssh():
+    """Enciende o apaga el SSH en una terminal (pide la contraseña y deja ver el progreso)."""
+    nuevo = "off" if estado_ssh() else "on"
+    return ["leksso-term", "-T", "Acceso remoto", "-e", "sh", "-c",
+            f"sudo leksso-acceso-remoto {nuevo}; printf '\nPulsa Intro para cerrar.'; read -r _"]
 
 
 def info():
@@ -47,7 +60,17 @@ class Ajustes(QtWidgets.QWidget):
         super().__init__()
         self.setWindowTitle("Ajustes")
         estilo(self, ESTILO_BASE)
-        raiz = QtWidgets.QVBoxLayout(self)
+        externo = QtWidgets.QVBoxLayout(self)
+        externo.setContentsMargins(0, 0, 0, 0)
+        # Todo el contenido va en un área con barra de desplazamiento: si la pantalla es pequeña, nada queda cortado.
+        area = QtWidgets.QScrollArea()
+        area.setWidgetResizable(True)
+        area.setFrameShape(QtWidgets.QFrame.NoFrame)
+        area.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
+        externo.addWidget(area)
+        contenido = QtWidgets.QWidget()
+        area.setWidget(contenido)
+        raiz = QtWidgets.QVBoxLayout(contenido)
         raiz.setContentsMargins(14, 10, 14, 14)
         cab = QtWidgets.QHBoxLayout()
         t = QtWidgets.QLabel("Ajustes")
@@ -63,13 +86,17 @@ class Ajustes(QtWidgets.QWidget):
         rejilla = QtWidgets.QGridLayout()
         n = 0
         for nombre, desc, orden, prog in AJUSTES:
+            ssh = desc == "__SSH__"
+            if ssh:
+                desc = ("Encendido: se puede entrar desde la red local. Pulsa para apagarlo" if estado_ssh()
+                        else "Apagado. Pulsa para encenderlo (solo red local)")
             b = QtWidgets.QPushButton(f"{nombre}\n{desc}")
             b.setObjectName("accion")
             ok = shutil.which(prog) is not None or prog == "cupsd"
             b.setEnabled(ok)
             if not ok:
                 b.setToolTip("No está instalado")
-            b.clicked.connect(lambda _=False, o=orden: self.abrir(o))
+            b.clicked.connect(lambda _=False, o=orden, e=ssh: self.abrir(orden_ssh() if e else o))
             rejilla.addWidget(b, n // 2, n % 2)
             n += 1
         raiz.addLayout(rejilla)
@@ -107,7 +134,9 @@ def main():
     app = QtWidgets.QApplication(sys.argv)
     app.setDesktopFileName("leksso-ajustes")
     w = Ajustes()
-    w.resize(600, 540)
+    # Alto: lo que necesita el contenido, pero sin pasar de la pantalla (si no cabe, aparece la barra de desplazamiento).
+    disp = app.primaryScreen().availableGeometry()
+    w.resize(min(640, disp.width() - 40), min(760, disp.height() - 40))
     w.show()
     return app.exec()
 

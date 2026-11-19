@@ -3,7 +3,8 @@
 
   leksso-apps                       lista por grupos, con lo que ya está instalado
   leksso-apps instalar NOMBRE...    instala por nombre (de Linux o de Windows) o por grupo
-  leksso-apps instalar --todo       instala todo lo automático (pide confirmación)
+  leksso-apps instalar --todo       instala todo lo automático y oficial (pide confirmación)
+  leksso-apps instalar --completo   igual, pero incluye también las alternativas de terceros (LibreOffice, Heroic...)
   leksso-apps pendientes            lo que no se puede instalar con un comando y por qué
   Opciones: --simular (solo muestra lo que haría), --si (no pregunta)
 
@@ -389,9 +390,10 @@ def main(argv):
     if args[0] != "instalar":
         print(__doc__)
         return 2
-    if "--todo" in argv:
-        # --todo instala solo lo oficial: las alternativas de terceros se piden siempre por su nombre
-        sel = [it for it in CATALOGO if it[1] not in ALTERNATIVAS and not instalado(it[3], it[5])]
+    todo = "--todo" in argv or "--completo" in argv
+    if todo:
+        # --todo instala solo lo oficial: las alternativas de terceros se piden por su nombre o con --completo
+        sel = [it for it in CATALOGO if (it[1] not in ALTERNATIVAS or "--completo" in argv) and not instalado(it[3], it[5])]
     else:
         nombres = args[1:]
         if not nombres:
@@ -407,12 +409,12 @@ def main(argv):
             print(f"  ya instalado: {it[1]}")
     if not pend:
         return 0
-    if "--todo" in argv and not si and not simular:
+    if todo and not si and not simular:
         print("Se instalará: " + ", ".join(it[1] for it in pend))
         if input("¿Continuar? [s/N] ").strip().lower() not in ("s", "si", "sí"):
             return 1
     fallos = []
-    confirmado = "--todo" in argv  # la confirmación de --todo cubre también los scripts del proveedor
+    confirmado = todo  # la confirmación de --todo cubre también los scripts del proveedor
     for it in pend:
         if hacer(it, simular, si or confirmado) != 0:
             fallos.append(it[1])
