@@ -324,11 +324,21 @@ def anotar(nombre, modo, rc, simular):
     return rc
 
 
+def proteger_audio(simular):
+    """Algunos programas traen fluidsynth, que abre la tarjeta de sonido directamente y deja a PipeWire sin audio:
+    su servicio de usuario se enmascara en cuanto aparece."""
+    if os.path.exists("/usr/bin/fluidsynth") or simular:
+        sudo(["ln", "-sf", "/dev/null", "/etc/systemd/user/fluidsynth.service"], simular)
+
+
 def hacer(item, simular, si):
     grupo, ident, win, tipo, objetivo, comprobar, nota = item
     print(c(f"\n▶ {ident}", "1;36") + f"  ({win})")
     if tipo == "apt":
-        return apt(objetivo, simular)
+        rc = apt(objetivo, simular)
+        if rc == 0:
+            proteger_audio(simular)
+        return rc
     if tipo == "vscode-ext":
         if shutil.which("code") is None and not simular:
             print(c("  Falta VS Code: instálalo primero (leksso-apps instalar code).", "33"))
