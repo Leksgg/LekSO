@@ -5,6 +5,7 @@
 #      leksso-zonas --restaurar  vuelve a la vista por defecto sin cerrar las apps del usuario
 #      leksso-zonas --plegar     pliega o despliega la columna de carpetas (más sitio para la app)
 #      leksso-zonas --medir      muestra los tamaños actuales de las zonas (en % de la pantalla)
+#      leksso-zonas --guardar    guarda ahora los tamaños actuales (normalmente se hace solo cada 15 s)
 #      leksso-zonas --fabrica    vuelve a los tamaños de fábrica (sin cerrar ni mover ventanas)
 #
 # Los tamaños de las zonas que dejes a tu gusto (arrastrando los bordes) se guardan solos en
@@ -177,6 +178,8 @@ elif [ "${1:-}" = "--fabrica" ]; then
   [ -e "$PLEGADO" ] || swaymsg "[con_mark=\"explorador\"] resize set width $EXPL ppt" >/dev/null 2>&1
   swaymsg "[con_mark=\"panel-ia\"] resize set width $PANEL ppt" >/dev/null 2>&1
   swaymsg "[con_mark=\"terminal\"] resize set height $TERM ppt" >/dev/null 2>&1
+elif [ "${1:-}" = "--guardar" ]; then
+  guardar
 elif [ "${1:-}" = "--medir" ]; then
   medir
 elif [ "${1:-}" = "--restaurar" ]; then
