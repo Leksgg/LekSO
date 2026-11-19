@@ -3,6 +3,11 @@
 Formato: `+` nuevo · `-` eliminado o retirado · `~` modificado · `*` otros.
 Lo más reciente, arriba.
 
+## Sin publicar
+
+~ **SSH con una cuenta sin contraseña**: antes se encendía y nadie podía entrar (sshd rechaza las contraseñas vacías). Ahora `leksso-acceso-remoto on` no enciende nada si la cuenta no tiene contraseña ni clave autorizada, y Ajustes, Acceso remoto ofrece resolverlo en el momento: poner una contraseña para SSH (solo se pide al entrar por SSH; el inicio de sesión y sudo siguen igual) o autorizar una clave pública. El modo público sigue siendo solo con clave y pide autorizar una si falta.
++ `leksso-acceso-remoto cuenta` (¿contraseña? ¿cuántas claves?) y `leksso-acceso-remoto clave 'ssh-...'` (valida y autoriza una clave pública, sin sudo).
+
 ## Beta 0.1.25 · 2026-11-19
 
 ~ **Ajustes, más ancha**: la ventana se abre al 55 % del ancho de la pantalla (entre 720 y 1000 px) y los botones se reparten en 1, 2 o 3 columnas según el ancho. El texto de cada botón se ajusta a su ancho en vez de cortarse.

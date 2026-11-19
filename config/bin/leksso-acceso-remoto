@@ -4,6 +4,11 @@
 # Uso: sudo leksso-acceso-remoto on [local|publico]   lo enciende (instala el servidor SSH si falta); por defecto, local
 #      sudo leksso-acceso-remoto off                  lo apaga y cierra el puerto
 #      leksso-acceso-remoto estado                    dice: apagado, local o publico
+#      leksso-acceso-remoto cuenta                    dice si la cuenta tiene contraseña y cuántas claves SSH autorizadas
+#      leksso-acceso-remoto clave 'ssh-ed25519 ...'   autoriza una clave pública (la validada) para esta cuenta
+#
+# Para entrar por SSH hace falta una contraseña en la cuenta o una clave autorizada: sin ninguna de las dos, SSH
+# rechaza todo (sshd no admite contraseñas vacías). Por eso `on` no enciende nada si falta, y Ajustes lo resuelve.
 #
 # local   Solo desde la red local (192.168.x.x, 10.x.x.x, 172.16-31.x.x). Usuario y contraseña, o clave.
 # publico Desde cualquier sitio (internet incluido), para manejar el equipo desde un servidor. SOLO con clave SSH:
@@ -28,19 +33,52 @@ quitar_regla() {
   done
   sed -i '/leksso-acceso-remoto/d' /etc/nftables.conf
 }
-claves_autorizadas() {   # cuántas claves SSH tiene el usuario que ejecuta sudo
-  local u="${SUDO_USER:-}" h
-  [ -n "$u" ] && [ "$u" != root ] || return 1
+usuario() { echo "${SUDO_USER:-$(id -un)}"; }
+claves_autorizadas() {   # ¿tiene claves SSH el usuario? (el que ejecuta sudo, o el actual)
+  local u h; u="$(usuario)"
+  [ "$u" != root ] || return 1
   h="$(getent passwd "$u" | cut -d: -f6)"
   [ -s "$h/.ssh/authorized_keys" ] && grep -Eq '^(ssh-|ecdsa-|sk-)' "$h/.ssh/authorized_keys"
+}
+num_claves() {
+  local h; h="$(getent passwd "$(usuario)" | cut -d: -f6)"
+  [ -s "$h/.ssh/authorized_keys" ] && grep -Ec '^(ssh-|ecdsa-|sk-)' "$h/.ssh/authorized_keys" || echo 0
+}
+con_contrasena() {       # ¿la cuenta tiene contraseña utilizable? (P = sí; NP = vacía; L = bloqueada)
+  [ "$(passwd -S "$(usuario)" 2>/dev/null | awk '{print $2}')" = P ]
 }
 
 case "${1:-estado}" in
   estado) estado ;;
+  cuenta)
+    if con_contrasena; then echo "contrasena=si claves=$(num_claves)"; else echo "contrasena=no claves=$(num_claves)"; fi
+    ;;
+  clave)
+    # Autoriza una clave pública para la cuenta de quien lo ejecuta (sin sudo). Se valida con ssh-keygen y se guarda
+    # SIN opciones delante (command=, from=...): solo el tipo, la clave y un comentario.
+    CL="${2:-}"; [ -n "$CL" ] || CL="$(cat)"
+    CL="$(printf '%s' "$CL" | tr -d '\r' | head -n1 | sed 's/^[[:space:]]*//; s/[[:space:]]*$//')"
+    case "$CL" in ssh-ed25519\ *|ssh-rsa\ *|ecdsa-sha2-*\ *|sk-ssh-ed25519@openssh.com\ *) ;; *) echo "ERROR: no es una clave pública SSH (debe empezar por ssh-ed25519, ssh-rsa, ecdsa-sha2-...)." >&2; exit 2 ;; esac
+    printf '%s\n' "$CL" | ssh-keygen -l -f /dev/stdin >/dev/null 2>&1 || { echo "ERROR: la clave no es válida (¿está cortada o tiene una errata?)." >&2; exit 2; }
+    [ "$(id -u)" -ne 0 ] || [ -n "${SUDO_USER:-}" ] || { echo "ERROR: ejecútalo como tu usuario, no como root." >&2; exit 2; }
+    H="$(getent passwd "$(usuario)" | cut -d: -f6)"
+    install -d -m 700 "$H/.ssh"
+    touch "$H/.ssh/authorized_keys"; chmod 600 "$H/.ssh/authorized_keys"
+    if grep -qxF "$CL" "$H/.ssh/authorized_keys"; then echo "Esa clave ya estaba autorizada."; else printf '%s\n' "$CL" >>"$H/.ssh/authorized_keys"; echo "Clave autorizada."; fi
+    [ "$(id -u)" -ne 0 ] || chown -R "$(usuario):" "$H/.ssh"
+    ;;
   on)
     [ "$(id -u)" -eq 0 ] || { echo "Ejecuta con sudo: sudo leksso-acceso-remoto on [local|publico]" >&2; exit 1; }
     MODO="${2:-local}"
     case "$MODO" in local|publico) ;; *) echo "Modo desconocido: $MODO (usa local o publico)" >&2; exit 2 ;; esac
+    # Sin contraseña ni clave, nadie podría entrar: no se enciende nada (Ajustes ofrece ponerlas).
+    if [ "$MODO" = local ] && ! con_contrasena && ! claves_autorizadas; then
+      cat >&2 <<MSG
+ERROR: la cuenta ${SUDO_USER:-actual} no tiene contraseña ni ninguna clave SSH autorizada, así que nadie podría entrar. No se enciende nada.
+Pon una contraseña (passwd) o autoriza una clave: leksso-acceso-remoto clave 'ssh-ed25519 ...'. Ajustes, Acceso remoto lo hace por ti.
+MSG
+      exit 3
+    fi
     if [ "$MODO" = publico ] && ! claves_autorizadas; then
       cat >&2 <<MSG
 ERROR: el modo público solo admite clave SSH y tu usuario no tiene ninguna autorizada, así que no se abre nada.
@@ -95,5 +133,5 @@ MSG
     rm -f "$MARCA" /etc/ssh/sshd_config.d/leksso.conf
     echo "Acceso remoto APAGADO."
     ;;
-  *) echo "Uso: leksso-acceso-remoto on [local|publico] | off | estado" >&2; exit 2 ;;
+  *) echo "Uso: leksso-acceso-remoto on [local|publico] | off | estado | cuenta | clave 'ssh-...'" >&2; exit 2 ;;
 esac

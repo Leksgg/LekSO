@@ -4,6 +4,7 @@
 Cada botón abre la herramienta que ya existe para eso; aquí solo se reúnen.
 Se cierra con la X o con Esc.
 """
+import getpass
 import shutil
 import subprocess
 import sys
@@ -11,7 +12,7 @@ import sys
 from PySide6 import QtCore, QtWidgets
 
 sys.path.insert(0, "/usr/local/lib/leksso-ui")
-from leksso_ui import ESTILO_BASE, alternar, estilo  # noqa: E402
+from leksso_ui import ESTILO_BASE, alternar, estilo, pedir_permiso, sudo_cmd  # noqa: E402
 
 # (nombre, descripción, orden, programa que debe existir)
 AJUSTES = [
@@ -40,6 +41,92 @@ def estado_ssh():
     return r.stdout.strip() or "apagado"
 
 
+def cuenta_ssh():
+    """(tiene contraseña, nº de claves SSH autorizadas) de esta cuenta."""
+    r = subprocess.run(["leksso-acceso-remoto", "cuenta"], capture_output=True, text=True).stdout
+    datos = dict(x.split("=", 1) for x in r.split() if "=" in x)
+    try:
+        return datos.get("contrasena") == "si", int(datos.get("claves", "0"))
+    except ValueError:
+        return False, 0
+
+
+def _aviso(parent, titulo, texto, icono=QtWidgets.QMessageBox.Information):
+    m = QtWidgets.QMessageBox(icono, titulo, texto, QtWidgets.QMessageBox.Ok, parent)
+    m.exec()
+
+
+def poner_contrasena(parent):
+    """Pone contraseña a la cuenta (se usará por SSH; el inicio de sesión y sudo siguen igual). True si se puso."""
+    usuario = getpass.getuser()
+    if not pedir_permiso(parent, "Para poner la contraseña hace falta permiso de administrador."):
+        return False
+    for _ in range(3):
+        c1, ok = QtWidgets.QInputDialog.getText(
+            parent, "Contraseña para SSH",
+            "Esta contraseña solo se pedirá al entrar por SSH desde otro equipo. Tu inicio de sesión y sudo siguen sin pedirla.\n\n"
+            "Elige una contraseña (mínimo 8 caracteres):", QtWidgets.QLineEdit.Password)
+        if not ok:
+            return False
+        if len(c1) < 8 or c1.lower() == usuario.lower() or ":" in c1 or "\n" in c1:
+            _aviso(parent, "Contraseña", "Debe tener al menos 8 caracteres, no ser tu nombre de usuario ni contener «:».")
+            continue
+        c2, ok = QtWidgets.QInputDialog.getText(parent, "Contraseña para SSH", "Repítela:", QtWidgets.QLineEdit.Password)
+        if not ok:
+            return False
+        if c1 != c2:
+            _aviso(parent, "Contraseña", "No coinciden. Prueba otra vez.")
+            continue
+        rc, _out, err = sudo_cmd(["chpasswd"], entrada=f"{usuario}:{c1}\n", espera=60)
+        if rc == 0:
+            return True
+        _aviso(parent, "Contraseña", "No se pudo poner la contraseña:\n" + (err.strip() or "error desconocido"), QtWidgets.QMessageBox.Warning)
+        return False
+    return False
+
+
+def autorizar_clave(parent):
+    """Pide una clave pública y la autoriza para esta cuenta. True si quedó autorizada."""
+    texto, ok = QtWidgets.QInputDialog.getMultiLineText(
+        parent, "Autorizar clave",
+        "Pega la clave PÚBLICA del equipo desde el que vas a entrar (una línea que empieza por ssh-ed25519 o ssh-rsa).\n"
+        "La encuentras en ~/.ssh/id_ed25519.pub de ese equipo. Nunca pegues la clave privada.")
+    if not ok or not texto.strip():
+        return False
+    r = subprocess.run(["leksso-acceso-remoto", "clave", texto.strip().splitlines()[0]], capture_output=True, text=True)
+    if r.returncode != 0:
+        _aviso(parent, "Autorizar clave", (r.stderr or r.stdout).strip() or "No se pudo autorizar la clave.", QtWidgets.QMessageBox.Warning)
+        return False
+    return True
+
+
+def preparar_cuenta(parent, modo_publico=False):
+    """Deja la cuenta lista para entrar por SSH: contraseña (solo red local) o clave. False si el usuario cancela."""
+    con_pw, claves = cuenta_ssh()
+    if modo_publico and claves == 0:
+        _aviso(parent, "Acceso público", "El modo público solo admite clave SSH y esta cuenta no tiene ninguna autorizada. "
+               "Autoriza primero la del equipo desde el que vas a entrar.")
+        return autorizar_clave(parent)
+    if con_pw or claves:
+        return True
+    caja = QtWidgets.QMessageBox(parent)
+    caja.setWindowTitle("Acceso remoto (SSH)")
+    caja.setText("Esta cuenta no tiene contraseña")
+    caja.setInformativeText("Sin contraseña ni clave, nadie podría entrar por SSH. Elige cómo quieres entrar:\n\n"
+                            "Contraseña para SSH: solo se pide al entrar por SSH; tu inicio de sesión no cambia.\n"
+                            "Clave pública: la más segura; pegas la clave del equipo desde el que entrarás.")
+    pw = caja.addButton("Poner contraseña para SSH", QtWidgets.QMessageBox.AcceptRole)
+    clave = caja.addButton("Autorizar una clave", QtWidgets.QMessageBox.AcceptRole)
+    caja.addButton("Cancelar", QtWidgets.QMessageBox.RejectRole)
+    caja.exec()
+    sel = caja.clickedButton()
+    if sel is pw:
+        return poner_contrasena(parent)
+    if sel is clave:
+        return autorizar_clave(parent)
+    return False
+
+
 def orden_ssh(parent):
     """Pregunta qué modo de SSH quiere y devuelve la orden (en una terminal, que pide la contraseña y enseña el
     progreso), o None si cancela."""
@@ -62,8 +149,12 @@ def orden_ssh(parent):
     if sel is apagar:
         accion = "off"
     elif sel is local:
+        if not preparar_cuenta(parent):
+            return None
         accion = "on local"
     elif sel is publico:
+        if not preparar_cuenta(parent, modo_publico=True):
+            return None
         accion = "on publico"
     else:
         return None
