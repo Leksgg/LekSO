@@ -3,7 +3,7 @@
 Formato: `+` nuevo · `-` eliminado o retirado · `~` modificado · `*` otros.
 Lo más reciente, arriba.
 
-## Sin publicar
+## Beta 0.1.25 · 2026-11-19
 
 ~ **Ajustes, más ancha**: la ventana se abre al 55 % del ancho de la pantalla (entre 720 y 1000 px) y los botones se reparten en 1, 2 o 3 columnas según el ancho. El texto de cada botón se ajusta a su ancho en vez de cortarse.
 
