@@ -3,6 +3,12 @@
 Formato: `+` nuevo · `-` eliminado o retirado · `~` modificado · `*` otros.
 Lo más reciente, arriba.
 
+## Sin publicar
+
++ **Ajustes, Bloqueo y reposo**: se elige cuándo se bloquea la pantalla, se apaga y se suspende (Nunca, 1, 5, 10, 15, 30 minutos, 1 o 2 horas); se guarda en `~/.config/leksso/reposo` y se aplica al momento. Por defecto sigue igual: 10, 15 y 30 minutos (la suspensión solo con batería). Con el bloqueo en «Nunca» tampoco se bloquea al suspender. `leksso-reposo iniciar|aplicar|mostrar`.
+~ **Codex: iniciar sesión**: desde dentro de la caja llevaba a una «ruta no válida» (Codex espera la respuesta del navegador en `localhost:1455` y la caja no tiene reenvío de puertos, a propósito). Ahora `leksso-codex login` (y el primer arranque, solo) hace la autenticación fuera de la caja; la sesión queda en la carpeta que la caja ve. Con `leksso-codex login --device-auth` se entra con un código, sin navegador local.
+~ **Ajustes**: los textos largos de las tarjetas (p. ej. el del SSH) ahora se ajustan al ancho en vez de cortarse.
+
 ## Beta 0.1.28 · 2026-11-20
 
 ~ **Micrófono y altavoz del portátil**: el micrófono grababa silencio total (el audio usaba el perfil genérico `stereo-fallback`, que no enruta los micrófonos digitales). Ahora la base instala `alsa-ucm-conf` y `alsa-utils`; con eso aparecen «Digital Microphone» y «Speaker» y se graba con voz. Hallado en la validación del A04 con Discord.
