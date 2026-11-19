@@ -3,6 +3,10 @@
 Formato: `+` nuevo · `-` eliminado o retirado · `~` modificado · `*` otros.
 Lo más reciente, arriba.
 
+## Sin publicar
+
++ **Extensiones de VS Code en el catálogo**: 93 extensiones en 9 grupos (`vscode-ia`, `vscode-python`, `vscode-js`, `vscode-cpp-net`, `vscode-java`, `vscode-git`, `vscode-markdown`, `vscode-nube`, `vscode-otros`). Se instalan para tu usuario con `code --install-extension` (también cuando se lanza con `sudo leksso-instalador`) y entran en `--todo` y `--completo`. Se pueden instalar por grupo: `leksso-apps instalar vscode-java`.
+
 ## Beta 0.1.26 · 2026-11-19
 
 ~ **Tamaño de las zonas del escritorio**: los anchos y altos que dejes arrastrando los bordes (explorador, panel de IA, terminal) se guardan solos en `~/.config/leksso/zonas` y se vuelven a poner al iniciar sesión, al restaurar las zonas y al plegar la columna de carpetas. Antes, cada inicio volvía a 22 %, 26 % y 26 %. Se puede volver a los de fábrica en cualquier momento, sin cerrar ni mover ventanas: Ajustes, Zonas del escritorio, o `leksso-zonas --fabrica`. `leksso-zonas --medir` muestra los tamaños actuales.
