@@ -3,6 +3,19 @@
 Formato: `+` nuevo · `-` eliminado o retirado · `~` modificado · `*` otros.
 Lo más reciente, arriba.
 
+## Sin publicar
+
+Segunda revisión de seguridad (sobre la 0.1.22). Se corrige lo comprobado; lo que es un cambio de arquitectura queda anotado abajo.
+
+~ **Permisos de archivos**: al aprobar, se comprueba que la carpeta sigue siendo la misma que cuando se pidió (si alguien la sustituyó mientras esperabas, no se concede). Desactivar un asistente inutiliza al momento sus tareas abiertas. Cada asistente tiene su propia cuota de peticiones sin responder, para que uno con la cola llena no tape a los demás.
+~ **Recuperar de las copias**: cada recuperación va a una carpeta nueva y exclusiva (nunca mezcla ni pisa la anterior), la ruta se pasa a restic tal cual (sin interpretar `*`, `?` ni `[`), y la carpeta de preparación solo se entrega al usuario cuando root ha terminado de recorrerla.
+~ **Rotación de copias**: varias copias parciales seguidas (con archivos saltados) ya no pueden borrar la última copia completa.
+~ **Cajas**: sin pasta, la caja con red NO arranca (antes compartía la red del equipo con un aviso). Con el perfil estricto, el filtro seccomp se abre dentro de pasta para que llegue de verdad a bubblewrap. El lanzador de Claude lee su configuración sin seguir enlaces y con tope de tamaño. La prueba de la caja ahora comprueba por separado que el programa arranca, que tiene Internet y que el aislamiento se mantiene.
+~ **Cortafuegos y SSH**: el cortafuegos se aplica en una sola transacción, sin reiniciar nftables (en Debian, parar nftables borra todas las reglas, también las de Docker o una VPN). Antes de abrir el puerto de SSH se comprueba la configuración efectiva (`sshd -T`).
+~ **Instalación y descargas**: el cerrojo de instalación vive en `/run` (en `/run/lock` cualquiera podía crear el archivo y bloquear el actualizador). Cada `.deb` descargado tiene su propio archivo de root, y toda descarga rechaza redirecciones que no sean HTTPS. El firmware automático lee también las direcciones de varias líneas de las fuentes de apt.
+
+* No se hace en esta versión, y por qué: quitar la ejecución de órdenes como root desde los asistentes y sustituirla por operaciones concretas con Polkit es un rediseño (y esa ejecución es una función que se activa a propósito, apagada por defecto); un perfil de Wine sin acceso a la sesión gráfica para ejecutables desconocidos necesita una sesión gráfica aparte; firmar la ISO entera, fijar npm y Ollama, y el historial/portapapeles/grupos siguen pendientes.
+
 ## Beta 0.1.22 · 2026-11-18
 
 Revisión de seguridad de la 0.1.21. Todo lo que sigue sale de una revisión externa del código; cada punto se comprobó antes de arreglarlo.
