@@ -3,7 +3,7 @@
 Formato: `+` nuevo · `-` eliminado o retirado · `~` modificado · `*` otros.
 Lo más reciente, arriba.
 
-## Sin publicar
+## Beta 0.1.26 · 2026-11-19
 
 ~ **Tamaño de las zonas del escritorio**: los anchos y altos que dejes arrastrando los bordes (explorador, panel de IA, terminal) se guardan solos en `~/.config/leksso/zonas` y se vuelven a poner al iniciar sesión, al restaurar las zonas y al plegar la columna de carpetas. Antes, cada inicio volvía a 22 %, 26 % y 26 %. Se puede volver a los de fábrica en cualquier momento, sin cerrar ni mover ventanas: Ajustes, Zonas del escritorio, o `leksso-zonas --fabrica`. `leksso-zonas --medir` muestra los tamaños actuales.
 ~ **`sway/local.conf` en Hyper-V**: ya no se reescribe en cada actualización si existe.
