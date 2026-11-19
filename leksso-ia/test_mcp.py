@@ -170,6 +170,7 @@ class Hostil(Base):
                 r, err = llamar("pedir_acceso", titulo="n", carpetas={str(self.proy): "r"}, esperar_s=v)
                 self.assertLess(time.time() - t0, 5, v)
                 self.assertIsNotNone(r)
+            self.p.pendientes.clear()           # la cuota por canal no es lo que se prueba aquí
             _, tarea = self.aprobar()
             for v in (float("inf"), float("nan"), -1, 0, "x"):
                 r, _ = llamar("leer", tarea=tarea, ruta=str(self.proy / "a.txt"), max_caracteres=v)

@@ -31,6 +31,7 @@ MAX_ORDEN_PREGUNTAR = 1500          # una orden que hay que aprobar debe poder l
 CADUCA_PENDIENTE = 600              # una petición sin responder se descarta a los 10 minutos
 CADUCA_ORDEN = 120                  # una orden aprobada hay que ejecutarla en 2 minutos
 MAX_CONEXIONES = 16                 # conexiones simultáneas por socket
+MAX_PENDIENTES_CANAL = 6            # peticiones sin responder por asistente: uno con la cola llena no tapa a los demás
 MAX_SALIDA_ORDEN = 400_000          # caracteres de salida que se guardan de una orden
 ADMIN_SOCK = "/run/leksso-admin.sock"
 
@@ -79,6 +80,9 @@ class Permisor:
             self.recordadas = json.loads(self.fichero_recordadas.read_text())
         # Las pruebas (LEKSSO_SIN_AVISOS=1) no deben llenar el escritorio de notificaciones.
         self.avisar = (lambda *a: None) if os.environ.get("LEKSSO_SIN_AVISOS") == "1" else self._avisar_escritorio
+
+    def _del_canal(self, destino, asistente):
+        return sum(1 for q in self.pendientes.values() if q.get("canal") == [destino, asistente])
 
     def _purgar(self):
         """Descarta lo que caducó: peticiones sin responder y órdenes aprobadas que nadie ejecutó."""
@@ -129,7 +133,7 @@ class Permisor:
         carpetas = {k: "".join(sorted(v["perms"])) for k, v in raices.items()}
         self.n.limpiar_tareas()
         self.aprobadas = {k: v for k, v in self.aprobadas.items() if v in self.n.tareas}
-        if len(self.pendientes) >= MAX_PENDIENTES:
+        if len(self.pendientes) >= MAX_PENDIENTES or self._del_canal(destino, asistente) >= MAX_PENDIENTES_CANAL:
             raise Denegado("hay demasiadas peticiones sin responder")
         if len(self.n.tareas) >= MAX_TAREAS:
             raise Denegado("hay demasiadas tareas abiertas")
@@ -138,7 +142,8 @@ class Permisor:
             self.aprobadas[pid] = self.n.conceder(titulo, carpetas, destino, self.ttl, canal=(destino, asistente))
             return {"pid": pid, "estado": "aprobada", "tarea": self.aprobadas[pid]}
         self.pendientes[pid] = {"titulo": titulo, "carpetas": carpetas, "destino": destino, "nuevas": nuevas,
-                                "canal": [destino, asistente], "t": time.time()}
+                                "canal": [destino, asistente], "t": time.time(),
+                                "ids": {k: (list(v["id"]) if v.get("id") else None) for k, v in raices.items()}}
         threading.Thread(target=self.avisar, args=(titulo, dict(carpetas), nuevas, destino), daemon=True).start()
         return {"pid": pid, "estado": "pendiente"}
 
@@ -202,10 +207,10 @@ class Permisor:
             raise Denegado(f"esta orden hay que aprobarla y es demasiado larga para mostrártela entera "
                            f"({len(orden)} caracteres; el máximo es {MAX_ORDEN_PREGUNTAR}). Pon la orden en un script "
                            "corto o divídela en varias.")
-        if len(self.pendientes) >= MAX_PENDIENTES:
+        if len(self.pendientes) >= MAX_PENDIENTES or self._del_canal("nube", asistente) >= MAX_PENDIENTES_CANAL:
             raise Denegado("hay demasiadas peticiones sin responder")
         pid = "p" + uuid.uuid4().hex[:16]
-        self.pendientes[pid] = {"tipo": "orden", "titulo": orden, "admin": admin, "asistente": asistente,
+        self.pendientes[pid] = {"tipo": "orden", "canal": ["nube", asistente], "titulo": orden, "admin": admin, "asistente": asistente,
                                 "motivo": motivo, "carpetas": {}, "destino": "nube", "nuevas": [], "t": time.time()}
         threading.Thread(target=self._avisar_orden, args=(asistente, orden, admin), daemon=True).start() \
             if os.environ.get("LEKSSO_SIN_AVISOS") != "1" else None
@@ -303,6 +308,8 @@ class Permisor:
             if op == "equipo":            # foto de solo lectura del equipo (cifras, sin archivos ni datos del usuario)
                 self.n.anotar_consulta("medir_equipo", "memoria, disco, CPU, batería y procesos")
                 return equipo.estado()
+            if asistente in asistentes.NOMBRES and not self.permisos(asistente)["activo"]:
+                raise Denegado("este asistente está desactivado: sus tareas abiertas ya no valen")
             return self.accion_ia(m, (destino, asistente))
         except KeyError as e:
             raise Denegado(f"falta el campo {e}")
@@ -324,7 +331,7 @@ class Permisor:
                 return {"orden": True}
             carpetas = m.get("carpetas") or p["carpetas"]
             tarea = self.n.conceder(p["titulo"], carpetas, p["destino"], self.ttl,
-                                    canal=tuple(p.get("canal") or ()) or None)
+                                    canal=tuple(p.get("canal") or ()) or None, ids=p.get("ids"))
             self.aprobadas[m["pid"]] = tarea
             if m.get("recordar") and p["destino"] == "local":
                 for ruta, perms in carpetas.items():

@@ -30,7 +30,7 @@ ANTERIOR = "/var/lib/leksso/version-anterior"
 SIN_FIRMA = "/etc/leksso/sin-firma"                # fase de pruebas: si existe, no se exige firma (lo crea el USB de pruebas)
 INSTALADA = "/var/lib/leksso/instalada.json"      # versión, commit y firmante de lo instalado
 RAMA_PRINCIPAL = "origin/main"
-BLOQUEO = "/run/lock/leksso-actualizar.lock"
+BLOQUEO = "/run/leksso-actualizar.lock"       # /run solo lo escribe root (en /run/lock cualquiera puede crear el archivo y bloquear)
 CACHE = os.path.expanduser("~/.cache/leksso/actualizacion.json")
 AVISADO = os.path.expanduser("~/.cache/leksso/avisado")
 

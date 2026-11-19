@@ -233,6 +233,59 @@ class QuienEsElPermisor(unittest.TestCase):
         self.assertTrue(self.ok(entorno=[b"PATH", b"HOME", b"XDG_RUNTIME_DIR"]))
 
 
+class SegundaRevision(unittest.TestCase):
+    def setUp(self):
+        self.p = permisor.Permisor(tempfile.mkdtemp())
+
+    def ia(self, asistente, **m):
+        return self.p.manejar_ia(m, "nube", asistente)
+
+    def test_carpeta_sustituida_mientras_se_espera_no_se_concede(self):
+        casa = str(self.p.n.casa)
+        a = os.path.join(casa, "docs")
+        os.makedirs(a)
+        fijar(claude={"activo": True})
+        r = self.ia("claude", op="pedir", titulo="leer", carpetas={a: "r"})
+        self.assertEqual(r["estado"], "pendiente")
+        os.rename(a, a + ".vieja")
+        os.makedirs(a)                                        # otra carpeta con el mismo nombre
+        with self.assertRaises(Denegado):
+            self.p.manejar_control({"op": "aprobar", "pid": r["pid"]})
+
+    def test_la_misma_carpeta_se_aprueba(self):
+        casa = str(self.p.n.casa)
+        a = os.path.join(casa, "docs")
+        os.makedirs(a)
+        fijar(claude={"activo": True})
+        r = self.ia("claude", op="pedir", titulo="leer", carpetas={a: "r"})
+        self.assertIn("tarea", self.p.manejar_control({"op": "aprobar", "pid": r["pid"]}))
+
+    def test_desactivar_el_asistente_inutiliza_sus_tareas(self):
+        casa = str(self.p.n.casa)
+        a = os.path.join(casa, "docs")
+        os.makedirs(a)
+        open(os.path.join(a, "x.txt"), "w").write("hola")
+        fijar(claude={"activo": True, "archivos": "libre"})
+        t = self.ia("claude", op="pedir", titulo="leer", carpetas={a: "r"})["tarea"]
+        self.assertEqual(self.ia("claude", op="leer", tarea=t, ruta=os.path.join(a, "x.txt"))["texto"], "hola")
+        fijar(claude={"activo": False, "archivos": "libre"})
+        with self.assertRaises(Denegado):
+            self.ia("claude", op="leer", tarea=t, ruta=os.path.join(a, "x.txt"))
+
+    def test_un_asistente_con_la_cola_llena_deja_sitio_a_otro(self):
+        casa = str(self.p.n.casa)
+        fijar(claude={"activo": True}, codex={"activo": True})
+        for i in range(permisor.MAX_PENDIENTES_CANAL):
+            d = os.path.join(casa, f"c{i}")
+            os.makedirs(d)
+            self.assertEqual(self.ia("claude", op="pedir", titulo="x", carpetas={d: "r"})["estado"], "pendiente")
+        d = os.path.join(casa, "otra")
+        os.makedirs(d)
+        with self.assertRaises(Denegado):
+            self.ia("claude", op="pedir", titulo="x", carpetas={d: "r"})
+        self.assertEqual(self.ia("codex", op="pedir", titulo="x", carpetas={d: "r"})["estado"], "pendiente")
+
+
 class PanelVeLaOrdenEntera(unittest.TestCase):
     def test_no_se_pierde_ni_un_caracter(self):
         orden = "echo uno\n" + "x" * 500 + "\nrm -rf ~/final-oculto"

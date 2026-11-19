@@ -29,6 +29,14 @@ case "${1:-estado}" in
     fi
     install -d /etc/ssh/sshd_config.d /etc/leksso
     printf '# LeksSO: acceso remoto\nPermitRootLogin no\nMaxAuthTries 4\nX11Forwarding no\n' > /etc/ssh/sshd_config.d/leksso.conf
+    # Configuración EFECTIVA (no solo lo que se escribió): OpenSSH usa el primer valor que encuentra, y otro archivo
+    # anterior podría dejar entrar a root. Si no es la esperada, no se abre nada.
+    if command -v sshd >/dev/null 2>&1; then
+      EFECTIVA="$(sshd -T 2>/dev/null)"
+      echo "$EFECTIVA" | grep -qi '^permitrootlogin no$' \
+        && echo "$EFECTIVA" | grep -qi '^x11forwarding no$' \
+        || { echo "ERROR: la configuración efectiva de SSH no es la esperada (revisa /etc/ssh/sshd_config.d). No se abre el puerto." >&2; exit 1; }
+    fi
     quitar_regla
     nft add rule inet leksso entrada $REGLA
     # que sobreviva al reinicio: la misma regla en el archivo del cortafuegos, dentro de la cadena de entrada

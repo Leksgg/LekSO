@@ -147,6 +147,24 @@ def copias():
     return sorted(({"id": s["short_id"], "fecha": s["time"]} for s in datos), key=lambda s: s["fecha"], reverse=True)
 
 
+def sobrantes(lista, parciales, maximo):
+    """Qué copias borrar al pasar del máximo. None = lo de siempre (quedarse con las `maximo` más nuevas). Si esas
+    más nuevas fueran TODAS parciales (con archivos saltados) y hubiera una completa más vieja, se devuelve la lista
+    explícita de las que sobran dejando a salvo la completa más reciente: así varias copias parciales seguidas no
+    pueden dejarte sin ninguna copia entera."""
+    nuevas = sorted(lista, key=lambda s: s["fecha"], reverse=True)
+    if len(nuevas) <= maximo:
+        return None
+    guardadas = nuevas[:maximo]
+    if any(s["id"] not in parciales for s in guardadas):
+        return None
+    completa = next((s for s in nuevas[maximo:] if s["id"] not in parciales), None)
+    if not completa:
+        return None
+    mantener = {s["id"] for s in guardadas[:maximo - 1]} | {completa["id"]}
+    return [s["id"] for s in nuevas if s["id"] not in mantener]
+
+
 def carpetas_personales():
     forzadas = os.environ.get("LEKSSO_COPIAS_HOMES") if PRUEBAS else None
     if forzadas:
@@ -319,13 +337,24 @@ def ejecutar(ahora=False):
             ultimas = (r.stderr.strip() or r.stdout.strip()).splitlines()[-3:]
             raise Error("No se pudo hacer la copia: " + " ".join(ultimas)[:260])
         aviso = "Algunos archivos no se pudieron leer y se saltaron." if r.returncode == 3 else ""
+        parciales = list(e.get("parciales", []))
+        if r.returncode == 3:
+            nueva = copias()
+            if nueva:
+                parciales.append(nueva[0]["id"])
         # solo si el repositorio está sano se borran las copias que sobran
         restic("check", "--read-data-subset=10%")      # estructura y, además, una parte al azar de los datos
-        restic("forget", "--group-by", "", "--keep-last", str(MAX_COPIAS), "--prune")
+        sobran = sobrantes(copias(), parciales, MAX_COPIAS)
+        if sobran is None:
+            restic("forget", "--group-by", "", "--keep-last", str(MAX_COPIAS), "--prune")
+        else:                                           # se conserva la última copia completa aunque sea más vieja
+            restic("forget", "--prune", *sobran)
         lista = copias()
+        parciales = [p for p in parciales if p in {x["id"] for x in lista}]
         espacio = sum(os.path.getsize(os.path.join(d, f)) for d, _, fs in os.walk(REPO) for f in fs)
         habia_fallado = (e.get("ultima") or {}).get("resultado") == "fallo"
-        guardar_estado("aviso" if aviso else "ok", aviso or "Copia hecha y comprobada.", inicio, snapshots=lista, espacio_repo=espacio)
+        guardar_estado("aviso" if aviso else "ok", aviso or "Copia hecha y comprobada.", inicio, snapshots=lista, espacio_repo=espacio,
+                       parciales=parciales)
         if habia_fallado:
             notificar("Las copias de seguridad vuelven a funcionar", "La última copia se hizo y se comprobó bien.", critico=False)
         print("Copia hecha." + (" " + aviso if aviso else ""))
@@ -372,19 +401,36 @@ def usuario_que_pide():
 
 
 COPIAR = ("import os, shutil, sys\n"
-          "o, d = sys.argv[1:]\n"
-          "os.makedirs(d, exist_ok=True)\n"
-          "shutil.copytree(o, d, symlinks=True, dirs_exist_ok=True)\n")
+          "o, base, nombre = sys.argv[1:]\n"
+          "os.makedirs(base, exist_ok=True)\n"
+          "for i in range(1, 1000):\n"
+          "    d = os.path.join(base, nombre if i == 1 else '%s-%d' % (nombre, i))\n"
+          "    try:\n"
+          "        os.mkdir(d)\n"
+          "        break\n"
+          "    except FileExistsError:\n"
+          "        continue\n"
+          "else:\n"
+          "    sys.exit('no hay un destino libre')\n"
+          "shutil.copytree(o, d, symlinks=True, dirs_exist_ok=True)\n"
+          "print(d)\n")
 
 
-def _copiar_como_usuario(u, origen, destino):
-    """Copia lo recuperado a la carpeta del usuario CON los permisos del usuario (como root solo si no hay otro)."""
-    orden = [sys.executable, "-I", "-c", COPIAR, origen, destino]
+def literal_para_restic(ruta):
+    """restic trata --include como un patrón (* ? [ ] \\): se escapa para que la ruta se tome tal cual."""
+    return re.sub(r"([\\*?\[])", lambda m: "\\" + m.group(1), ruta)
+
+
+def _copiar_como_usuario(u, origen, base, nombre):
+    """Copia lo recuperado a una carpeta NUEVA y exclusiva de «base» CON los permisos del usuario (como root solo si
+    no hay otro). Cada recuperación tiene su carpeta: nunca mezcla ni pisa una anterior. Devuelve la carpeta."""
+    orden = [sys.executable, "-I", "-c", COPIAR, origen, base, nombre]
     if os.geteuid() == 0 and u.pw_uid != 0:
         orden = ["runuser", "-u", u.pw_name, "--"] + orden
     r = subprocess.run(orden, capture_output=True, text=True, timeout=3600)
     if r.returncode != 0:
         raise Error("No se pudo dejar lo recuperado en tu carpeta: " + (r.stderr.strip().splitlines() or ["error"])[-1][:200])
+    return r.stdout.strip().splitlines()[-1]
 
 
 def restaurar(copia, ruta):
@@ -396,20 +442,24 @@ def restaurar(copia, ruta):
     fecha = next((s["fecha"] for s in copias() if s["id"] == copia), None)
     if not fecha:
         raise Error("Esa copia ya no existe.")
-    destino = os.path.join(u.pw_dir, "Recuperado", dt.datetime.fromisoformat(fecha).strftime("%Y-%m-%d_%H%M"))
+    base = os.path.join(u.pw_dir, "Recuperado")
+    nombre = dt.datetime.fromisoformat(fecha).strftime("%Y-%m-%d_%H%M")
     # Restic restaura (como root) en una carpeta privada que crea root. Nada de root toca la carpeta del usuario:
     # el paso final lo hace el propio usuario, así un enlace simbólico en «Recuperado» o por encima no puede
     # llevar escrituras ni cambios de propietario a rutas del sistema.
     preparacion = tempfile.mkdtemp(prefix="leksso-recuperar-")
     try:
-        restic("restore", copia, "--target", preparacion, "--include", ruta)
+        restic("restore", copia, "--target", preparacion, "--include", literal_para_restic(ruta))
+        # Mientras root recorre el árbol, la carpeta de preparación sigue siendo suya (0700): el usuario no puede
+        # tocarla. Primero se cambia el propietario de todo lo de dentro y, al final, el de la carpeta raíz.
         for d, ds, fs in os.walk(preparacion):
-            for n in [""] + ds + fs:
+            for n in ds + fs:
                 try:
-                    os.chown(os.path.join(d, n) if n else d, u.pw_uid, u.pw_gid, follow_symlinks=False)
+                    os.chown(os.path.join(d, n), u.pw_uid, u.pw_gid, follow_symlinks=False)
                 except OSError:
                     pass
-        _copiar_como_usuario(u, preparacion, destino)
+        os.chown(preparacion, u.pw_uid, u.pw_gid, follow_symlinks=False)
+        destino = _copiar_como_usuario(u, preparacion, base, nombre)
     finally:
         shutil.rmtree(preparacion, ignore_errors=True)
     print(json.dumps({"ok": True, "destino": destino + ruta}))

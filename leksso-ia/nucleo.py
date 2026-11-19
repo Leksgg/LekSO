@@ -262,9 +262,14 @@ class Nucleo:
                 self._anotar({"id": self._nuevo_id(), "tarea": tid, "accion": "crear_carpeta", "ok": True,
                               "ruta": real, "raiz": padre, "padre": [], "nombre": nombre})
 
-    def conceder(self, titulo, carpetas, destino="local", ttl=3600, canal=None):
-        """carpetas: {ruta: 'rwd'}. Devuelve el id de la tarea."""
+    def conceder(self, titulo, carpetas, destino="local", ttl=3600, canal=None, ids=None):
+        """carpetas: {ruta: 'rwd'}. Devuelve el id de la tarea. «ids» son las identidades (dispositivo, inodo) que
+        tenían las carpetas cuando se pidió el permiso: si alguna carpeta es otra al aprobar, no se concede."""
         raices = self.comprobar_carpetas(carpetas)
+        for ruta, visto in (ids or {}).items():
+            ahora = raices.get(ruta, {}).get("id")
+            if visto is not None and ahora is not None and list(ahora) != list(visto):
+                raise Denegado(f"la carpeta {ruta} ya no es la misma que cuando se pidió el permiso: pídelo otra vez")
         tid = "t" + uuid.uuid4().hex[:16]
         self._crear_nuevas(raices, tid)
         t = type("Tarea", (), {})()

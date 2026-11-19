@@ -25,7 +25,25 @@ en -- touch /usr/x >/dev/null 2>&1 && falla "escribe en /usr" || bien "no escrib
 en -- touch /etc/x >/dev/null 2>&1 && falla "escribe en /etc" || bien "no escribe en /etc"
 en -- cat /etc/shadow >/dev/null 2>&1 && falla "lee /etc/shadow" || bien "no lee /etc/shadow"
 en -- python3 -c "import socket;socket.create_connection(('127.0.0.1',8765),2)" >/dev/null 2>&1 && falla "tiene red sin --red" || bien "sin red por defecto"
-bash "$CAJA" --red -- python3 -c "import socket;socket.create_connection(('127.0.0.1',8765),2)" >/dev/null 2>&1 && bien "con --red sí hay red (control)" || bien "con --red: red aislada igualmente (loopback propio)"
+# Con --red se comprueban POR SEPARADO tres cosas (una prueba que pasa tanto si el loopback responde como si el
+# lanzador falla no demuestra nada): 1) el programa llegó a arrancar, 2) tiene la conectividad prevista,
+# 3) el aislamiento se mantiene (ni el localhost del equipo ni sus sockets abstractos).
+if command -v pasta >/dev/null 2>&1; then
+  [ "$(bash "$CAJA" --red -- sh -c 'echo arranco' 2>/dev/null)" = arranco ] && bien "--red: el programa llega a arrancar" || falla "--red: la caja no arranca"
+  if curl -s -o /dev/null -m 6 https://deb.debian.org/ 2>/dev/null; then
+    [ "$(bash "$CAJA" --red -- python3 -c "import urllib.request as u;print(u.urlopen('https://deb.debian.org/',timeout=10).status)" 2>/dev/null)" = 200 ]       && bien "--red: tiene salida a Internet" || falla "--red: no tiene salida a Internet"
+  else echo "info  este equipo no tiene Internet: se omite la comprobación de conectividad"; fi
+  bash "$CAJA" --red -- python3 -c "import socket;socket.create_connection(('127.0.0.1',8765),2)" >/dev/null 2>&1     && falla "--red: la caja alcanza el localhost del equipo" || bien "--red: no alcanza el localhost del equipo"
+  [ "$(bash "$CAJA" --red -- sh -c 'grep -c "@" /proc/net/unix' 2>/dev/null)" = 0 ]     && bien "--red: no ve los sockets abstractos del equipo" || falla "--red: ve sockets abstractos del equipo"
+  if python3 -c "import seccomp" 2>/dev/null; then
+    [ "$(bash "$CAJA" --red --estricta -- sh -c 'echo arranco' 2>/dev/null)" = arranco ]       && bien "--red con --estricta: arranca (el filtro llega a bwrap)" || falla "--red con --estricta: no arranca"
+    bash "$CAJA" --red --estricta -- unshare -r true >/dev/null 2>&1       && falla "--red con --estricta: permite espacios de usuario" || bien "--red con --estricta: el filtro está activo"
+  fi
+else
+  # Sin pasta, la caja con red debe NEGARSE (código 5 y un mensaje que lo diga), no arrancar con la red del equipo.
+  SAL="$(bash "$CAJA" --red -- true 2>&1)"; COD=$?
+  [ "$COD" = 5 ] && echo "$SAL" | grep -q "falta pasta" && bien "sin pasta la caja con red se niega a arrancar"     || falla "sin pasta la caja con red no se niega (código $COD)"
+fi
 for opc in "" "--gui --audio --gpu"; do
   en $opc -- sh -c "ls $XDG_RUNTIME_DIR/leksso-control.sock /run/user/$(id -u)/leksso-control.sock /run/user/$(id -u)/leksso-ia.sock" >/dev/null 2>&1 \
     && falla "el socket del permisor es visible (opciones: ${opc:-ninguna})" || bien "el socket del permisor no es visible (opciones: ${opc:-ninguna})"

@@ -47,6 +47,14 @@ class Claves(unittest.TestCase):
         for nombre, esperadas in apps.HUELLAS.items():
             self.assertFalse(ajena <= esperadas, nombre)
 
+    def test_una_redireccion_a_http_se_rechaza(self):
+        import urllib.request
+        h = apps._SoloHttps()
+        req = urllib.request.Request("https://ejemplo.org/a")
+        with self.assertRaises(SystemExit):
+            h.redirect_request(req, None, 302, "Found", {}, "http://ejemplo.org/b")
+        self.assertIsNotNone(h.redirect_request(req, None, 302, "Found", {}, "https://ejemplo.org/b"))
+
     def test_las_huellas_fijadas_tienen_formato_de_huella(self):
         for nombre, esperadas in apps.HUELLAS.items():
             self.assertTrue(esperadas, nombre)

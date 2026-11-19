@@ -30,6 +30,13 @@ class FuentesDeDebian(unittest.TestCase):
         self.assertFalse(hw.es_fuente_de_debian(""))
         self.assertFalse(hw.es_fuente_de_debian(DEB822 + "URIs: https://x.example.com/\n"))
 
+    def test_uris_en_varias_lineas_se_leen_todas(self):
+        multi = "Types: deb\nURIs: https://deb.debian.org/debian\n https://packages.microsoft.com/repos/code\nSuites: stable\n"
+        self.assertFalse(hw.es_fuente_de_debian(multi))
+        solo_debian = ("Types: deb\nURIs: https://deb.debian.org/debian\n"
+                       " http://security.debian.org/debian-security\nSuites: trixie\n")
+        self.assertTrue(hw.es_fuente_de_debian(solo_debian))
+
     def test_lo_secreto_no_va_en_los_argumentos(self):
         rc, sal = hw.ejecutar(["cat"], entrada="secreto\n")
         self.assertEqual((rc, sal), (0, "secreto\n"))

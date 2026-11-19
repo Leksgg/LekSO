@@ -50,7 +50,15 @@ NFT
 nft -c -f /etc/nftables.conf || echo "AVISO: no se pudo comprobar la sintaxis del cortafuegos aquí."
 systemctl enable nftables >/dev/null
 # En el instalador (sin systemd en marcha) no se puede arrancar el servicio: arrancará en el primer inicio.
-if [ -d /run/systemd/system ]; then systemctl restart nftables; fi
+# NO se reinicia nftables: en Debian su «stop» ejecuta «flush ruleset» y borraría las reglas de otros programas
+# (Docker, VPN…). El archivo se aplica en UNA transacción: o se aplica entera o se queda la política anterior.
+if [ -d /run/systemd/system ]; then
+  if systemctl is-active --quiet nftables; then
+    nft -f /etc/nftables.conf || { echo "ERROR: no se pudo aplicar el cortafuegos; sigue la política anterior." >&2; exit 1; }
+  else
+    systemctl start nftables
+  fi
+fi
 
 # 2. Actualizaciones de seguridad automáticas (solo el repositorio de seguridad de Debian; sin reinicio automático).
 cat > /etc/apt/apt.conf.d/20auto-upgrades <<'APT'

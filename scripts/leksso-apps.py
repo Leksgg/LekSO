@@ -139,11 +139,23 @@ def apt(paquetes, simular):
     return sudo(["apt-get", "install", "-y"] + paquetes.split(), simular)
 
 
+class _SoloHttps(urllib.request.HTTPRedirectHandler):
+    """Una redirección a http:// (u otro esquema) se rechaza: HTTPS también después de redirigir."""
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        if not newurl.lower().startswith("https://"):
+            raise SystemExit(f"Redirección a una dirección no HTTPS rechazada: {newurl[:80]}")
+        return super().redirect_request(req, fp, code, msg, headers, newurl)
+
+
+def abrir_https(req, timeout=60):
+    return urllib.request.build_opener(_SoloHttps).open(req, timeout=timeout)
+
+
 def descargar(url, destino):
     if not url.startswith("https://"):
         raise SystemExit("Solo se descarga por HTTPS")
     req = urllib.request.Request(url, headers={"User-Agent": "leksso-apps"})
-    with urllib.request.urlopen(req, timeout=60) as r, open(destino, "wb") as f:
+    with abrir_https(req) as r, open(destino, "wb") as f:
         shutil.copyfileobj(r, f)
 
 
@@ -163,8 +175,12 @@ def instalar_deb(url, simular):
         print(c("  SHA-256 del paquete: ", "2") + hashlib.sha256(datos).hexdigest())
     finally:
         shutil.rmtree(d, ignore_errors=True)
-    destino = "/var/cache/leksso-descargas/paquete.deb"
     if sudo(["install", "-d", "-m", "0755", "-o", "root", "-g", "root", "/var/cache/leksso-descargas"], False) != 0:
+        return 1
+    # Cada instalación, su propio archivo (nombre único creado por root): dos a la vez no se pisan.
+    m = subprocess.run(["sudo", "mktemp", "/var/cache/leksso-descargas/paquete.XXXXXXXX.deb"], capture_output=True, text=True)
+    destino = m.stdout.strip()
+    if m.returncode != 0 or not destino.startswith("/var/cache/leksso-descargas/"):
         return 1
     if subprocess.run(["sudo", "tee", destino], input=datos, stdout=subprocess.DEVNULL).returncode != 0:
         return 1
@@ -219,7 +235,7 @@ def repo_clave(nombre, url_clave, linea, simular, dearmor=False):
     if not simular:
         sudo(["apt-get", "install", "-y", "gnupg"], False)
         req = urllib.request.Request(url_clave, headers={"User-Agent": "leksso-apps"})
-        with urllib.request.urlopen(req, timeout=60) as r:
+        with abrir_https(req) as r:
             clave = r.read(1_000_000)
         huellas = huellas_de(clave)
         esperadas = HUELLAS.get(nombre)

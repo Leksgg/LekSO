@@ -59,10 +59,15 @@ ARGS=(
 PREFIJO_RED=()
 if [ "$RED" -eq 1 ]; then
   ARGS+=(--share-net)                     # dentro de la red que prepara pasta (o la del equipo si no hay pasta)
-  if [ "${LEKSSO_CAJA_RED_COMPARTIDA:-0}" != 1 ] && command -v pasta >/dev/null 2>&1; then
+  if [ "${LEKSSO_CAJA_RED_COMPARTIDA:-0}" = 1 ]; then
+    echo "AVISO: la caja comparte la red del equipo (sockets locales y servicios en localhost incluidos)." >&2
+  elif command -v pasta >/dev/null 2>&1; then
     PREFIJO_RED=(pasta --config-net --quiet -t none -u none -T none -U none --no-map-gw --)   # sin reenvío de puertos en ningún sentido
   else
-    echo "AVISO: sin pasta, la caja comparte la red del equipo (sockets locales y servicios en localhost incluidos)." >&2
+    # Cerrada por defecto: sin pasta NO se arranca la caja con red (antes se compartía la del equipo en silencio).
+    echo "ERROR: falta pasta (paquete passt): la caja con red no se arranca sin una red propia. Instálalo con «sudo apt install passt»." >&2
+    echo "       (Solo si aceptas que la caja vea la red del equipo: LEKSSO_CAJA_RED_COMPARTIDA=1.)" >&2
+    exit 5
   fi
 fi
 
@@ -104,7 +109,12 @@ if [ "$ESTRICTA" -eq 1 ]; then
   SC="${LEKSSO_SECCOMP:-/usr/local/lib/leksso-ia/seccomp-estricta.py}"
   [ -f "$SC" ] || SC="$(dirname "$(realpath "$0")")/seccomp-estricta.py"
   python3 -c "import seccomp" 2>/dev/null || { echo "Falta python3-seccomp para --estricta" >&2; exit 3; }
-  exec 9< <(python3 "$SC")
   ARGS+=(--seccomp 9)
+  if [ "${#PREFIJO_RED[@]}" -gt 0 ]; then
+    # pasta cierra los descriptores que hereda: el filtro se abre DENTRO, justo antes de lanzar bwrap, para que el
+    # descriptor 9 llegue de verdad a bwrap (si no, bwrap fallaría y la caja no arrancaría: nunca sin filtro).
+    exec "${PREFIJO_RED[@]}" bash -c 'exec 9< <(python3 "$1") || exit 1; shift; exec bwrap "$@"' _ "$SC" "${ARGS[@]}" "$@"
+  fi
+  exec 9< <(python3 "$SC")
 fi
 exec "${PREFIJO_RED[@]}" bwrap "${ARGS[@]}" "$@"

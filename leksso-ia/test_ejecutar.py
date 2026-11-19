@@ -155,6 +155,7 @@ class Ordenes(unittest.TestCase):
                              ("echo x >> /etc/sudoers", True)):
             r = self.ia("claude", op="ejecutar", orden=orden, admin=admin)
             self.assertEqual(r.get("estado"), "pendiente", orden)
+            self.p.pendientes.clear()           # la cuota por canal no es lo que se prueba aquí
         self.assertEqual(self.hechas, [])
 
     def test_lo_normal_no_se_marca_destructivo(self):

@@ -17,7 +17,14 @@ python3 - "$CASA/.claude.json" <<'PY' || true
 import json, os, sys
 ruta = sys.argv[1]
 try:
-    d = json.load(open(ruta, encoding="utf-8"))
+    # Se abre sin seguir enlaces ni bloquearse con archivos especiales, y con un tope de tamaño: la caja puede escribir aquí.
+    fd = os.open(ruta, os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK)
+    try:
+        if not os.path.isfile("/proc/self/fd/%d" % fd) or os.fstat(fd).st_size > 1_000_000:
+            raise OSError("no es un archivo normal o es enorme")
+        d = json.loads(os.read(fd, 1_000_001).decode("utf-8"))
+    finally:
+        os.close(fd)
 except (OSError, ValueError):
     d = {}
 p = d.setdefault("projects", {}).setdefault("/home/caja", {})

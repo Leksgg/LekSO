@@ -162,8 +162,8 @@ main() {
 # Para las pruebas se puede cargar el script sin ejecutarlo.
 if [ "${LEKSSO_INSTALAR_SOLO_FUNCIONES:-}" != "1" ]; then
   # Una sola instalación o actualización a la vez: comparten la copia del repositorio.
-  if [ "$(id -u)" -eq 0 ] && [ -d /run/lock ]; then
-    exec 9>/run/lock/leksso-actualizar.lock
+  if [ "$(id -u)" -eq 0 ] && [ -d /run ]; then
+    exec 9>/run/leksso-actualizar.lock
     flock -n 9 || die "Ya hay otra instalación o actualización de LeksSO en marcha."
   fi
   main "$@"

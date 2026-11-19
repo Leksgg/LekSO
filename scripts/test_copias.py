@@ -41,9 +41,13 @@ elif a[0] == "backup":
 elif a[0] == "check":
     if os.path.exists(d + "/falla_check"): print("error: pack dañado", file=sys.stderr); sys.exit(1)
 elif a[0] == "forget":
-    n = int(a[a.index("--keep-last") + 1]); s = sorted(cargar(), key=lambda x: x["time"]); guardar(s[-n:])
+    if "--keep-last" in a:
+        n = int(a[a.index("--keep-last") + 1]); s = sorted(cargar(), key=lambda x: x["time"]); guardar(s[-n:])
+    else:
+        quitar = set(x for x in a[1:] if not x.startswith("-")); guardar([x for x in cargar() if x["id"] not in quitar])
 elif a[0] == "restore":
-    t = a[a.index("--target") + 1]; r = a[a.index("--include") + 1]
+    import re
+    t = a[a.index("--target") + 1]; r = re.sub(r"\\(.)", r"\1", a[a.index("--include") + 1])
     os.makedirs(t + os.path.dirname(r), exist_ok=True); open(t + r, "w").write("recuperado")
 elif a[0] == "ls":
     print(json.dumps({"struct_type": "snapshot"}))
@@ -249,13 +253,39 @@ class PruebasCopias(unittest.TestCase):
         cargador = importlib.machinery.SourceFileLoader("copias_prueba", os.path.join(os.path.dirname(os.path.abspath(__file__)), "leksso-copias.py"))
         mod = importlib.util.module_from_spec(importlib.util.spec_from_loader("copias_prueba", cargador))
         cargador.exec_module(mod)
-        prep, dest = tempfile.mkdtemp(), os.path.join(tempfile.mkdtemp(), "Recuperado", "2026-01-01_0000")
+        prep, base = tempfile.mkdtemp(), os.path.join(tempfile.mkdtemp(), "Recuperado")
         os.makedirs(os.path.join(prep, "a"))
         open(os.path.join(prep, "a", "b.txt"), "w").write("hola")
         os.symlink("/etc/passwd", os.path.join(prep, "a", "enlace"))
-        mod._copiar_como_usuario(pwd.getpwuid(os.getuid()), prep, dest)
+        dest = mod._copiar_como_usuario(pwd.getpwuid(os.getuid()), prep, base, "2026-01-01_0000")
+        dest2 = mod._copiar_como_usuario(pwd.getpwuid(os.getuid()), prep, base, "2026-01-01_0000")
+        self.assertNotEqual(dest, dest2)                                          # cada recuperación, su carpeta
+        self.assertTrue(dest2.endswith("-2"))
+        self.assertEqual(mod.literal_para_restic("/home/u/a*b[1]?.txt"), "/home/u/a\\*b\\[1]\\?.txt")
         self.assertEqual(open(os.path.join(dest, "a", "b.txt")).read(), "hola")
         self.assertTrue(os.path.islink(os.path.join(dest, "a", "enlace")))        # el enlace queda como enlace
+
+    def test_cinco_copias_parciales_seguidas_no_borran_la_ultima_completa(self):
+        mod = self.cargar_modulo()
+        completas = [{"id": f"c{i}", "fecha": f"2026-11-0{i}T03:00:00+01:00"} for i in (1, 2)]
+        parciales = [{"id": f"p{i}", "fecha": f"2026-11-1{i}T03:00:00+01:00"} for i in range(1, 6)]
+        lista = completas + parciales
+        sobran = mod.sobrantes(lista, [p["id"] for p in parciales], 5)
+        self.assertIsNotNone(sobran)
+        self.assertNotIn("c2", sobran)                       # la última completa se conserva
+        self.assertIn("c1", sobran)
+        self.assertEqual(len(lista) - len(sobran), 5)
+        # con copias normales todo sigue como siempre
+        self.assertIsNone(mod.sobrantes(lista, [], 5))
+        self.assertIsNone(mod.sobrantes(lista[:5], [p["id"] for p in parciales], 5))
+
+    def cargar_modulo(self):
+        import importlib.machinery
+        import importlib.util
+        l = importlib.machinery.SourceFileLoader("copias_prueba2", os.path.join(os.path.dirname(os.path.abspath(__file__)), "leksso-copias.py"))
+        m = importlib.util.module_from_spec(importlib.util.spec_from_loader("copias_prueba2", l))
+        l.exec_module(m)
+        return m
 
     def test_listar_solo_muestra_lo_del_usuario(self):
         self.activar()

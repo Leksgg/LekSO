@@ -118,15 +118,22 @@ def parsear_pendientes(salida):
 def hosts_de_fuente(texto):
     """Los servidores que usa un archivo de fuentes de apt (formato clásico «deb …» o deb822 «URIs: …»)."""
     hosts = set()
-    for linea in texto.splitlines():
-        linea = linea.strip()
+    en_uris = False                      # deb822: «URIs:» puede seguir en las líneas siguientes (con sangría)
+    for bruta in texto.splitlines():
+        linea = bruta.strip()
         if linea.startswith("#") or not linea:
+            en_uris = en_uris and bool(linea.startswith("#"))
             continue
-        if linea.lower().startswith("uris:"):
+        if en_uris and bruta[:1] in (" ", "\t"):
+            urls = linea.split()
+        elif linea.lower().startswith("uris:"):
+            en_uris = True
             urls = linea.split(":", 1)[1].split()
         elif re.match(r"^deb(-src)?\s", linea):
+            en_uris = False
             urls = [p for p in linea.split() if "://" in p]
         else:
+            en_uris = False
             continue
         for u in urls:
             m = re.match(r"^(?:[a-z+]+)://(?:[^/@]*@)?([^/:]+)", u)
