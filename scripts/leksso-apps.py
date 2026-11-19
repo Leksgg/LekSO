@@ -22,7 +22,7 @@ import tempfile
 import urllib.request
 
 # (grupo, id, equivale a (Windows), tipo, objetivo, comprobación, nota)
-# tipos: apt, repo-brave, repo-vscode, steam, deb-url, deb-github, npm, script, manual
+# tipos: apt, repo-brave, repo-vscode, steam, deb-url, deb-github, npm, script, vscode-ext, manual
 CATALOGO = [
     # Desarrollo
     ("Desarrollo", "git", "Git", "apt", "git", "git", ""),
@@ -39,6 +39,16 @@ CATALOGO = [
      "Automatización y pruebas de navegador. Instala Node, las librerías del sistema y Chromium."),
     ("Desarrollo", "tesseract", "Tesseract-OCR", "apt", "tesseract-ocr tesseract-ocr-spa tesseract-ocr-eng", "tesseract-ocr", ""),
     ("Desarrollo", "filezilla", "FileZilla", "apt", "filezilla", "filezilla", ""),
+    # Extensiones de VS Code (se instalan para el usuario, no para root; hace falta VS Code)
+    ("Extensiones de VS Code", "vscode-ia", "Extensiones: IA y asistentes", "vscode-ext", "anthropic.claude-code continue.continue openai.chatgpt openai.codex-audio ollama.ollama", "anthropic.claude-code continue.continue openai.chatgpt openai.codex-audio ollama.ollama", "Se instalan para tu usuario con `code --install-extension`; necesita VS Code (grupo Desarrollo)."),
+    ("Extensiones de VS Code", "vscode-python", "Extensiones: Python y datos", "vscode-ext", "ms-python.python ms-python.debugpy ms-python.vscode-pylance ms-python.vscode-python-envs ms-toolsai.jupyter ms-toolsai.jupyter-keymap ms-toolsai.jupyter-renderers ms-toolsai.vscode-jupyter-cell-tags ms-toolsai.vscode-jupyter-slideshow mechatroner.rainbow-csv nespinozacr.mysql-autocomplete", "ms-python.python ms-python.debugpy ms-python.vscode-pylance ms-python.vscode-python-envs ms-toolsai.jupyter ms-toolsai.jupyter-keymap ms-toolsai.jupyter-renderers ms-toolsai.vscode-jupyter-cell-tags ms-toolsai.vscode-jupyter-slideshow mechatroner.rainbow-csv nespinozacr.mysql-autocomplete", "Se instalan para tu usuario con `code --install-extension`; necesita VS Code (grupo Desarrollo)."),
+    ("Extensiones de VS Code", "vscode-js", "Extensiones: JavaScript y Node", "vscode-ext", "dbaeumer.vscode-eslint esbenp.prettier-vscode orta.vscode-jest connor4312.nodejs-testing ms-playwright.playwright msjsdiag.vscode-react-native astro-build.astro-vscode wallabyjs.quokka-vscode wix.vscode-import-cost pflannery.vscode-versionlens mikestead.dotenv afractal.node-essentials chris-noring.node-snippets swellaby.node-pack christian-kohler.npm-intellisense christian-kohler.path-intellisense ionutvmi.path-autocomplete jasonnutter.search-node-modules leizongmin.node-module-intellisense tgreen7.vs-code-node-require", "dbaeumer.vscode-eslint esbenp.prettier-vscode orta.vscode-jest connor4312.nodejs-testing ms-playwright.playwright msjsdiag.vscode-react-native astro-build.astro-vscode wallabyjs.quokka-vscode wix.vscode-import-cost pflannery.vscode-versionlens mikestead.dotenv afractal.node-essentials chris-noring.node-snippets swellaby.node-pack christian-kohler.npm-intellisense christian-kohler.path-intellisense ionutvmi.path-autocomplete jasonnutter.search-node-modules leizongmin.node-module-intellisense tgreen7.vs-code-node-require", "Se instalan para tu usuario con `code --install-extension`; necesita VS Code (grupo Desarrollo)."),
+    ("Extensiones de VS Code", "vscode-cpp-net", "Extensiones: C, C++ y .NET", "vscode-ext", "ms-vscode.cpptools ms-vscode.cpptools-extension-pack ms-vscode.cpptools-themes ms-vscode.cpp-devtools ms-vscode.cmake-tools ms-dotnettools.csharp ms-dotnettools.csdevkit ms-dotnettools.vscode-dotnet-pack ms-dotnettools.vscode-dotnet-runtime ionide.ionide-fsharp", "ms-vscode.cpptools ms-vscode.cpptools-extension-pack ms-vscode.cpptools-themes ms-vscode.cpp-devtools ms-vscode.cmake-tools ms-dotnettools.csharp ms-dotnettools.csdevkit ms-dotnettools.vscode-dotnet-pack ms-dotnettools.vscode-dotnet-runtime ionide.ionide-fsharp", "Se instalan para tu usuario con `code --install-extension`; necesita VS Code (grupo Desarrollo)."),
+    ("Extensiones de VS Code", "vscode-java", "Extensiones: Java", "vscode-ext", "redhat.java vscjava.vscode-java-pack vscjava.vscode-java-debug vscjava.vscode-java-dependency vscjava.vscode-java-test vscjava.vscode-maven vscjava.vscode-gradle", "redhat.java vscjava.vscode-java-pack vscjava.vscode-java-debug vscjava.vscode-java-dependency vscjava.vscode-java-test vscjava.vscode-maven vscjava.vscode-gradle", "Se instalan para tu usuario con `code --install-extension`; necesita VS Code (grupo Desarrollo)."),
+    ("Extensiones de VS Code", "vscode-git", "Extensiones: Git y GitHub", "vscode-ext", "eamodio.gitlens donjayamanne.githistory github.vscode-pull-request-github github.vscode-github-actions github.codespaces github.remotehub ms-vscode.remote-repositories ms-vscode.azure-repos", "eamodio.gitlens donjayamanne.githistory github.vscode-pull-request-github github.vscode-github-actions github.codespaces github.remotehub ms-vscode.remote-repositories ms-vscode.azure-repos", "Se instalan para tu usuario con `code --install-extension`; necesita VS Code (grupo Desarrollo)."),
+    ("Extensiones de VS Code", "vscode-markdown", "Extensiones: Markdown y notas", "vscode-ext", "yzhang.markdown-all-in-one shd101wyy.markdown-preview-enhanced davidanson.vscode-markdownlint bierner.markdown-mermaid bierner.markdown-checkbox bierner.markdown-emoji bierner.markdown-footnotes bierner.github-markdown-preview bierner.markdown-preview-github-styles bierner.markdown-yaml-preamble bierner.emojisense darkriszty.markdown-table-prettify csholmq.excel-to-markdown-table marchiore.csvtomarkdown mdickin.markdown-shortcuts telesoho.vscode-markdown-paste-image goessner.mdmath gauravpatidar.obsidian-graph-in-vscode", "yzhang.markdown-all-in-one shd101wyy.markdown-preview-enhanced davidanson.vscode-markdownlint bierner.markdown-mermaid bierner.markdown-checkbox bierner.markdown-emoji bierner.markdown-footnotes bierner.github-markdown-preview bierner.markdown-preview-github-styles bierner.markdown-yaml-preamble bierner.emojisense darkriszty.markdown-table-prettify csholmq.excel-to-markdown-table marchiore.csvtomarkdown mdickin.markdown-shortcuts telesoho.vscode-markdown-paste-image goessner.mdmath gauravpatidar.obsidian-graph-in-vscode", "Se instalan para tu usuario con `code --install-extension`; necesita VS Code (grupo Desarrollo)."),
+    ("Extensiones de VS Code", "vscode-nube", "Extensiones: contenedores y nube", "vscode-ext", "ms-azuretools.vscode-containers ms-vscode-remote.remote-containers ms-kubernetes-tools.vscode-kubernetes-tools redhat.vscode-yaml redhat.vscode-commons redhat.fabric8-analytics", "ms-azuretools.vscode-containers ms-vscode-remote.remote-containers ms-kubernetes-tools.vscode-kubernetes-tools redhat.vscode-yaml redhat.vscode-commons redhat.fabric8-analytics", "Se instalan para tu usuario con `code --install-extension`; necesita VS Code (grupo Desarrollo)."),
+    ("Extensiones de VS Code", "vscode-otros", "Extensiones: otras", "vscode-ext", "ms-vsliveshare.vsliveshare ms-vscode.powershell ms-edgedevtools.vscode-edge-devtools editorconfig.editorconfig be5invis.vscode-icontheme-nomo-dark tomoki1207.pdf imgildev.vscode-json-flow visualstudiotoolsforunity.vstuc", "ms-vsliveshare.vsliveshare ms-vscode.powershell ms-edgedevtools.vscode-edge-devtools editorconfig.editorconfig be5invis.vscode-icontheme-nomo-dark tomoki1207.pdf imgildev.vscode-json-flow visualstudiotoolsforunity.vstuc", "Se instalan para tu usuario con `code --install-extension`; necesita VS Code (grupo Desarrollo)."),
     # Inteligencia artificial
     ("IA", "claude-code", "Claude Code", "npm", "@anthropic-ai/claude-code", "claude", "Ejecútalo dentro de `caja --ia-nube`."),
     ("IA", "codex", "Codex CLI", "npm", "@openai/codex", "codex", "Ejecútalo dentro de `caja --ia-nube`."),
@@ -117,7 +127,35 @@ def c(t, k):
     return f"\033[{k}m{t}\033[0m" if COLOR else t
 
 
+def usuario_real():
+    """El usuario al que pertenecen las extensiones: el que lanzó sudo, o el actual."""
+    return os.environ.get("SUDO_USER") or os.environ.get("USER") or ""
+
+
+def cmd_code(*args):
+    """Orden de VS Code ejecutada como el usuario real (si esto corre con sudo, no como root)."""
+    usuario = usuario_real()
+    if getattr(os, "geteuid", lambda: 1)() == 0 and usuario and usuario != "root":
+        return ["sudo", "-u", usuario, "-H", "code", *args]
+    return ["code", *args]
+
+
+_EXT = {}
+
+
+def extensiones_instaladas():
+    """Extensiones de VS Code ya instaladas para el usuario (en minúsculas). Vacío si no hay VS Code."""
+    if "v" not in _EXT:
+        if shutil.which("code") is None:
+            return set()
+        r = subprocess.run(cmd_code("--list-extensions"), capture_output=True, text=True, timeout=120)
+        _EXT["v"] = {x.strip().lower() for x in r.stdout.splitlines() if x.strip()} if r.returncode == 0 else set()
+    return _EXT["v"]
+
+
 def instalado(tipo, comprobar):
+    if tipo == "vscode-ext":
+        return all(i.lower() in extensiones_instaladas() for i in comprobar.split())
     if tipo in ("npm", "script", "playwright"):
         return shutil.which(comprobar) is not None
     r = subprocess.run(["dpkg-query", "-W", "-f=${Status}", comprobar], capture_output=True, text=True)
@@ -291,6 +329,21 @@ def hacer(item, simular, si):
     print(c(f"\n▶ {ident}", "1;36") + f"  ({win})")
     if tipo == "apt":
         return apt(objetivo, simular)
+    if tipo == "vscode-ext":
+        if shutil.which("code") is None and not simular:
+            print(c("  Falta VS Code: instálalo primero (leksso-apps instalar code).", "33"))
+            return 1
+        ya = extensiones_instaladas()
+        fallos = []
+        for ext in objetivo.split():
+            if ext.lower() in ya:
+                continue
+            if correr(cmd_code("--install-extension", ext), simular) != 0:
+                fallos.append(ext)
+        _EXT.clear()
+        if fallos:
+            print(c("  No se pudieron instalar: " + ", ".join(fallos), "31"))
+        return anotar(ident, "extensiones de VS Code (catálogo)", 1 if fallos else 0, simular) if not fallos else 1
     if tipo == "repo-brave":
         repo_clave("brave-browser", "https://brave-browser-apt-release.s3.brave.com/brave-browser-archive-keyring.gpg",
                    "deb [signed-by={llave}] https://brave-browser-apt-release.s3.brave.com/ stable main", simular)
