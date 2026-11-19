@@ -27,7 +27,7 @@ client.urgent             #fdc357  #332305  #fdc357  #fdc357    #fdc357
 output * bg #021012 solid_color
 gaps inner 0
 
-exec waybar
+exec leksso-barra
 exec systemctl --user start leksso-permisor.service
 exec leksso-zonas
 exec leksso-actualizar comprobar --avisar

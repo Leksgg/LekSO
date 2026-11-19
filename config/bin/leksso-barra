@@ -1,0 +1,29 @@
+#!/bin/sh
+# Barra de LeksSO (raíl y barra de tareas): arranca waybar y lo vuelve a arrancar si se cierra.
+# Sin esto, si waybar se cae al iniciar la sesión (por ejemplo, si recibe una señal antes de estar listo o arranca
+# antes que la pantalla), el escritorio se queda sin raíl ni barra de tareas hasta el siguiente inicio.
+# Cada cierre queda en ~/.cache/leksso/barra.log con el código de salida (más de 128 = lo mató una señal).
+#
+# Uso: leksso-barra        (lo lanza sway al iniciar; una sola copia a la vez)
+
+LOG="$HOME/.cache/leksso/barra.log"
+mkdir -p "$(dirname "$LOG")"
+# una sola copia: si ya hay una vigilando, esta sale
+exec 9>"${XDG_RUNTIME_DIR:-/tmp}/leksso-barra.lock"
+flock -n 9 || exit 0
+# el registro no crece sin fin
+[ -f "$LOG" ] && [ "$(wc -c < "$LOG")" -gt 200000 ] && tail -c 50000 "$LOG" > "$LOG.nuevo" && mv -f "$LOG.nuevo" "$LOG"
+
+fallos=0
+while [ "$fallos" -lt 20 ]; do
+  inicio=$(date +%s)
+  waybar >> "$LOG" 2>&1
+  rc=$?
+  vivio=$(( $(date +%s) - inicio ))
+  printf '%s waybar terminó (código %s) tras %s s\n' "$(date '+%F %T')" "$rc" "$vivio" >> "$LOG"
+  # una salida limpia a petición del usuario no se reinicia; un cierre rápido o por señal, sí
+  [ "$rc" -eq 0 ] && [ "$vivio" -gt 5 ] && break
+  # si aguantó más de un minuto, el contador de fallos empieza de cero
+  if [ "$vivio" -gt 60 ]; then fallos=0; else fallos=$((fallos + 1)); fi
+  sleep 1
+done

@@ -5,6 +5,7 @@ Lo más reciente, arriba.
 
 ## Sin publicar
 
+~ **Barra del escritorio que se reinicia sola**: tras un reinicio en el A04 el raíl y la barra de tareas no aparecieron (waybar no arrancó y nada lo volvió a lanzar). Ahora sway lanza `leksso-barra`, que arranca waybar y lo reinicia si se cae (hasta 20 veces seguidas) y deja cada cierre, con su código de salida, en `~/.cache/leksso/barra.log` para saber la causa. Solo hay una copia vigilando a la vez.
 ~ **Teclas de brillo**: no funcionaban (el archivo del brillo era solo de root y Debian no trae la regla de brightnessctl). Nueva regla udev `70-leksso-brillo.rules` que da permiso al grupo `video`; se instala con el resto y se aplica al momento. Hallado en la validación del A04.
 
 ## Beta 0.1.27 · 2026-11-19
