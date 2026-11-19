@@ -20,8 +20,14 @@ apt-get install -y --no-install-recommends nftables unattended-upgrades
 REGLA_SSH=""
 # --ssh (máquinas de prueba): solo desde redes privadas, no desde cualquier origen alcanzable.
 [ "$SSH" -eq 1 ] && REGLA_SSH='ip saddr { 10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16 } tcp dport 22 accept comment "leksso-acceso-remoto"'
-# Si el acceso remoto está encendido (leksso-acceso-remoto on), se conserva su regla: solo red local.
-[ "$SSH" -eq 0 ] && [ -f /etc/leksso/acceso-remoto ] &&   REGLA_SSH='ip saddr { 10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16 } tcp dport 22 accept comment "leksso-acceso-remoto"'
+# Si el acceso remoto está encendido (leksso-acceso-remoto on), se conserva su regla según el modo (local o publico).
+if [ "$SSH" -eq 0 ] && [ -f /etc/leksso/acceso-remoto ]; then
+  if [ "$(cat /etc/leksso/acceso-remoto)" = publico ]; then
+    REGLA_SSH='tcp dport 22 ct state new limit rate 20/minute burst 10 packets accept comment "leksso-acceso-remoto"'
+  else
+    REGLA_SSH='ip saddr { 10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16 } tcp dport 22 accept comment "leksso-acceso-remoto"'
+  fi
+fi
 cat > /etc/nftables.conf <<NFT
 #!/usr/sbin/nft -f
 # LeksSO: entrante bloqueado por defecto. Saliente libre.

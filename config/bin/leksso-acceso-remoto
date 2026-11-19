@@ -1,17 +1,26 @@
 #!/usr/bin/env bash
-# Acceso remoto a este equipo por SSH, SOLO desde la red local. Apagado por defecto.
+# Acceso remoto a este equipo por SSH. Apagado por defecto.
 #
-# Uso: sudo leksso-acceso-remoto on       lo enciende (instala el servidor SSH si falta)
-#      sudo leksso-acceso-remoto off      lo apaga y cierra el puerto
-#      leksso-acceso-remoto estado        dice si está encendido
+# Uso: sudo leksso-acceso-remoto on [local|publico]   lo enciende (instala el servidor SSH si falta); por defecto, local
+#      sudo leksso-acceso-remoto off                  lo apaga y cierra el puerto
+#      leksso-acceso-remoto estado                    dice: apagado, local o publico
 #
-# Encendido: se entra con tu usuario y tu contraseña (o tu clave SSH), nunca como root, y solo desde
-# direcciones de red local (192.168.x.x, 10.x.x.x, 172.16-31.x.x). Desde internet el puerto sigue cerrado.
+# local   Solo desde la red local (192.168.x.x, 10.x.x.x, 172.16-31.x.x). Usuario y contraseña, o clave.
+# publico Desde cualquier sitio (internet incluido), para manejar el equipo desde un servidor. SOLO con clave SSH:
+#         la contraseña queda desactivada y, si tu usuario no tiene ninguna clave autorizada, no se abre nada.
+#         Además se limita el ritmo de conexiones nuevas. En ambos modos: nunca como root.
 set -euo pipefail
-MARCA=/etc/leksso/acceso-remoto
-REGLA='ip saddr { 10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16 } tcp dport 22 accept comment "leksso-acceso-remoto"'
+MARCA=/etc/leksso/acceso-remoto          # su contenido es el modo: local o publico
+LOCAL='ip saddr { 10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16 } tcp dport 22 accept comment "leksso-acceso-remoto"'
+PUBLICO='tcp dport 22 ct state new limit rate 20/minute burst 10 packets accept comment "leksso-acceso-remoto"'
 
-estado() { if [ -f "$MARCA" ] && systemctl is-active -q ssh 2>/dev/null; then echo "encendido"; else echo "apagado"; fi; }
+estado() {
+  if [ -f "$MARCA" ] && systemctl is-active -q ssh 2>/dev/null; then
+    case "$(cat "$MARCA" 2>/dev/null)" in publico) echo publico ;; *) echo local ;; esac
+  else
+    echo apagado
+  fi
+}
 quitar_regla() {
   local h
   for h in $(nft -a list chain inet leksso entrada 2>/dev/null | sed -n 's/.*leksso-acceso-remoto.*# handle \([0-9]*\)$/\1/p'); do
@@ -19,32 +28,63 @@ quitar_regla() {
   done
   sed -i '/leksso-acceso-remoto/d' /etc/nftables.conf
 }
+claves_autorizadas() {   # cuántas claves SSH tiene el usuario que ejecuta sudo
+  local u="${SUDO_USER:-}" h
+  [ -n "$u" ] && [ "$u" != root ] || return 1
+  h="$(getent passwd "$u" | cut -d: -f6)"
+  [ -s "$h/.ssh/authorized_keys" ] && grep -Eq '^(ssh-|ecdsa-|sk-)' "$h/.ssh/authorized_keys"
+}
 
 case "${1:-estado}" in
   estado) estado ;;
   on)
-    [ "$(id -u)" -eq 0 ] || { echo "Ejecuta con sudo: sudo leksso-acceso-remoto on" >&2; exit 1; }
+    [ "$(id -u)" -eq 0 ] || { echo "Ejecuta con sudo: sudo leksso-acceso-remoto on [local|publico]" >&2; exit 1; }
+    MODO="${2:-local}"
+    case "$MODO" in local|publico) ;; *) echo "Modo desconocido: $MODO (usa local o publico)" >&2; exit 2 ;; esac
+    if [ "$MODO" = publico ] && ! claves_autorizadas; then
+      cat >&2 <<MSG
+ERROR: el modo público solo admite clave SSH y tu usuario no tiene ninguna autorizada, así que no se abre nada.
+Desde el equipo (o servidor) con el que vas a entrar, ejecuta primero, mientras el modo local está encendido:
+  ssh-copy-id ${SUDO_USER:-usuario}@<dirección de este equipo>
+Luego repite: sudo leksso-acceso-remoto on publico
+MSG
+      exit 1
+    fi
     if ! dpkg -s openssh-server >/dev/null 2>&1; then
       DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends openssh-server
     fi
     install -d /etc/ssh/sshd_config.d /etc/leksso
-    printf '# LeksSO: acceso remoto\nPermitRootLogin no\nMaxAuthTries 4\nX11Forwarding no\n' > /etc/ssh/sshd_config.d/leksso.conf
+    {
+      printf '# LeksSO: acceso remoto (%s)\nPermitRootLogin no\nMaxAuthTries 4\nX11Forwarding no\n' "$MODO"
+      [ "$MODO" = publico ] && printf 'PasswordAuthentication no\nKbdInteractiveAuthentication no\nAuthenticationMethods publickey\nLoginGraceTime 20\n'
+    } > /etc/ssh/sshd_config.d/leksso.conf
     # Configuración EFECTIVA (no solo lo que se escribió): OpenSSH usa el primer valor que encuentra, y otro archivo
-    # anterior podría dejar entrar a root. Si no es la esperada, no se abre nada.
+    # anterior podría dejar entrar a root o con contraseña. Si no es la esperada, no se abre nada.
     if command -v sshd >/dev/null 2>&1; then
       EFECTIVA="$(sshd -T 2>/dev/null)"
-      echo "$EFECTIVA" | grep -qi '^permitrootlogin no$' \
-        && echo "$EFECTIVA" | grep -qi '^x11forwarding no$' \
-        || { echo "ERROR: la configuración efectiva de SSH no es la esperada (revisa /etc/ssh/sshd_config.d). No se abre el puerto." >&2; exit 1; }
+      OK=1
+      echo "$EFECTIVA" | grep -qi '^permitrootlogin no$' || OK=0
+      echo "$EFECTIVA" | grep -qi '^x11forwarding no$' || OK=0
+      if [ "$MODO" = publico ]; then
+        echo "$EFECTIVA" | grep -qi '^passwordauthentication no$' || OK=0
+        echo "$EFECTIVA" | grep -qi '^kbdinteractiveauthentication no$' || OK=0
+      fi
+      [ "$OK" -eq 1 ] || { echo "ERROR: la configuración efectiva de SSH no es la esperada (revisa /etc/ssh/sshd_config.d). No se abre el puerto." >&2; exit 1; }
     fi
     quitar_regla
+    if [ "$MODO" = publico ]; then REGLA="$PUBLICO"; else REGLA="$LOCAL"; fi
     nft add rule inet leksso entrada $REGLA
     # que sobreviva al reinicio: la misma regla en el archivo del cortafuegos, dentro de la cadena de entrada
-    sed -i "/udp sport 547 udp dport 546 accept/a\\    $REGLA" /etc/nftables.conf
-    touch "$MARCA"
+    sed -i "/udp sport 547 udp dport 546 accept/a\    $REGLA" /etc/nftables.conf
+    printf '%s\n' "$MODO" > "$MARCA"
     systemctl enable -q --now ssh
     systemctl try-reload-or-restart ssh      # si ya estaba en marcha, que lea la configuración nueva
-    echo "Acceso remoto ENCENDIDO (solo red local). Dirección de este equipo:"
+    if [ "$MODO" = publico ]; then
+      echo "Acceso remoto ENCENDIDO (local y público, solo con clave SSH). Direcciones locales de este equipo:"
+      echo "Para entrar desde internet hace falta además reenviar el puerto 22 en tu router hacia este equipo."
+    else
+      echo "Acceso remoto ENCENDIDO (solo red local). Dirección de este equipo:"
+    fi
     ip -4 -o addr show scope global | awk '{print "  ssh '"${SUDO_USER:-usuario}"'@" $4}' | sed 's#/[0-9]*$##'
     echo "Para apagarlo: sudo leksso-acceso-remoto off"
     ;;
@@ -52,8 +92,8 @@ case "${1:-estado}" in
     [ "$(id -u)" -eq 0 ] || { echo "Ejecuta con sudo: sudo leksso-acceso-remoto off" >&2; exit 1; }
     systemctl disable -q --now ssh ssh.socket 2>/dev/null || true
     quitar_regla
-    rm -f "$MARCA"
+    rm -f "$MARCA" /etc/ssh/sshd_config.d/leksso.conf
     echo "Acceso remoto APAGADO."
     ;;
-  *) echo "Uso: leksso-acceso-remoto on|off|estado" >&2; exit 2 ;;
+  *) echo "Uso: leksso-acceso-remoto on [local|publico] | off | estado" >&2; exit 2 ;;
 esac

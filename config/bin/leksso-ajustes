@@ -35,15 +35,40 @@ PERFILES = [("Ahorro", "power-saver"), ("Equilibrado", "balanced"), ("Rendimient
 
 
 def estado_ssh():
+    """'apagado', 'local' o 'publico'."""
     r = subprocess.run(["leksso-acceso-remoto", "estado"], capture_output=True, text=True)
-    return r.stdout.strip() == "encendido"
+    return r.stdout.strip() or "apagado"
 
 
-def orden_ssh():
-    """Enciende o apaga el SSH en una terminal (pide la contraseña y deja ver el progreso)."""
-    nuevo = "off" if estado_ssh() else "on"
+def orden_ssh(parent):
+    """Pregunta qué modo de SSH quiere y devuelve la orden (en una terminal, que pide la contraseña y enseña el
+    progreso), o None si cancela."""
+    actual = estado_ssh()
+    caja = QtWidgets.QMessageBox(parent)
+    caja.setWindowTitle("Acceso remoto (SSH)")
+    caja.setText("Acceso remoto por SSH")
+    caja.setInformativeText(
+        "Ahora: " + {"apagado": "apagado", "local": "encendido solo en la red local",
+                     "publico": "encendido local y público"}[actual] + ".\n\n"
+        "Red local: entras desde tu casa o tu red, con usuario y contraseña o con clave.\n\n"
+        "Local y público: entras también desde internet (por ejemplo desde un servidor). Solo con clave SSH, sin "
+        "contraseña; hace falta tener una clave autorizada y reenviar el puerto 22 en el router.")
+    local = caja.addButton("Solo red local", QtWidgets.QMessageBox.AcceptRole)
+    publico = caja.addButton("Local y público", QtWidgets.QMessageBox.AcceptRole)
+    apagar = caja.addButton("Apagar", QtWidgets.QMessageBox.DestructiveRole)
+    caja.addButton("Cancelar", QtWidgets.QMessageBox.RejectRole)
+    caja.exec()
+    sel = caja.clickedButton()
+    if sel is apagar:
+        accion = "off"
+    elif sel is local:
+        accion = "on local"
+    elif sel is publico:
+        accion = "on publico"
+    else:
+        return None
     return ["leksso-term", "-T", "Acceso remoto", "-e", "sh", "-c",
-            f"sudo leksso-acceso-remoto {nuevo}; printf '\nPulsa Intro para cerrar.'; read -r _"]
+            f"sudo leksso-acceso-remoto {accion}; printf '\\nPulsa Intro para cerrar.'; read -r _"]
 
 
 def info():
@@ -88,15 +113,16 @@ class Ajustes(QtWidgets.QWidget):
         for nombre, desc, orden, prog in AJUSTES:
             ssh = desc == "__SSH__"
             if ssh:
-                desc = ("Encendido: se puede entrar desde la red local. Pulsa para apagarlo" if estado_ssh()
-                        else "Apagado. Pulsa para encenderlo (solo red local)")
+                desc = {"apagado": "Apagado. Pulsa para encenderlo (red local o también público)",
+                        "local": "Encendido solo en la red local. Pulsa para cambiarlo",
+                        "publico": "Encendido local y público (con clave). Pulsa para cambiarlo"}[estado_ssh()]
             b = QtWidgets.QPushButton(f"{nombre}\n{desc}")
             b.setObjectName("accion")
             ok = shutil.which(prog) is not None or prog == "cupsd"
             b.setEnabled(ok)
             if not ok:
                 b.setToolTip("No está instalado")
-            b.clicked.connect(lambda _=False, o=orden, e=ssh: self.abrir(orden_ssh() if e else o))
+            b.clicked.connect(lambda _=False, o=orden, e=ssh: self.abrir(orden_ssh(self) if e else o))
             rejilla.addWidget(b, n // 2, n % 2)
             n += 1
         raiz.addLayout(rejilla)
@@ -117,6 +143,8 @@ class Ajustes(QtWidgets.QWidget):
         raiz.addStretch()
 
     def abrir(self, orden):
+        if orden is None:      # el usuario canceló el diálogo
+            return
         subprocess.Popen(orden, start_new_session=True, stdin=subprocess.DEVNULL,
                          stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         self.close()
