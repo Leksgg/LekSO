@@ -5,6 +5,7 @@ Lo más reciente, arriba.
 
 ## Sin publicar
 
+~ **Causa del raíl perdido tras reiniciar (A04)**: la sesión de sway no pasaba su entorno gráfico a systemd. Al instalar el catálogo se instaló `xdg-desktop-portal-gtk` (dependencia de Minigalaxy); en el siguiente arranque el portal principal intentaba usarlo, no podía abrirse sin pantalla, se quedaba esperando 25 s por petición y waybar moría con «Failed to activate service org.freedesktop.portal.Desktop: timed out». Ahora sway importa `WAYLAND_DISPLAY`, `SWAYSOCK` y `XDG_CURRENT_DESKTOP` en systemd y en D-Bus antes de arrancar la barra.
 ~ **Barra del escritorio que se reinicia sola**: tras un reinicio en el A04 el raíl y la barra de tareas no aparecieron (waybar no arrancó y nada lo volvió a lanzar). Ahora sway lanza `leksso-barra`, que arranca waybar y lo reinicia si se cae (hasta 20 veces seguidas) y deja cada cierre, con su código de salida, en `~/.cache/leksso/barra.log` para saber la causa. Solo hay una copia vigilando a la vez.
 ~ **Teclas de brillo**: no funcionaban (el archivo del brillo era solo de root y Debian no trae la regla de brightnessctl). Nueva regla udev `70-leksso-brillo.rules` que da permiso al grupo `video`; se instala con el resto y se aplica al momento. Hallado en la validación del A04.
 
