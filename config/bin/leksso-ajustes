@@ -26,6 +26,8 @@ AJUSTES = [
     ("Aplicaciones", "Instalar programas",
      ["leksso-term", "-T", "Aplicaciones", "-e", "sh", "-c", "leksso-apps; printf '\\nPulsa Intro para cerrar.'; read -r _"],
      "leksso-apps"),
+    ("Zonas del escritorio", "Tus tamaños se guardan solos. Pulsa para volver a los de fábrica",
+     ["leksso-zonas", "--fabrica"], "leksso-zonas"),
     ("Actualizaciones", "Versión y novedades", ["leksso-actualizaciones"], "leksso-actualizaciones"),
     ("Copias", "Copias de seguridad de tus archivos", ["leksso-copias-ui"], "leksso-copias-ui"),
     ("Acceso remoto (SSH)", "__SSH__", None, "leksso-acceso-remoto"),

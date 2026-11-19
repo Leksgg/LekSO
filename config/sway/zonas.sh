@@ -5,9 +5,11 @@
 #      leksso-zonas --restaurar  vuelve a la vista por defecto sin cerrar las apps del usuario
 #      leksso-zonas --plegar     pliega o despliega la columna de carpetas (más sitio para la app)
 #      leksso-zonas --medir      muestra los tamaños actuales de las zonas (en % de la pantalla)
+#      leksso-zonas --fabrica    vuelve a los tamaños de fábrica (sin cerrar ni mover ventanas)
 #
 # Los tamaños de las zonas que dejes a tu gusto (arrastrando los bordes) se guardan solos en
-# ~/.config/leksso/zonas y se vuelven a poner al iniciar sesión y al restaurar las zonas.
+# ~/.config/leksso/zonas y se vuelven a poner al iniciar sesión y al restaurar las zonas. Con --fabrica
+# (o Ajustes, Zonas del escritorio) se borran y se vuelve a los de fábrica.
 
 # Si se lanzó sin el socket de sway (p. ej. desde una barra reiniciada a mano), lo busca.
 if [ -z "${SWAYSOCK:-}" ]; then
@@ -64,6 +66,9 @@ guardar() {
     k="${par%%=*}"; v="${par#*=}"
     case "$v" in ''|*[!0-9]*) continue ;; esac
     [ "$v" -ge 10 ] && [ "$v" -le 70 ] || continue
+    # un punto de diferencia es solo el redondeo al medir: no cuenta como cambio del usuario
+    case "$k" in explorador) ant=$EXPL ;; panel) ant=$PANEL ;; terminal) ant=$TERM ;; *) continue ;; esac
+    dif=$((v - ant)); [ "$dif" -lt 0 ] && dif=$((0 - dif)); [ "$dif" -ge 2 ] || continue
     case "$k" in explorador) EXPL=$v ;; panel) PANEL=$v ;; terminal) TERM=$v ;; esac
   done
   [ "explorador=$EXPL panel=$PANEL terminal=$TERM" = "$actual" ] && return 0
@@ -165,6 +170,13 @@ plegar() {
 
 if [ "${1:-}" = "--plegar" ]; then
   plegar
+elif [ "${1:-}" = "--fabrica" ]; then
+  # Vuelve a los tamaños de fábrica sin cerrar ni mover ninguna ventana: borra lo guardado y los aplica.
+  rm -f "$TAMANOS" "$TAMANOS.nuevo"
+  cargar
+  [ -e "$PLEGADO" ] || swaymsg "[con_mark=\"explorador\"] resize set width $EXPL ppt" >/dev/null 2>&1
+  swaymsg "[con_mark=\"panel-ia\"] resize set width $PANEL ppt" >/dev/null 2>&1
+  swaymsg "[con_mark=\"terminal\"] resize set height $TERM ppt" >/dev/null 2>&1
 elif [ "${1:-}" = "--medir" ]; then
   medir
 elif [ "${1:-}" = "--restaurar" ]; then
