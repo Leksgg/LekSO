@@ -80,7 +80,8 @@ usermod -aG seatd "$USUARIO" 2>/dev/null || true
 U install -d "$HOME_USR/.config/sway"
 U install -m 0644 "$RAIZ/config/sway/config" "$HOME_USR/.config/sway/config"
 # En una máquina virtual de Hyper-V, resolución grande (en un equipo real se usa la nativa).
-if [ "$(systemd-detect-virt 2>/dev/null || true)" = "microsoft" ]; then
+# Solo si el usuario no tiene ya su local.conf: ese archivo es suyo y una actualización no lo reescribe.
+if [ "$(systemd-detect-virt 2>/dev/null || true)" = "microsoft" ] && [ ! -e "$HOME_USR/.config/sway/local.conf" ]; then
   echo "output * resolution 1920x1080" | U tee "$HOME_USR/.config/sway/local.conf" >/dev/null
 fi
 

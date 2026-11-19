@@ -5,6 +5,8 @@ Lo más reciente, arriba.
 
 ## Sin publicar
 
+~ **Tamaño de las zonas del escritorio**: los anchos y altos que dejes arrastrando los bordes (explorador, panel de IA, terminal) se guardan solos en `~/.config/leksso/zonas` y se vuelven a poner al iniciar sesión, al restaurar las zonas y al plegar la columna de carpetas. Antes, cada inicio volvía a 22 %, 26 % y 26 %. `leksso-zonas --medir` muestra los tamaños actuales.
+~ **`sway/local.conf` en Hyper-V**: ya no se reescribe en cada actualización si existe.
 ~ **SSH con una cuenta sin contraseña**: antes se encendía y nadie podía entrar (sshd rechaza las contraseñas vacías). Ahora `leksso-acceso-remoto on` no enciende nada si la cuenta no tiene contraseña ni clave autorizada, y Ajustes, Acceso remoto ofrece resolverlo en el momento: poner una contraseña para SSH (solo se pide al entrar por SSH; el inicio de sesión y sudo siguen igual) o autorizar una clave pública. El modo público sigue siendo solo con clave y pide autorizar una si falta.
 + `leksso-acceso-remoto cuenta` (¿contraseña? ¿cuántas claves?) y `leksso-acceso-remoto clave 'ssh-...'` (valida y autoriza una clave pública, sin sudo).
 
