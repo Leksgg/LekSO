@@ -70,6 +70,25 @@ esac
 VERSION="$(cat "$PAQ/VERSION_TAG")"
 SUDO_USER="$USUARIO" bash "$PAQ/instalar.sh" --origen "$PAQ/leksso.bundle" --version "$VERSION" --si
 
+# 4b. Otros sistemas en el equipo (Windows): el menú de arranque de LeksSO (GRUB) los muestra, así se elige al encender,
+#     y, si hay Windows, la hora de la placa se deja como la guarda él (hora local) para que no se desfase al alternar.
+#     Si no hay otro sistema, no cambia nada. os-prober viene en el USB (sin internet).
+apt-get install -y -qq os-prober >/dev/null 2>&1 || true
+if command -v os-prober >/dev/null 2>&1; then
+  if grep -q '^GRUB_DISABLE_OS_PROBER' /etc/default/grub; then
+    sed -i 's/^GRUB_DISABLE_OS_PROBER=.*/GRUB_DISABLE_OS_PROBER=false/' /etc/default/grub
+  else
+    echo 'GRUB_DISABLE_OS_PROBER=false' >> /etc/default/grub
+  fi
+  OTROS="$(os-prober 2>/dev/null || true)"
+  update-grub >/dev/null 2>&1 || true
+  case "$OTROS" in
+    *Windows*|*Microsoft*)
+      echo "Windows detectado: GRUB lo muestra en su menú; hora de la placa en hora local."
+      printf '0.0 0 0.0\n0\nLOCAL\n' > /etc/adjtime ;;
+  esac
+fi
+
 # 5. Fuentes de apt normales para el sistema ya instalado (las actualizaciones de Debian irán por red) y limpieza.
 rm -f /etc/apt/sources.list.d/leksso-offline.list /etc/apt/apt.conf.d/99leksso-sin-recomendados
 cat > /etc/apt/sources.list <<'EOF'
