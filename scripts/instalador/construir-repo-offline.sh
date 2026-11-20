@@ -30,7 +30,8 @@ LISTA="$(bash -c '
 EXTRA="nftables unattended-upgrades isenkram-cli intel-microcode amd64-microcode thermald
 firmware-iwlwifi firmware-sof-signed firmware-intel-misc firmware-intel-graphics firmware-amd-graphics
 firmware-realtek firmware-atheros firmware-mediatek firmware-misc-nonfree
-git openssh-client openssh-server ca-certificates python3 sudo locales"
+git openssh-client openssh-server ca-certificates python3 sudo locales
+clevis clevis-luks clevis-tpm2 clevis-initramfs tpm2-tools"
 TODOS="$(printf '%s\n%s\n' "$LISTA" "$EXTRA" | tr ' ' '\n' | sed '/^$/d' | sort -u | tr '\n' ' ')"
 echo "Paquetes pedidos: $(echo "$TODOS" | wc -w)"
 

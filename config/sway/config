@@ -40,6 +40,7 @@ exec wl-paste --type image --watch cliphist store
 # Reposo: por defecto bloquear a los 10 min, apagar la pantalla a los 15 y suspender a los 30 (solo con batería).
 # Los tiempos se cambian en Ajustes, Bloqueo y reposo (se guardan en ~/.config/leksso/reposo).
 exec leksso-reposo iniciar
+exec leksso-disco primer-arranque
 exec udiskie --no-tray --no-notify --automount
 
 # El menú de aplicaciones flota en el centro de la pantalla

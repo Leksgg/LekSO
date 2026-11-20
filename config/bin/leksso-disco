@@ -35,6 +35,15 @@ con_clevis() {
   DEBIAN_FRONTEND=noninteractive apt-get install -y clevis clevis-luks clevis-tpm2 clevis-initramfs tpm2-tools || return 1
 }
 
+# Primer arranque tras instalar con «desbloqueo automático»: si la marca existe y aún no está enlazado, ofrece activarlo.
+if [ "${1:-}" = primer-arranque ]; then
+  MARCA=/etc/leksso/disco-automatico-pendiente
+  [ -e "$MARCA" ] && [ "$(id -u)" -ne 0 ] || exit 0
+  if [ "$(sudo -n "$0" estado --corto 2>/dev/null)" = "desbloqueo automático con el TPM" ]; then sudo -n rm -f "$MARCA"; exit 0; fi
+  sleep 30    # que el escritorio termine de montarse
+  exec leksso-term -T "Disco cifrado: activar desbloqueo automatico" -e sh -c     "echo 'Este equipo se instalo con desbloqueo automatico del disco. Se activa ahora (te pedira la clave del disco una vez).'; echo 'Si no quieres: cierra esta ventana y ejecuta  sudo leksso-disco automatico off'; echo; sudo leksso-disco automatico on; echo; echo 'Pulsa Intro para cerrar'; read -r _"
+fi
+
 # Todo lo que sale por pantalla en las órdenes que cambian algo queda también en un registro (para ver el motivo si falla).
 case "${1:-}" in automatico|renovar)
   if [ "$(id -u)" -eq 0 ] && [ -z "${LEKSSO_DISCO_LOG:-}" ]; then
@@ -87,6 +96,7 @@ MSG
         update-initramfs -u -k all || { echo "AVISO: falló update-initramfs; quita el enlace con: sudo leksso-disco automatico off" >&2; exit 1; }
         n="$(lsinitramfs "/boot/initrd.img-$(uname -r)" 2>/dev/null | grep -c clevis)"
         echo "Hecho. (El arranque lleva el desbloqueo: $n archivos de clevis.) Reinicia para comprobarlo: no debe pedir clave."
+        rm -f /etc/leksso/disco-automatico-pendiente
         ;;
       off)
         con_clevis || exit 1
@@ -95,6 +105,7 @@ MSG
         clevis luks unbind -d "$DEV" -s "$s" -f || { echo "No se pudo quitar el enlace." >&2; exit 1; }
         update-initramfs -u -k all
         echo "Hecho. A partir del próximo arranque se pide la clave del disco."
+        rm -f /etc/leksso/disco-automatico-pendiente
         ;;
       *) echo "Uso: sudo leksso-disco automatico on|off" >&2; exit 2 ;;
     esac

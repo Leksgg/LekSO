@@ -54,6 +54,11 @@ for par in "preseed:preseed-sin-contrasena" "preseed-sin-cifrado:preseed-sin-cif
   printf '\n# --- Sin contraseña de usuario: la deja bloqueada y postinstalar.sh la quita ---\nd-i passwd/user-password-crypted password !\n' >> "$PAQ/$destino.cfg"
 done
 
+# 1a-bis. Disco cifrado con DESBLOQUEO AUTOMÁTICO (TPM2): igual que «cifrado», pero en el primer arranque del escritorio se ofrece
+#     enlazar el disco al TPM para no teclear la clave en cada encendido (la clave elegida queda de respaldo).
+sed -E 's#^(  in-target sh /opt/leksso-instalacion/postinstalar.sh( --sin-contrasena)?)$#\1 --disco-automatico#' "$PAQ/preseed.cfg" > "$PAQ/preseed-disco-automatico.cfg"
+sed -E 's#^(  in-target sh /opt/leksso-instalacion/postinstalar.sh( --sin-contrasena)?)$#\1 --disco-automatico#' "$PAQ/preseed-sin-contrasena.cfg" > "$PAQ/preseed-disco-automatico-sin-contrasena.cfg"
+
 # 1b. Fase de pruebas en equipos reales: sin exigir firma en las actualizaciones y con acceso remoto en red local.
 if [ "$FASE" = 1 ]; then echo "fase de pruebas" > "$PAQ/FASE_PRUEBAS"; fi
 
@@ -98,7 +103,9 @@ if [ -z "$PRUEBA" ]; then
   ENTRADA="$ENTRADA
 $(variante 'Instalar LeksSO sin cifrar el disco (borra el disco que elijas)' preseed-sin-cifrado.cfg)
 $(variante 'Instalar LeksSO sin contraseña de usuario, disco cifrado (entra solo al escritorio)' preseed-sin-contrasena.cfg)
-$(variante 'Instalar LeksSO sin cifrar y sin contraseña (el más simple; borra el disco que elijas)' preseed-sin-cifrado-sin-contrasena.cfg)"
+$(variante 'Instalar LeksSO sin cifrar y sin contraseña (el más simple; borra el disco que elijas)' preseed-sin-cifrado-sin-contrasena.cfg)
+$(variante 'Instalar LeksSO con disco cifrado y desbloqueo automatico por TPM (borra el disco que elijas)' preseed-disco-automatico.cfg)
+$(variante 'Instalar LeksSO sin contraseña de usuario, disco cifrado con desbloqueo automatico por TPM (el mas comodo; borra el disco que elijas)' preseed-disco-automatico-sin-contrasena.cfg)"
 fi
 python3 -I - "$ORIGEN_GRUB" "$TMP/grub.cfg" "$ENTRADA" <<'PY'
 import sys
