@@ -3,6 +3,10 @@
 Formato: `+` nuevo · `-` eliminado o retirado · `~` modificado · `*` otros.
 Lo más reciente, arriba.
 
+## Sin publicar
+
++ **Servidor de TeamSpeak 3 en LeksSO**: `sudo leksso-ts3-instalar [--datos CARPETA]` instala la 3.13.8 (versión y suma SHA-256 fijadas; si no coincide, no instala) como un usuario propio sin acceso al resto del equipo y, con `--datos`, trae la base de datos y los archivos de un servidor de Windows sin tocar el origen (cierra el registro WAL y comprueba la integridad). Queda **apagado**: `sudo leksso-ts3 on` lo arranca y abre solo la voz (UDP 9987) y los archivos (TCP 30033) mientras esté encendido; `off` lo para y cierra los puertos. La consulta nunca se abre (solo desde el propio equipo). Para entrar desde fuera de casa hay que reenviar esos puertos en el router.
+
 ## Beta 0.1.30 · 2026-11-20
 
 + **Instalador: cifrado con desbloqueo automático (TPM2)**: dos entradas nuevas en el menú de la ISO («disco cifrado con desbloqueo automático por TPM» y la misma sin contraseña de usuario, que es la más cómoda). Se instala con la clave que se elija y, en el primer arranque del escritorio, se ofrece enlazar el disco al TPM (`leksso-disco primer-arranque`); la clave queda de respaldo. Las herramientas (`clevis`, `tpm2-tools`) van en el USB. Preparado en el código; la ISO aún no se ha construido ni probado.

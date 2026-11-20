@@ -1,0 +1,43 @@
+#!/usr/bin/env bash
+# Servidor de TeamSpeak 3 de LeksSO: se enciende cuando hace falta (por ejemplo, si Discord falla en un directo).
+#
+# Uso: sudo leksso-ts3 on        arranca el servidor y abre sus puertos (voz UDP 9987, archivos TCP 30033)
+#      sudo leksso-ts3 off       lo para y cierra los puertos
+#      leksso-ts3 estado         dice si está encendido
+#
+# Los puertos se abren solo mientras está encendido: no quedan abiertos tras apagarlo ni tras reiniciar el equipo.
+# Para que entren desde fuera de casa hace falta además reenviar esos puertos en el router hacia este equipo.
+# La consulta (10011/10022) NO se abre nunca: solo acepta conexiones desde este mismo equipo.
+set -uo pipefail
+MARCA='comment "leksso-ts3"'
+
+quitar_reglas() {
+  local h
+  for h in $(nft -a list chain inet leksso entrada 2>/dev/null | sed -n 's/.*leksso-ts3.*# handle \([0-9]*\)$/\1/p'); do
+    nft delete rule inet leksso entrada handle "$h"
+  done
+}
+estado() { if systemctl is-active -q teamspeak3; then echo encendido; else echo apagado; fi; }
+solo_root() { [ "$(id -u)" -eq 0 ] || { echo "Ejecuta con sudo: sudo $0 $*" >&2; exit 1; }; }
+
+case "${1:-estado}" in
+  estado) estado ;;
+  on)
+    solo_root "$@"
+    systemctl cat teamspeak3 >/dev/null 2>&1 || { echo "El servidor no está instalado: sudo leksso-ts3-instalar" >&2; exit 1; }
+    systemctl start teamspeak3 || { echo "No se pudo arrancar: journalctl -u teamspeak3" >&2; exit 1; }
+    quitar_reglas
+    nft add rule inet leksso entrada udp dport 9987 accept $MARCA
+    nft add rule inet leksso entrada tcp dport 30033 accept $MARCA
+    echo "Servidor de TeamSpeak ENCENDIDO. Voz: UDP 9987. Archivos: TCP 30033."
+    ip -4 -o addr show scope global | awk '{print "  dirección local: " $4}' | sed 's#/[0-9]*$##'
+    echo "Para apagarlo: sudo leksso-ts3 off"
+    ;;
+  off)
+    solo_root "$@"
+    systemctl stop teamspeak3 2>/dev/null
+    quitar_reglas
+    echo "Servidor de TeamSpeak APAGADO y puertos cerrados."
+    ;;
+  *) echo "Uso: leksso-ts3 estado | sudo leksso-ts3 on|off" >&2; exit 2 ;;
+esac

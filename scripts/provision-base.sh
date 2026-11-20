@@ -223,7 +223,7 @@ U install -d "$HOME_USR/Escritorio" "$HOME_USR/Descargas" "$HOME_USR/Documentos"
 U install -m 0755 "$RAIZ"/config/escritorio/*.desktop "$HOME_USR/Escritorio/"
 
 # Programas predeterminados por tipo de archivo (no pisa lo que el usuario ya haya elegido).
-install -m 0755 "$RAIZ/config/bin/leksso-info" "$RAIZ/config/bin/leksso-wine" "$RAIZ/config/bin/leksso-menu" "$RAIZ/config/bin/leksso-energia" "$RAIZ/config/bin/leksso-flotantes" "$RAIZ/config/bin/leksso-term" "$RAIZ/config/bin/leksso-medios" "$RAIZ/config/bin/leksso-captura" "$RAIZ/config/bin/leksso-reposo" "$RAIZ/config/bin/leksso-portapapeles" "$RAIZ/config/bin/leksso-ajustes" "$RAIZ/config/bin/leksso-redes" "$RAIZ/config/bin/leksso-actualizaciones" "$RAIZ/config/bin/leksso-panel-ia" "$RAIZ/config/bin/leksso-acceso-remoto" "$RAIZ/config/bin/leksso-instalador" "$RAIZ/config/bin/leksso-barra" "$RAIZ/config/bin/leksso-disco" "$RAIZ/config/bin/leksso-archivos" "$RAIZ/config/bin/leksso-juego" "$RAIZ/config/bin/leksso-office-web" "$RAIZ/config/bin/leksso-secureboot" /usr/local/bin/
+install -m 0755 "$RAIZ/config/bin/leksso-info" "$RAIZ/config/bin/leksso-wine" "$RAIZ/config/bin/leksso-menu" "$RAIZ/config/bin/leksso-energia" "$RAIZ/config/bin/leksso-flotantes" "$RAIZ/config/bin/leksso-term" "$RAIZ/config/bin/leksso-medios" "$RAIZ/config/bin/leksso-captura" "$RAIZ/config/bin/leksso-reposo" "$RAIZ/config/bin/leksso-portapapeles" "$RAIZ/config/bin/leksso-ajustes" "$RAIZ/config/bin/leksso-redes" "$RAIZ/config/bin/leksso-actualizaciones" "$RAIZ/config/bin/leksso-panel-ia" "$RAIZ/config/bin/leksso-acceso-remoto" "$RAIZ/config/bin/leksso-instalador" "$RAIZ/config/bin/leksso-barra" "$RAIZ/config/bin/leksso-disco" "$RAIZ/config/bin/leksso-ts3" "$RAIZ/config/bin/leksso-archivos" "$RAIZ/config/bin/leksso-juego" "$RAIZ/config/bin/leksso-office-web" "$RAIZ/config/bin/leksso-secureboot" /usr/local/bin/
 # Apagar y reiniciar no se quedan esperando a un servicio que no responde (por defecto serían hasta 2 minutos).
 install -d /etc/systemd/system.conf.d /etc/systemd/user.conf.d /etc/systemd/system/user@.service.d /etc/systemd/user/mpris-proxy.service.d
 printf '[Manager]
@@ -250,6 +250,7 @@ install -m 0644 "$RAIZ/config/ui/leksso_ui.py" "$RAIZ/config/ui/leksso_conexione
 install -m 0644 "$RAIZ"/config/applications/*.desktop /usr/share/applications/
 install -m 0755 "$RAIZ/scripts/asociar-archivos.py" /usr/local/bin/leksso-asociar
 install -m 0755 "$RAIZ/scripts/leksso-apps.py" /usr/local/bin/leksso-apps
+install -m 0755 "$RAIZ/scripts/leksso-ts3-instalar.sh" /usr/local/bin/leksso-ts3-instalar
 sudo -u "$USUARIO" leksso-asociar
 
 # Temas de color: los archivos de colores por papel, el comando que los aplica y la ventana de Apariencia.
