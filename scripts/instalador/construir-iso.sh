@@ -88,9 +88,9 @@ ORIGEN_GRUB="$TMP/grub.orig"
 xorriso -osirrox on -indev "$ISO" -extract /boot/grub/grub.cfg "$ORIGEN_GRUB" >/dev/null 2>&1
 # Una imagen de pruebas no debe poder confundirse con una normal: lo dice el título de cada entrada del menú.
 AVISO_PRUEBAS=""
-[ "$FASE" = 1 ] && AVISO_PRUEBAS="[PRUEBAS: actualiza SIN comprobar firma y deja SSH abierto] "
-[ -n "$PRUEBA" ] && AVISO_PRUEBAS="[IMAGEN DE PRUEBAS: claves fijas, SSH y sudo sin contraseña] "
-ENTRADA="menuentry --hotkey=l '${AVISO_PRUEBAS}Instalar LeksSO (disco cifrado y contraseña; borra el disco que elijas)' {
+[ "$FASE" = 1 ] && AVISO_PRUEBAS="[PRUEBAS] "
+[ -n "$PRUEBA" ] && AVISO_PRUEBAS="[IMAGEN DE PRUEBAS] "
+ENTRADA="menuentry --hotkey=l '${AVISO_PRUEBAS}Instalar LeksSO | Disco cifrado con clave | Usuario con contraseña (recomendada)' {
     set background_color=black
     linux    /install.amd/vmlinuz auto=true priority=high file=/cdrom/leksso/preseed.cfg vga=788 --- quiet
     initrd   /install.amd/initrd.gz
@@ -101,12 +101,12 @@ if [ -z "$PRUEBA" ]; then
     printf "menuentry '${AVISO_PRUEBAS}%s' {\n    set background_color=black\n    linux    /install.amd/vmlinuz auto=true priority=high file=/cdrom/leksso/%s vga=788 --- quiet\n    initrd   /install.amd/initrd.gz\n}\n" "$1" "$2"
   }
   ENTRADA="$ENTRADA
-$(variante 'Instalar LeksSO sin cifrar el disco (borra el disco que elijas)' preseed-sin-cifrado.cfg)
-$(variante 'Instalar LeksSO sin contraseña de usuario, disco cifrado (entra solo al escritorio)' preseed-sin-contrasena.cfg)
-$(variante 'Instalar LeksSO sin cifrar y sin contraseña (el más simple; borra el disco que elijas)' preseed-sin-cifrado-sin-contrasena.cfg)
-$(variante 'Instalar LeksSO con disco cifrado y desbloqueo automatico por TPM (borra el disco que elijas)' preseed-disco-automatico.cfg)
-$(variante 'Instalar LeksSO sin contraseña de usuario, disco cifrado con desbloqueo automatico por TPM (el mas comodo; borra el disco que elijas)' preseed-disco-automatico-sin-contrasena.cfg)
-$(printf "menuentry 'Reparar LeksSO que no arranca (modo de rescate; NO borra nada)' {
+$(variante 'Instalar LeksSO | Disco cifrado con clave | Usuario sin contraseña' preseed-sin-contrasena.cfg)
+$(variante 'Instalar LeksSO | Cifrado con TPM, sin clave | Usuario con contraseña' preseed-disco-automatico.cfg)
+$(variante 'Instalar LeksSO | Cifrado con TPM, sin clave | Usuario sin contraseña' preseed-disco-automatico-sin-contrasena.cfg)
+$(variante 'Instalar LeksSO | Disco sin cifrar | Usuario con contraseña' preseed-sin-cifrado.cfg)
+$(variante 'Instalar LeksSO | Disco sin cifrar | Usuario sin contraseña' preseed-sin-cifrado-sin-contrasena.cfg)
+$(printf "menuentry 'Reparar LeksSO que no arranca (rescate, no borra nada)' {
     set background_color=black
     echo 'MODO DE RESCATE. Elige el idioma y el teclado, abre el disco con tu clave y entra en la consola del sistema.'
     echo 'Alli escribe:  leksso-reparar     (para recuperar tus archivos: copialos a un USB desde esa consola)'
