@@ -5,6 +5,12 @@ Lo más reciente, arriba.
 
 ## Sin publicar
 
++ **Recuperación, como las opciones avanzadas de inicio de Windows**:
+  - **Energía, «Reiniciar en otro sistema o dispositivo…»**: reinicia UNA vez en Windows, en una memoria USB de arranque, en la red o en la BIOS, y después el equipo arranca como siempre. Detrás está `leksso-reiniciar-en listar | usar ID | bios` (`efibootmgr`, que ahora va en la base).
+  - **`sudo leksso-reparar [--comprobar] [--completa]`**: repara el arranque sin tocar tus archivos (monta las particiones de arranque, termina paquetes a medias, regenera el initramfs, reinstala GRUB y su entrada en la BIOS, regenera el menú). `--comprobar` solo enseña lo que haría. Funciona con el sistema en marcha y desde la consola del modo de rescate del pendrive.
+  - **`sudo leksso-actualizar reinstalar`**: vuelve a instalar la versión que tienes, con su firma comprobada (repara archivos de LeksSO dañados). `leksso-reparar --completa` lo usa.
+  - **Instalador: «Reparar LeksSO que no arranca (modo de rescate; NO borra nada)»**, entrada nueva del menú, con las instrucciones en pantalla.
+  - La ventana de Energía es más alta (380×680) para el botón nuevo.
 ~ **Convivencia con Windows, probada en una VM** (Windows 10 en un disco y LeksSO 0.1.31 con cifrado y TPM en otro): el menú de arranque de LeksSO muestra «Windows Boot Manager» y Windows arranca desde él; LeksSO se instala sin tocar el disco de Windows; el desbloqueo del disco por TPM funciona en un arranque real (sin pedir clave) y la oferta del primer arranque sale sola. **Hora de la placa**: la instalación no puede dejarla en hora local (el instalador de Debian reescribe el reloj al terminar), así que ahora lo hace `leksso-hora` al iniciar la sesión, una sola vez, si hay Windows y sudo sin contraseña.
 * Visto al probar: al elegir el disco el instalador solo enseña modelo y tamaño y marca el primero por defecto, que puede ser el de Windows. La protección contra borrar un disco con Windows sigue pendiente.
 

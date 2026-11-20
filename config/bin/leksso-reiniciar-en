@@ -1,0 +1,38 @@
+#!/bin/sh
+# Reinicia el equipo UNA vez en otro sistema o dispositivo (Windows, una memoria USB, la red) o en la configuración de
+# la BIOS. Es el «Reiniciar desde un dispositivo» de Windows. Después, el equipo vuelve a arrancar como siempre.
+#
+# Uso: leksso-reiniciar-en listar            lista lo que se puede elegir: ID, tipo (usb, windows, red, sistema) y nombre
+#      sudo leksso-reiniciar-en usar ID      arranca ESA entrada en el próximo reinicio y reinicia (el ID sale de «listar»)
+#      leksso-reiniciar-en bios              reinicia en la configuración de la BIOS
+# Solo en equipos con arranque UEFI. Si hay una memoria USB de arranque conectada, aparece en la lista.
+case "${1:-}" in
+  listar)
+    command -v efibootmgr >/dev/null 2>&1 || exit 0
+    efibootmgr 2>/dev/null | awk -F'\t' '
+      /^Boot[0-9A-Fa-f][0-9A-Fa-f][0-9A-Fa-f][0-9A-Fa-f]\*/ {
+        id = substr($1, 5, 4); desc = substr($1, 10); ruta = $2
+        tipo = "sistema"
+        if (ruta ~ /USB\(/ && desc !~ /[Nn][Ee][Tt][Ww][Oo][Rr][Kk]/) tipo = "usb"
+        else if (desc ~ /[Nn]etwork|IPV[46]|PXE|Wi-Fi/) tipo = "red"
+        else if (desc ~ /[Ww]indows/) tipo = "windows"
+        print id "\t" tipo "\t" desc
+      }'
+    ;;
+  usar)
+    id="${2:-}"
+    case "$id" in [0-9A-Fa-f][0-9A-Fa-f][0-9A-Fa-f][0-9A-Fa-f]) ;; *) echo "ID no válido: usa uno de «leksso-reiniciar-en listar»." >&2; exit 2 ;; esac
+    [ "$(id -u)" -eq 0 ] || { echo "Ejecuta con sudo: sudo leksso-reiniciar-en usar $id" >&2; exit 1; }
+    # solo se acepta un ID que exista y esté activo en la lista
+    "$0" listar | cut -f1 | grep -qix "$id" || { echo "Esa entrada de arranque no existe." >&2; exit 1; }
+    efibootmgr --bootnext "$id" >/dev/null || { echo "No se pudo preparar el arranque." >&2; exit 1; }
+    exec systemctl reboot
+    ;;
+  bios)
+    exec systemctl reboot --firmware-setup
+    ;;
+  *)
+    echo "Uso: leksso-reiniciar-en listar | sudo leksso-reiniciar-en usar ID | leksso-reiniciar-en bios" >&2
+    exit 2
+    ;;
+esac

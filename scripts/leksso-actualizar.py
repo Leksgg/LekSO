@@ -307,6 +307,21 @@ def volver():
     return 0
 
 
+def reinstalar():
+    """Vuelve a instalar la versión que ya tienes (repara archivos de LeksSO dañados o cambiados), con su firma comprobada."""
+    raiz_o_salir()
+    _cerrojo = bloquear()
+    usuario = usuario_real()
+    actual = version_actual()
+    if not actual or not clave(actual):
+        sys.exit("No consta qué versión de LeksSO hay instalada.")
+    preparar_clon()
+    commit, huella = verificar("v" + actual)
+    instalar_version("v" + actual, usuario, commit, huella)
+    print(f"\nLeksSO {bonita(actual)} reinstalada. Cierra la sesión y vuelve a entrar.")
+    return 0
+
+
 def modulo_hardware():
     """Carga leksso_hardware.py, instalado junto a las bibliotecas de LeksSO o al lado de este script."""
     for carpeta in ("/usr/local/lib/leksso", os.path.dirname(os.path.abspath(__file__))):
@@ -345,6 +360,8 @@ def main(a):
             return aplicar(a[1] if len(a) > 1 else None)
         if c == "volver":
             return volver()
+        if c == "reinstalar":
+            return reinstalar()
         if c == "hardware":
             return modulo_hardware().main(a[1:])
     except RuntimeError as e:

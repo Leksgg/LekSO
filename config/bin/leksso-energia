@@ -11,7 +11,7 @@ import sys
 from PySide6 import QtCore, QtWidgets
 
 sys.path.insert(0, "/usr/local/lib/leksso-ui")
-from leksso_ui import ESTILO_BASE, alternar, estilo, pintar  # noqa: E402
+from leksso_ui import ESTILO_BASE, alternar, estilo, pedir_permiso, pintar, sudo_cmd  # noqa: E402
 
 
 def admite(metodo):
@@ -85,7 +85,47 @@ class Energia(QtWidgets.QWidget):
             b.setEnabled(ok)
             b.clicked.connect(lambda _=False, n=nombre, o=orden, c=confirma: self.hacer(n, o, c))
             raiz.addWidget(b)
+        # «Reiniciar desde un dispositivo» de Windows: arrancar una sola vez otro sistema, una memoria USB o la BIOS.
+        otro = QtWidgets.QPushButton("Reiniciar en otro sistema o dispositivo…\nWindows, una memoria USB de arranque o la BIOS")
+        otro.setObjectName("peligro")
+        otro.clicked.connect(self.reiniciar_en)
+        raiz.addWidget(otro)
         raiz.addStretch()
+
+    def reiniciar_en(self):
+        """Elegir a dónde reiniciar UNA vez. La lista sale de las entradas de arranque que ve la BIOS."""
+        r = subprocess.run(["leksso-reiniciar-en", "listar"], capture_output=True, text=True)
+        etiqueta = {"usb": "Memoria USB", "windows": "Windows", "red": "Arranque por red", "sistema": "Sistema"}
+        opciones = []     # (texto, id o None para la BIOS)
+        for linea in r.stdout.splitlines():
+            partes = linea.split("\t")
+            if len(partes) == 3:
+                nombre = partes[2].strip()
+                if nombre.lower() == "debian":
+                    nombre = "LeksSO"
+                opciones.append((f"{etiqueta.get(partes[1], 'Sistema')}: {nombre}", partes[0]))
+        opciones.sort(key=lambda o: (o[0].startswith("Arranque por red"), o[0]))   # la red, al final
+        opciones.append(("Configuración de la BIOS", None))
+        texto, ok = QtWidgets.QInputDialog.getItem(
+            self, "Reiniciar en…", "Elige a dónde quieres arrancar esta vez. Después el equipo arrancará como siempre.",
+            [o[0] for o in opciones], 0, False)
+        if not ok:
+            return
+        id_entrada = dict(opciones)[texto]
+        if QtWidgets.QMessageBox.question(
+                self, "Reiniciar", f"Se reiniciará ahora en:\n{texto}\n\nSe cerrará lo que tengas abierto sin guardar.",
+                QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No, QtWidgets.QMessageBox.No) != QtWidgets.QMessageBox.Yes:
+            return
+        if id_entrada is None:
+            self.hacer("Reiniciar en la BIOS", ["leksso-reiniciar-en", "bios"], False)
+            return
+        if not pedir_permiso(self, "Para elegir el arranque de la próxima vez hace falta permiso de administrador."):
+            return
+        rc, _salida, err = sudo_cmd(["efibootmgr", "--bootnext", id_entrada], espera=30)
+        if rc != 0:
+            QtWidgets.QMessageBox.warning(self, "Reiniciar", "No se pudo preparar el arranque:\n" + (err.strip() or "error desconocido"))
+            return
+        self.hacer("Reiniciar", ["systemctl", "reboot"], False)
 
     @staticmethod
     def perfil_actual():

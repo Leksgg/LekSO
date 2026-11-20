@@ -1,0 +1,86 @@
+#!/usr/bin/env bash
+# Repara el arranque y la instalación de LeksSO SIN tocar tus archivos: es el «Reparar inicio» de Windows.
+#
+# Uso: sudo leksso-reparar [--comprobar] [--completa]
+#   --comprobar   solo enseña lo que haría y comprueba lo que se pueda, sin cambiar nada
+#   --completa    además vuelve a instalar la versión de LeksSO que tienes (necesita internet)
+#
+# Sirve en dos casos:
+#   - Con el sistema en marcha (el arranque falla a veces, el menú de GRUB desaparece, falta la entrada en la BIOS...).
+#   - Con el sistema roto: arranca el pendrive de instalación, elige «Reparar LeksSO que no arranca», abre el disco con tu
+#     clave, entra en la consola del sistema y ejecuta aquí: leksso-reparar
+#
+# Qué hace, por este orden: monta las particiones de arranque, termina las instalaciones a medias, regenera el arranque
+# (initramfs), vuelve a instalar GRUB y su entrada en la BIOS, y regenera el menú de arranque.
+set -uo pipefail
+SIM=0; COMPLETA=0
+for a in "$@"; do
+  case "$a" in
+    --comprobar) SIM=1 ;; --completa) COMPLETA=1 ;;
+    *) echo "Uso: sudo leksso-reparar [--comprobar] [--completa]" >&2; exit 2 ;;
+  esac
+done
+[ "$(id -u)" -eq 0 ] || { echo "Ejecuta con sudo: sudo leksso-reparar" >&2; exit 1; }
+
+FALLOS=0
+paso() { printf '\n== %s\n' "$1"; }
+hacer() {
+  printf '  $ %s\n' "$*"
+  [ "$SIM" -eq 1 ] && return 0
+  "$@"; local rc=$?
+  [ "$rc" -eq 0 ] || { echo "  (falló con código $rc)"; FALLOS=$((FALLOS + 1)); }
+  return 0
+}
+# ¿Corre systemd? (en la consola de rescate del instalador no)
+EN_MARCHA=0; [ "$(cat /proc/1/comm 2>/dev/null)" = systemd ] && EN_MARCHA=1
+[ "$SIM" -eq 1 ] && echo "MODO COMPROBAR: no se cambia nada."
+echo "Sistema: $( [ "$EN_MARCHA" -eq 1 ] && echo 'en marcha' || echo 'consola de rescate' )   Arranque: $( [ -d /sys/firmware/efi ] && echo UEFI || echo 'BIOS clásica o desconocido' )"
+
+paso "1. Particiones de arranque"
+for p in /boot /boot/efi; do
+  if mountpoint -q "$p"; then echo "  $p: montada"; else echo "  $p: sin montar"; hacer mount "$p"; fi
+done
+if [ -d /sys/firmware/efi ] && ! mountpoint -q /sys/firmware/efi/efivars 2>/dev/null; then
+  hacer mount -t efivarfs efivarfs /sys/firmware/efi/efivars
+fi
+[ -d /boot/grub ] || { echo "  AVISO: no encuentro /boot/grub: ¿está montada la partición /boot?"; FALLOS=$((FALLOS + 1)); }
+
+paso "2. Paquetes a medias"
+hacer dpkg --configure -a
+
+paso "3. Arranque (initramfs) de todos los núcleos"
+hacer update-initramfs -u -k all
+
+paso "4. GRUB y su entrada en la BIOS"
+if [ -d /sys/firmware/efi ] && [ -d /boot/efi ]; then
+  hacer grub-install --target=x86_64-efi --efi-directory=/boot/efi --bootloader-id=debian
+else
+  echo "  Sin UEFI no se reinstala GRUB desde aquí (usa el modo de rescate de Debian: «Reinstalar el cargador de arranque GRUB»)."
+fi
+
+paso "5. Menú de arranque (con Windows, si lo encuentra)"
+hacer update-grub
+
+if [ "$COMPLETA" -eq 1 ]; then
+  paso "6. Reinstalar LeksSO (la versión que tienes)"
+  if [ "$EN_MARCHA" -eq 1 ] && command -v leksso-actualizar >/dev/null 2>&1; then
+    hacer leksso-actualizar reinstalar
+  else
+    echo "  Hace falta el sistema en marcha y con internet: vuelve a ejecutarlo así cuando arranque."
+  fi
+fi
+
+if [ "$EN_MARCHA" -eq 1 ]; then
+  paso "Servicios con fallos ahora mismo"
+  systemctl --failed --no-legend --no-pager | head -8
+fi
+if command -v efibootmgr >/dev/null 2>&1 && [ -d /sys/firmware/efi ]; then
+  paso "Entradas de arranque que ve la BIOS"
+  efibootmgr 2>/dev/null | grep -E '^(BootOrder|Boot[0-9A-F]{4}\*)' | cut -c1-110
+fi
+
+echo
+if [ "$SIM" -eq 1 ]; then echo "Comprobado: no se ha cambiado nada. Para reparar de verdad: sudo leksso-reparar"
+elif [ "$FALLOS" -eq 0 ]; then echo "Listo: arranque reparado. Reinicia para comprobarlo."
+else echo "Terminado con $FALLOS avisos: revisa lo de arriba. Tus archivos no se han tocado."; fi
+[ "$FALLOS" -eq 0 ]

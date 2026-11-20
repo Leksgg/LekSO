@@ -105,7 +105,15 @@ $(variante 'Instalar LeksSO sin cifrar el disco (borra el disco que elijas)' pre
 $(variante 'Instalar LeksSO sin contraseña de usuario, disco cifrado (entra solo al escritorio)' preseed-sin-contrasena.cfg)
 $(variante 'Instalar LeksSO sin cifrar y sin contraseña (el más simple; borra el disco que elijas)' preseed-sin-cifrado-sin-contrasena.cfg)
 $(variante 'Instalar LeksSO con disco cifrado y desbloqueo automatico por TPM (borra el disco que elijas)' preseed-disco-automatico.cfg)
-$(variante 'Instalar LeksSO sin contraseña de usuario, disco cifrado con desbloqueo automatico por TPM (el mas comodo; borra el disco que elijas)' preseed-disco-automatico-sin-contrasena.cfg)"
+$(variante 'Instalar LeksSO sin contraseña de usuario, disco cifrado con desbloqueo automatico por TPM (el mas comodo; borra el disco que elijas)' preseed-disco-automatico-sin-contrasena.cfg)
+$(printf "menuentry 'Reparar LeksSO que no arranca (modo de rescate; NO borra nada)' {
+    set background_color=black
+    echo 'MODO DE RESCATE. Elige el idioma y el teclado, abre el disco con tu clave y entra en la consola del sistema.'
+    echo 'Alli escribe:  leksso-reparar     (para recuperar tus archivos: copialos a un USB desde esa consola)'
+    sleep 6
+    linux    /install.amd/vmlinuz rescue/enable=true vga=788 --- quiet
+    initrd   /install.amd/initrd.gz
+}")"
 fi
 python3 -I - "$ORIGEN_GRUB" "$TMP/grub.cfg" "$ENTRADA" <<'PY'
 import sys
