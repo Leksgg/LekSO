@@ -3,7 +3,7 @@
 Formato: `+` nuevo · `-` eliminado o retirado · `~` modificado · `*` otros.
 Lo más reciente, arriba.
 
-## Sin publicar
+## Beta 0.1.34 · 2026-11-20
 
 ~ **Red inalámbrica: un portátil solo con Wi-Fi ya queda con red desde el primer arranque.** Hasta ahora la instalación no dejaba el Wi-Fi utilizable en un equipo sin cable, por dos motivos:
   - **Faltaba `wpasupplicant`**, que NetworkManager necesita para conectarse a cualquier Wi-Fi con contraseña. Es un paquete «recomendado» y el instalador instala sin recomendados. Ahora forma parte de la base, junto con `iw` y `wireless-regdb` (canales y potencias permitidos por país).
