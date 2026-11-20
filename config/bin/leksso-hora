@@ -1,0 +1,13 @@
+#!/bin/sh
+# Si hay Windows en el equipo (lo detecta GRUB), deja el reloj de la placa en hora local, que es como lo guarda Windows:
+# si no, la hora saldría desfasada al alternar entre los dos sistemas. Se hace una sola vez (marca en /etc/leksso/hora-local)
+# y solo si el usuario puede usar sudo sin contraseña (si no, no se toca nada). Sin Windows, no cambia nada.
+# Se lanza al iniciar la sesión; la instalación no puede hacerlo porque el instalador de Debian reescribe el reloj al final.
+MARCA=/etc/leksso/hora-local
+[ -e "$MARCA" ] && exit 0
+sudo -n grep -qi windows /boot/grub/grub.cfg 2>/dev/null || exit 0
+if [ "$(timedatectl show -p LocalRTC --value 2>/dev/null)" = "no" ]; then
+  sudo -n timedatectl set-local-rtc 1 --adjust-system-clock 2>/dev/null || exit 0
+fi
+sudo -n sh -c 'install -d /etc/leksso && touch /etc/leksso/hora-local' 2>/dev/null
+exit 0

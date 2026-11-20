@@ -1,18 +1,19 @@
-# Crea una maquina virtual de Hyper-V para probar que LeksSO y Windows conviven en el mismo equipo
+﻿# Crea una maquina virtual de Hyper-V para probar que LeksSO y Windows conviven en el mismo equipo
 # (menu de arranque, deteccion de Windows, hora de la placa, desbloqueo por TPM).
 #
 # Uso (PowerShell COMO ADMINISTRADOR):
-#   powershell -ExecutionPolicy Bypass -File crear-vm-convivencia.ps1 -IsoWindows "E:\ISO\Win11.iso" [-IsoLeksso "E:\ISO\leksso.iso"] [-Carpeta "E:\VMs\Convivencia-test"]
+#   powershell -ExecutionPolicy Bypass -File crear-vm-convivencia.ps1 -IsoWindows "E:\ISO\Win11.iso" [-IsoRespuestas "D:\Instaladores\Windows10\respuestas-vm.iso"] [-Carpeta "E:\VMs\Convivencia-test"]
 #
 # Deja una VM «Convivencia-test» de generacion 2 con:
 #   - arranque seguro (plantilla «Microsoft UEFI Certificate Authority», la que admite Linux) y TPM virtual
 #   - DOS discos virtuales: uno para Windows (80 GB) y otro para LeksSO (64 GB), para probar cada sistema en su disco
-#   - el DVD con la ISO de Windows puesto (y la de LeksSO si se indica, como segundo DVD)
+#   - el DVD con la ISO de Windows puesto (y, si se indica, otro con el archivo de respuestas para instalarlo solo).
+#     La ISO de LeksSO se pone despues en el MISMO DVD de Windows (Set-VMDvdDrive) cuando toque instalar LeksSO.
 # No toca ningun disco real ni la VM «LeksSO-test». Pasos despues: instalar Windows en el primer disco; apagar;
 # arrancar desde la ISO de LeksSO e instalar en el SEGUNDO disco; comprobar el menu de arranque.
 param(
   [Parameter(Mandatory)][string]$IsoWindows,
-  [string]$IsoLeksso = "",
+  [string]$IsoRespuestas = "",   # ISO pequeña con autounattend.xml para instalar Windows sin nadie delante (solo VM de pruebas)
   [string]$Carpeta = "E:\VMs\Convivencia-test",
   [string]$Nombre = "Convivencia-test",
   [int]$GBWindows = 80,
@@ -23,7 +24,7 @@ if (-not ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdenti
   throw "Ejecuta este script en un PowerShell como administrador."
 }
 if (-not (Test-Path $IsoWindows)) { throw "No encuentro la ISO de Windows: $IsoWindows" }
-if ($IsoLeksso -and -not (Test-Path $IsoLeksso)) { throw "No encuentro la ISO de LeksSO: $IsoLeksso" }
+if ($IsoRespuestas -and -not (Test-Path $IsoRespuestas)) { throw "No encuentro la ISO de respuestas: $IsoRespuestas" }
 if (Get-VM -Name $Nombre -ErrorAction SilentlyContinue) { throw "Ya existe una VM llamada $Nombre. Borrala o usa -Nombre." }
 New-Item -ItemType Directory -Force -Path $Carpeta | Out-Null
 
@@ -38,7 +39,7 @@ Set-VMMemory -VMName $Nombre -DynamicMemoryEnabled $false
 Add-VMHardDiskDrive -VMName $Nombre -Path $discoW
 Add-VMHardDiskDrive -VMName $Nombre -Path $discoL
 Add-VMDvdDrive -VMName $Nombre -Path $IsoWindows
-if ($IsoLeksso) { Add-VMDvdDrive -VMName $Nombre -Path $IsoLeksso }
+if ($IsoRespuestas) { Add-VMDvdDrive -VMName $Nombre -Path $IsoRespuestas }
 
 # Arranque seguro con la plantilla que admite Linux (shim) y Windows, y TPM virtual (Windows 11 lo pide; LeksSO lo usa para el desbloqueo).
 Set-VMFirmware -VMName $Nombre -EnableSecureBoot On -SecureBootTemplate MicrosoftUEFICertificateAuthority

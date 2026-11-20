@@ -41,6 +41,7 @@ exec wl-paste --type image --watch cliphist store
 # Los tiempos se cambian en Ajustes, Bloqueo y reposo (se guardan en ~/.config/leksso/reposo).
 exec leksso-reposo iniciar
 exec leksso-disco primer-arranque
+exec leksso-hora
 exec udiskie --no-tray --no-notify --automount
 
 # El menú de aplicaciones flota en el centro de la pantalla

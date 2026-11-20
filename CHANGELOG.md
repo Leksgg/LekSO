@@ -3,6 +3,11 @@
 Formato: `+` nuevo · `-` eliminado o retirado · `~` modificado · `*` otros.
 Lo más reciente, arriba.
 
+## Sin publicar
+
+~ **Convivencia con Windows, probada en una VM** (Windows 10 en un disco y LeksSO 0.1.31 con cifrado y TPM en otro): el menú de arranque de LeksSO muestra «Windows Boot Manager» y Windows arranca desde él; LeksSO se instala sin tocar el disco de Windows; el desbloqueo del disco por TPM funciona en un arranque real (sin pedir clave) y la oferta del primer arranque sale sola. **Hora de la placa**: la instalación no puede dejarla en hora local (el instalador de Debian reescribe el reloj al terminar), así que ahora lo hace `leksso-hora` al iniciar la sesión, una sola vez, si hay Windows y sudo sin contraseña.
+* Visto al probar: al elegir el disco el instalador solo enseña modelo y tamaño y marca el primero por defecto, que puede ser el de Windows. La protección contra borrar un disco con Windows sigue pendiente.
+
 ## Beta 0.1.31 · 2026-11-20
 
 + **Instalador: convivir con Windows**: `os-prober` va en el USB y el menú de arranque de LeksSO (GRUB) muestra Windows si lo encuentra; así se elige el sistema al encender. Si hay Windows, la hora de la placa se deja en hora local para que no se desfase al alternar. Sin otro sistema, no cambia nada. Cada sistema debe ir en su disco: el instalador sigue borrando el disco entero que se elige (la protección contra borrar un disco con Windows y el modo «junto a Windows» siguen pendientes). `scripts/instalador/crear-vm-convivencia.ps1` crea la máquina virtual de Hyper-V (arranque seguro, TPM y dos discos) para probarlo antes de tocar el equipo real.
