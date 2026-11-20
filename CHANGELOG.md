@@ -5,6 +5,12 @@ Lo más reciente, arriba.
 
 ## Sin publicar
 
++ **Instalador: sin parar en equipos sin red ni con dos discos** (probado en una VM sin red y con dos discos; falta la instalación completa hasta el escritorio con una ISO firmada):
+  - **Sin red no pregunta nada de red** (lista de controladores, «ninguna interfaz», «configurar la red», «sin réplica»): `netcfg/enable false`, `apt-setup/no_mirror true` y `priority=critical`. Solo pide lo imprescindible: usuario, disco y clave.
+  - **Con dos discos** ya no sale el menú del método (que parecía el particionado manual): pregunta solo qué disco. Atención: el orden de la lista cambia entre arranques; mira el modelo y el tamaño antes de pulsar Intro.
+  - **GRUB se instala en el disco elegido.** Con dos discos lo intentaba en el primero (`/dev/sda`) y fallaba: «Falló un paso: Instalar el cargador de arranque GRUB».
+  - **Ya no sobrescribe el disco entero con datos aleatorios** antes de cifrar (`partman-auto-crypto/erase_disks false`; antes tardaba horas en un disco grande).
+  - **Menú de arranque legible**: la caja del tema de Debian cortaba los títulos a unos 46 caracteres; se ensancha y se añade una leyenda debajo que explica cada opción. Títulos con el mismo formato: «Instalar LeksSO | cómo va el disco | cómo entra el usuario».
 + **Administrar discos y particiones**:
   - **Ajustes, Discos**: tabla de discos y particiones (solo lectura) y accesos a **GParted**, **Discos de GNOME**, la salud del disco (SMART) y «Ampliar el sistema». GParted y Discos entran en el catálogo (Utilidades) y en la base, con `smartmontools`, `parted` y un agente de permisos pequeño (`lxqt-policykit`) para que pidan la contraseña de administrador.
   - **`sudo leksso-disco ampliar [--comprobar]`**: da al sistema todo el espacio libre tras su partición, con el equipo encendido (partición, contenedor cifrado, LVM, sistema de archivos). No cambia la clave, así que el desbloqueo por TPM sigue valiendo. Probado en un disco cifrado con LVM de prueba (1 GB a 2 GB) y en el A04 con `--comprobar`. Reducir o mover las particiones del sistema exige hacerlo con el sistema apagado: pendiente (entrada «Administrar discos» en el pendrive).
