@@ -115,6 +115,27 @@ $(printf "menuentry 'Reparar LeksSO que no arranca (rescate, no borra nada)' {
     initrd   /install.amd/initrd.gz
 }")"
 fi
+# 3b. Tema del menú: la caja de Debian es estrecha (unos 46 caracteres) y cortaba los títulos justo donde se distinguen. Se ensancha
+#     y se añade una leyenda fija debajo que explica cada palabra.
+xorriso -osirrox on -indev "$ISO" -extract /boot/grub/theme/1 "$TMP/tema.orig" >/dev/null 2>&1
+python3 -I - "$TMP/tema.orig" "$TMP/tema1" <<'PY'
+import re, sys
+t = open(sys.argv[1], encoding="utf-8").read()
+t = re.sub(r"(\+ boot_menu \{\s*left = )18%(\s*width = )50%(\s*top = )200(\s*height = )200", r"\g<1>5%\g<2>90%\g<3>170\g<4>280", t)
+leyenda = """
++ vbox {
+  top = 470
+  left = 5%
+  width = 90%
+  + label {text = "Cifrado con clave: tecleas la clave del disco en cada arranque.   Cifrado con TPM: el equipo abre el disco solo." font = "Sans 10" color = "#d0d0d0" align = "left"}
+  + label {text = "Usuario sin contraseña: entra directo al escritorio.   Sin cifrar: el disco queda legible si lo sacan del equipo." font = "Sans 10" color = "#d0d0d0" align = "left"}
+  + label {text = "Todas las opciones de Instalar BORRAN el disco que elijas. «Reparar» no borra nada." font = "Sans 10" color = "#ffd27a" align = "left"}
+}
+"""
+open(sys.argv[2], "w", encoding="utf-8").write(t.rstrip() + "\n" + leyenda)
+PY
+grep -q 'width = 90%' "$TMP/tema1" || { echo "No se pudo ensanchar el tema del menú." >&2; exit 1; }
+
 python3 -I - "$ORIGEN_GRUB" "$TMP/grub.cfg" "$ENTRADA" <<'PY'
 import sys
 orig = open(sys.argv[1], encoding="utf-8").read()
@@ -128,7 +149,7 @@ PY
 
 # 4. La imagen: la original más el paquete y el menú nuevo (el arranque se conserva).
 rm -f "$SALIDA"
-xorriso -indev "$ISO" -outdev "$SALIDA" -map "$PAQ" /leksso -map "$TMP/grub.cfg" /boot/grub/grub.cfg -boot_image any replay 2>&1 \
+xorriso -indev "$ISO" -outdev "$SALIDA" -map "$PAQ" /leksso -map "$TMP/grub.cfg" /boot/grub/grub.cfg -map "$TMP/tema1" /boot/grub/theme/1 -boot_image any replay 2>&1 \
   | grep -iE 'fail|error|written|wrote' || true
 echo
 ls -la "$SALIDA"
