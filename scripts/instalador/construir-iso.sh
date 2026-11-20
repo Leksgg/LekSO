@@ -92,13 +92,13 @@ AVISO_PRUEBAS=""
 [ -n "$PRUEBA" ] && AVISO_PRUEBAS="[IMAGEN DE PRUEBAS] "
 ENTRADA="menuentry --hotkey=l '${AVISO_PRUEBAS}Instalar LeksSO | Disco cifrado con clave | Usuario con contraseña (recomendada)' {
     set background_color=black
-    linux    /install.amd/vmlinuz auto=true priority=high file=/cdrom/leksso/preseed.cfg vga=788 --- quiet
+    linux    /install.amd/vmlinuz auto=true priority=critical file=/cdrom/leksso/preseed.cfg vga=788 --- quiet
     initrd   /install.amd/initrd.gz
 }"
 # Variantes (no en las imágenes de pruebas, que llevan respuestas fijas solo en la primera): cifrado sí/no, contraseña sí/no.
 if [ -z "$PRUEBA" ]; then
   variante() {  # título, preseed
-    printf "menuentry '${AVISO_PRUEBAS}%s' {\n    set background_color=black\n    linux    /install.amd/vmlinuz auto=true priority=high file=/cdrom/leksso/%s vga=788 --- quiet\n    initrd   /install.amd/initrd.gz\n}\n" "$1" "$2"
+    printf "menuentry '${AVISO_PRUEBAS}%s' {\n    set background_color=black\n    linux    /install.amd/vmlinuz auto=true priority=critical file=/cdrom/leksso/%s vga=788 --- quiet\n    initrd   /install.amd/initrd.gz\n}\n" "$1" "$2"
   }
   ENTRADA="$ENTRADA
 $(variante 'Instalar LeksSO | Disco cifrado con clave | Usuario sin contraseña' preseed-sin-contrasena.cfg)
