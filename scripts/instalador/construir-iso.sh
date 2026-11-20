@@ -36,6 +36,7 @@ git bundle create "$PAQ/leksso.bundle" refs/heads/main --tags >/dev/null 2>&1 ||
 git show "$VERSION:scripts/instalar.sh" > "$PAQ/instalar.sh"
 git show "$VERSION:scripts/instalador/preseed.cfg" > "$PAQ/preseed.cfg"
 git show "$VERSION:scripts/instalador/receta.sh" > "$PAQ/receta.sh"
+git show "$VERSION:scripts/instalador/elegir-disco.sh" > "$PAQ/elegir-disco.sh"
 git show "$VERSION:scripts/instalador/postinstalar.sh" > "$PAQ/postinstalar.sh"
 printf '%s\n' "$VERSION" > "$PAQ/VERSION_TAG"
 cp -r "$OFFLINE" "$PAQ/offline"
@@ -140,10 +141,24 @@ python3 -I - "$ORIGEN_GRUB" "$TMP/grub.cfg" "$ENTRADA" <<'PY'
 import sys
 orig = open(sys.argv[1], encoding="utf-8").read()
 entrada = sys.argv[3]
-# antes de la primera entrada del menú original; y que arranque ésta por defecto
+# Menú de dos niveles: arriba «Instalar LeksSO ▸» (las variantes dentro), «Instalar Windows 10» (solo si el pendrive tiene su
+# partición con la etiqueta WIN10) y «Reparar». Se quitan las entradas originales de Debian (Graphical install, avanzadas...).
+k = entrada.find("menuentry 'Reparar")
+if k > 0:
+    win = (
+        "if search --no-floppy --label WIN10 --set=win10; then\n"
+        "  menuentry 'Instalar Windows 10 (desde este pendrive)' {\n"
+        "    set background_color=black\n"
+        "    echo 'Windows 10: el instalador te deja elegir el disco. No borra nada hasta que lo confirmes alli.'\n"
+        "    sleep 3\n"
+        "    search --no-floppy --label WIN10 --set=root\n"
+        "    chainloader /efi/boot/bootx64.efi\n"
+        "  }\n"
+        "fi\n")
+    entrada = "submenu 'Instalar LeksSO  (elige el tipo de instalacion)' {\n" + entrada[:k] + "}\n" + win + entrada[k:]
 i = orig.index("menuentry ")
-nuevo = orig[:i] + entrada + "\n" + orig[i:]
-nuevo = "set default=0\nset timeout=10\n" + nuevo
+# Sin cuenta atras (timeout=-1): el menu espera; no debe empezar a borrar un disco solo.
+nuevo = "set default=0\nset timeout=-1\n" + orig[:i] + entrada + "\n"
 open(sys.argv[2], "w", encoding="utf-8").write(nuevo)
 PY
 
