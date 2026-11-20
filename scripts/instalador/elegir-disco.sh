@@ -69,7 +69,7 @@ lista_discos() {   # imprime: nombre|descripcion
         vfat|exfat) tiene="$tiene FAT" ;;
       esac
     done
-    tiene="$(printf '%s\n' $tiene | sort -u | tr '\n' ' ' | sed 's/ *$//; s/ / y /g')"
+    tiene="$(printf '%s\n' $tiene | sort -u | tr '\n' ' ' | sed 's/ *$//; s/ / + /g')"
     if [ -n "$tiene" ]; then cont="contiene $tiene"; else cont="vacio"; fi
     echo "$n|$n: $modelo - $gb GB $tipo - $cont"
   done

@@ -116,36 +116,51 @@ $(printf "menuentry 'Reparar LeksSO que no arranca (rescate, no borra nada)' {
     initrd   /install.amd/initrd.gz
 }")"
 fi
-# 3b. Tema del menú: la caja de Debian es estrecha (unos 46 caracteres) y cortaba los títulos justo donde se distinguen. Se ensancha
-#     y se añade una leyenda fija debajo que explica cada palabra.
+# 3b. Temas del menú: la caja de Debian es estrecha (unos 46 caracteres) y cortaba los títulos justo donde se distinguen. Se
+#     ensancha y se añade una leyenda fija debajo. Hay DOS temas: el 1 (menú de arriba) y el 2 (menú «Instalar LeksSO»), cada uno
+#     con la leyenda que le toca. (Un «submenu» de GRUB pierde el tema; por eso el segundo nivel es otro archivo de menú.)
 xorriso -osirrox on -indev "$ISO" -extract /boot/grub/theme/1 "$TMP/tema.orig" >/dev/null 2>&1
-python3 -I - "$TMP/tema.orig" "$TMP/tema1" <<'PY'
+python3 -I - "$TMP/tema.orig" "$TMP/tema1" "$TMP/tema2" <<'PY'
 import re, sys
 t = open(sys.argv[1], encoding="utf-8").read()
 t = re.sub(r"(\+ boot_menu \{\s*left = )18%(\s*width = )50%(\s*top = )200(\s*height = )200", r"\g<1>5%\g<2>90%\g<3>170\g<4>280", t)
-leyenda = """
-+ vbox {
-  top = 470
-  left = 5%
-  width = 90%
-  + label {text = "Cifrado con clave: tecleas la clave del disco en cada arranque.   Cifrado con TPM: el equipo abre el disco solo." font = "Sans 10" color = "#d0d0d0" align = "left"}
-  + label {text = "Usuario sin contraseña: entra directo al escritorio.   Sin cifrar: el disco queda legible si lo sacan del equipo." font = "Sans 10" color = "#d0d0d0" align = "left"}
-  + label {text = "Todas las opciones de Instalar BORRAN el disco que elijas. «Reparar» no borra nada." font = "Sans 10" color = "#ffd27a" align = "left"}
-}
-"""
-open(sys.argv[2], "w", encoding="utf-8").write(t.rstrip() + "\n" + leyenda)
-PY
-grep -q 'width = 90%' "$TMP/tema1" || { echo "No se pudo ensanchar el tema del menú." >&2; exit 1; }
 
-python3 -I - "$ORIGEN_GRUB" "$TMP/grub.cfg" "$ENTRADA" <<'PY'
+def leyenda(lineas):
+    s = "\n+ vbox {\n  top = 470\n  left = 5%\n  width = 90%\n"
+    for texto, color in lineas:
+        s += '  + label {text = "%s" font = "Sans 10" color = "%s" align = "left"}\n' % (texto, color)
+    return s + "}\n"
+
+arriba = leyenda([
+    ("Elige qué quieres hacer. Con «Instalar» se te pedirá después el disco, y se BORRARÁ todo lo que tenga.", "#d0d0d0"),
+    ("«Reparar» no borra nada: arregla un LeksSO que no arranca.", "#d0d0d0"),
+])
+instalar = leyenda([
+    ("Cifrado con clave: tecleas la clave del disco en cada arranque.   Cifrado con TPM: el equipo abre el disco solo.", "#d0d0d0"),
+    ("Usuario sin contraseña: entra directo al escritorio.   Sin cifrar: el disco queda legible si lo sacan del equipo.", "#d0d0d0"),
+    ("Todas estas opciones BORRAN el disco que elijas en la pantalla siguiente.", "#ffd27a"),
+])
+open(sys.argv[2], "w", encoding="utf-8").write(t.rstrip() + "\n" + arriba)
+open(sys.argv[3], "w", encoding="utf-8").write(t.rstrip() + "\n" + instalar)
+PY
+grep -q 'width = 90%' "$TMP/tema1" && grep -q 'width = 90%' "$TMP/tema2" || { echo "No se pudo ensanchar el tema del menú." >&2; exit 1; }
+
+# Menú de dos niveles. Arriba: «Instalar LeksSO» (abre leksso-instalar.cfg con las variantes), «Instalar Windows 10» (solo si el
+# pendrive tiene su partición con la etiqueta WIN10) y «Reparar». Se quitan las entradas originales de Debian (Graphical install...).
+python3 -I - "$ORIGEN_GRUB" "$TMP/grub.cfg" "$TMP/leksso-instalar.cfg" "$ENTRADA" <<'PY'
 import sys
 orig = open(sys.argv[1], encoding="utf-8").read()
-entrada = sys.argv[3]
-# Menú de dos niveles: arriba «Instalar LeksSO ▸» (las variantes dentro), «Instalar Windows 10» (solo si el pendrive tiene su
-# partición con la etiqueta WIN10) y «Reparar». Se quitan las entradas originales de Debian (Graphical install, avanzadas...).
+entrada = sys.argv[4]
 k = entrada.find("menuentry 'Reparar")
+i = orig.index("menuentry ")
+cabecera = orig[:i]
+# Sin cuenta atrás (timeout=-1): el menú espera; no debe empezar a borrar un disco solo.
 if k > 0:
-    win = (
+    variantes, reparar = entrada[:k], entrada[k:]
+    arriba = (
+        "menuentry 'Instalar LeksSO  (elige el tipo de instalacion)' {\n"
+        "    configfile /boot/grub/leksso-instalar.cfg\n"
+        "}\n"
         "if search --no-floppy --label WIN10 --set=win10; then\n"
         "  menuentry 'Instalar Windows 10 (desde este pendrive)' {\n"
         "    set background_color=black\n"
@@ -154,17 +169,20 @@ if k > 0:
         "    search --no-floppy --label WIN10 --set=root\n"
         "    chainloader /efi/boot/bootx64.efi\n"
         "  }\n"
-        "fi\n")
-    entrada = "submenu 'Instalar LeksSO  (elige el tipo de instalacion)' {\n" + entrada[:k] + "}\n" + win + entrada[k:]
-i = orig.index("menuentry ")
-# Sin cuenta atras (timeout=-1): el menu espera; no debe empezar a borrar un disco solo.
-nuevo = "set default=0\nset timeout=-1\n" + orig[:i] + entrada + "\n"
-open(sys.argv[2], "w", encoding="utf-8").write(nuevo)
+        "fi\n") + reparar
+    segundo = (
+        "set theme=/boot/grub/theme/2\nset default=0\nset timeout=-1\n" + variantes +
+        "menuentry '<  Volver al menu anterior' {\n    configfile /boot/grub/grub.cfg\n}\n")
+else:   # imagen de pruebas: una sola entrada, sin segundo nivel
+    arriba, segundo = entrada, ""
+espera = "-1" if k > 0 else "10"   # las imágenes de pruebas arrancan solas
+open(sys.argv[2], "w", encoding="utf-8").write("set default=0\nset timeout=" + espera + "\n" + cabecera + arriba + "\n")
+open(sys.argv[3], "w", encoding="utf-8").write(segundo)
 PY
 
 # 4. La imagen: la original más el paquete y el menú nuevo (el arranque se conserva).
 rm -f "$SALIDA"
-xorriso -indev "$ISO" -outdev "$SALIDA" -map "$PAQ" /leksso -map "$TMP/grub.cfg" /boot/grub/grub.cfg -map "$TMP/tema1" /boot/grub/theme/1 -boot_image any replay 2>&1 \
+xorriso -indev "$ISO" -outdev "$SALIDA" -map "$PAQ" /leksso -map "$TMP/grub.cfg" /boot/grub/grub.cfg -map "$TMP/tema1" /boot/grub/theme/1 -map "$TMP/tema2" /boot/grub/theme/2 -map "$TMP/leksso-instalar.cfg" /boot/grub/leksso-instalar.cfg -boot_image any replay 2>&1 \
   | grep -iE 'fail|error|written|wrote' || true
 echo
 ls -la "$SALIDA"
