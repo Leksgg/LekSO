@@ -3,7 +3,7 @@
 Formato: `+` nuevo · `-` eliminado o retirado · `~` modificado · `*` otros.
 Lo más reciente, arriba.
 
-## Sin publicar
+## Beta 0.1.30 · 2026-11-20
 
 + **Instalador: cifrado con desbloqueo automático (TPM2)**: dos entradas nuevas en el menú de la ISO («disco cifrado con desbloqueo automático por TPM» y la misma sin contraseña de usuario, que es la más cómoda). Se instala con la clave que se elija y, en el primer arranque del escritorio, se ofrece enlazar el disco al TPM (`leksso-disco primer-arranque`); la clave queda de respaldo. Las herramientas (`clevis`, `tpm2-tools`) van en el USB. Preparado en el código; la ISO aún no se ha construido ni probado.
 + **Disco cifrado con desbloqueo automático (TPM2)**: `leksso-disco automatico on|off`, `renovar` y `estado`, y la tarjeta **Disco cifrado** en Ajustes. Si el equipo tiene TPM2, el disco se abre solo en cada arranque, sin teclear la clave, mientras el estado de Secure Boot (PCR 7) sea el de siempre; si cambia (BIOS, base de firmas), pide la clave normal una vez y se renueva con `renovar`. La clave del disco **no se borra**: es el respaldo. Pide confirmar que la tienes guardada y avisa de que protege el disco extraído o robado, pero no contra quien encienda el equipo tal cual. Activarlo requiere teclear la clave del disco una vez. Revisión de equipo y ensayo en un LUKS de prueba: enlazar, abrir sin clave, respaldo y caída al prompt tras cambiar el arranque.
