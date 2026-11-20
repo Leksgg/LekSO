@@ -35,6 +35,15 @@ con_clevis() {
   DEBIAN_FRONTEND=noninteractive apt-get install -y clevis clevis-luks clevis-tpm2 clevis-initramfs tpm2-tools || return 1
 }
 
+# Todo lo que sale por pantalla en las órdenes que cambian algo queda también en un registro (para ver el motivo si falla).
+case "${1:-}" in automatico|renovar)
+  if [ "$(id -u)" -eq 0 ] && [ -z "${LEKSSO_DISCO_LOG:-}" ]; then
+    export LEKSSO_DISCO_LOG=1; install -d -m 0755 /var/log/leksso 2>/dev/null
+    exec > >(tee -a /var/log/leksso/disco.log) 2>&1
+    echo "=== $(date '+%F %T') leksso-disco $* ==="
+  fi ;;
+esac
+
 DEV="$(dispositivo)" || { [ "${1:-}" = estado ] && { echo "sin disco cifrado"; exit 0; }; echo "Este equipo no tiene el disco cifrado (no hay LUKS en /etc/crypttab)." >&2; exit 1; }
 
 case "${1:-estado}" in
@@ -67,7 +76,11 @@ Antes de activar el desbloqueo automático:
 MSG
         if [ "${3:-}" != "--si" ]; then
           printf '¿Tienes guardada la clave del disco fuera de este equipo o la sabes de memoria? Escribe SI para seguir: '
-          read -r r; [ "$r" = "SI" ] || { echo "No se ha cambiado nada."; exit 1; }
+          read -r r
+          case "$(printf '%s' "$r" | tr '[:upper:]' '[:lower:]' | tr -d '[:space:]')" in
+            si|sí|s|yes|y) ;;
+            *) echo "No se ha cambiado nada (respondiste «$r»; hay que escribir SI)."; exit 1 ;;
+          esac
         fi
         echo "Escribe la clave del disco (una vez) para autorizar el enlace con el TPM:"
         clevis luks bind -d "$DEV" tpm2 "$PCR" || { echo "No se pudo enlazar. No se ha cambiado nada en el arranque." >&2; exit 1; }
