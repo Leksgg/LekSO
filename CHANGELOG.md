@@ -3,6 +3,14 @@
 Formato: `+` nuevo · `-` eliminado o retirado · `~` modificado · `*` otros.
 Lo más reciente, arriba.
 
+## Sin publicar
+
+~ **Arreglo de la 0.1.32: la instalación sin red se caía** («Falló la ejecución de la orden de preconfiguración… código de error 100»). La 0.1.32 exigía unos paquetes nuevos de administración de discos (`lxqt-policykit`, `cloud-guest-utils`, `smartmontools`, `gparted`, `gnome-disk-utility`) que no estaban en el repositorio local de la imagen de instalación. Ahora se instalan uno a uno y **sin que un fallo detenga la instalación**; sin red, se instalan después (Aplicaciones, Utilidades). El repositorio local que se construya a partir de ahora los incluye, y también `firmware-brcm80211` (Wi-Fi Broadcom). Hasta ahora no se había visto porque la instalación fallaba antes por la firma de la imagen de pruebas.
++ **Instalador: menú de dos niveles y pantalla propia del disco** (probado en la VM hasta el último paso):
+  - **Menú de arriba** con «Instalar LeksSO», «Instalar Windows 10» (solo si el pendrive lleva su partición) y «Reparar»; el segundo nivel lista las 6 variantes con su leyenda. Sin cuenta atrás (no debe empezar a borrar solo) y sin las entradas de Debian que sobraban.
+  - **Pantalla del disco**: lista cada disco con modelo, tamaño, tipo (NVMe, SSD, disco duro, USB) y qué contiene («Windows», «Linux», «cifrado»); no ofrece el pendrive de instalación; preselecciona el NVMe/SSD; y hay que **escribir BORRAR** para continuar (vacío vuelve a la lista).
+  - Se dejan las confirmaciones de Debian tras ella (saltarlas hacía caer «Instalar el sistema base»).
+
 ## Beta 0.1.32 · 2026-11-20
 
 + **Instalador: sin parar en equipos sin red ni con dos discos** (probado en una VM sin red y con dos discos; falta la instalación completa hasta el escritorio con una ISO firmada):
