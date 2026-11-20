@@ -3,7 +3,7 @@
 Formato: `+` nuevo · `-` eliminado o retirado · `~` modificado · `*` otros.
 Lo más reciente, arriba.
 
-## Sin publicar
+## Beta 0.1.32 · 2026-11-20
 
 + **Instalador: sin parar en equipos sin red ni con dos discos** (probado en una VM sin red y con dos discos; falta la instalación completa hasta el escritorio con una ISO firmada):
   - **Sin red no pregunta nada de red** (lista de controladores, «ninguna interfaz», «configurar la red», «sin réplica»): `netcfg/enable false`, `apt-setup/no_mirror true` y `priority=critical`. Solo pide lo imprescindible: usuario, disco y clave.
