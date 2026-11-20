@@ -40,10 +40,10 @@ install -d /etc/apt/apt.conf.d
 install -m 0644 "$RAIZ/config/apt/99leksso-auditoria" /etc/apt/apt.conf.d/99leksso-auditoria
 
 # Paquetes por capa. Todos existen en Debian 13 (trixie); winetricks necesita la sección contrib.
-ESCRITORIO=(labwc sway swaybg waybar kitty fuzzel grim pcmanfm-qt qt6-wayland qt6-svg-plugins qt6ct xwayland fonts-font-awesome seatd xdg-desktop-portal-wlr micro imv zathura zathura-pdf-poppler mpv vlc xarchiver udisks2 udiskie gvfs gvfs-backends polkitd ntfs-3g exfatprogs usbutils v4l-utils bluez pavucontrol-qt swaylock wl-clipboard mako-notifier libnotify-bin swayidle brightnessctl slurp cliphist wdisplays blueman cups fonts-noto-color-emoji fonts-liberation ffmpegthumbnailer power-profiles-daemon playerctl wlr-randr network-manager streamdeck-ui python3-pyside6.qtwidgets python3-pyside6.qtgui python3-pyside6.qtcore python3-pyside6.qtsvg)
+ESCRITORIO=(labwc sway swaybg waybar kitty fuzzel grim pcmanfm-qt qt6-wayland qt6-svg-plugins qt6ct xwayland fonts-font-awesome seatd xdg-desktop-portal-wlr micro imv zathura zathura-pdf-poppler mpv vlc xarchiver udisks2 udiskie gvfs gvfs-backends polkitd lxqt-policykit ntfs-3g exfatprogs usbutils v4l-utils bluez pavucontrol-qt swaylock wl-clipboard mako-notifier libnotify-bin swayidle brightnessctl slurp cliphist wdisplays blueman cups fonts-noto-color-emoji fonts-liberation ffmpegthumbnailer power-profiles-daemon playerctl wlr-randr network-manager streamdeck-ui python3-pyside6.qtwidgets python3-pyside6.qtgui python3-pyside6.qtcore python3-pyside6.qtsvg)
 AUDIO=(pipewire pipewire-pulse wireplumber alsa-ucm-conf alsa-utils libspa-0.2-bluetooth)   # ucm: micrófono y altavoz del portátil; bluetooth: auriculares
 AISLAMIENTO=(bubblewrap firejail python3-seccomp passt)
-HERRAMIENTAS=(git curl btop lm-sensors python3 bc pciutils mokutil fwupd plocate restic efibootmgr)   # plocate: búsqueda de archivos; restic: copias de seguridad
+HERRAMIENTAS=(git curl btop lm-sensors python3 bc pciutils mokutil fwupd plocate restic efibootmgr cloud-guest-utils parted smartmontools gparted gnome-disk-utility)   # plocate: búsqueda de archivos; restic: copias de seguridad
 GRAFICA=(mesa-vulkan-drivers)
 HYPERV=(hyperv-daemons)       # solo útil dentro de una máquina virtual de Hyper-V
 COMPATIBILIDAD=(wine winetricks)

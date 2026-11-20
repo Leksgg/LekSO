@@ -5,6 +5,7 @@
 #      sudo leksso-disco automatico on     enlaza el disco al TPM2 (te pide la clave del disco UNA vez)
 #      sudo leksso-disco automatico off    quita el enlace: vuelve a pedir la clave al arrancar
 #      sudo leksso-disco renovar           vuelve a enlazar tras un cambio de BIOS o de claves de arranque
+#      sudo leksso-disco ampliar [--comprobar]   da al sistema todo el espacio libre que haya tras su partición (en caliente)
 #
 # Cómo funciona: la clave del disco NO se borra ni se cambia; sigue siendo el respaldo. El TPM guarda una segunda
 # clave que solo entrega si el estado de Secure Boot (PCR 7) es el de siempre. Si cambia (actualización de BIOS o de
@@ -45,7 +46,7 @@ if [ "${1:-}" = primer-arranque ]; then
 fi
 
 # Todo lo que sale por pantalla en las órdenes que cambian algo queda también en un registro (para ver el motivo si falla).
-case "${1:-}" in automatico|renovar)
+case "${1:-}" in automatico|renovar|ampliar)
   if [ "$(id -u)" -eq 0 ] && [ -z "${LEKSSO_DISCO_LOG:-}" ]; then
     export LEKSSO_DISCO_LOG=1; install -d -m 0755 /var/log/leksso 2>/dev/null
     exec > >(tee -a /var/log/leksso/disco.log) 2>&1
@@ -121,5 +122,34 @@ MSG
     update-initramfs -u -k all
     echo "Hecho: el desbloqueo automático vuelve a coincidir con el arranque actual."
     ;;
-  *) echo "Uso: leksso-disco estado | sudo leksso-disco automatico on|off | sudo leksso-disco renovar" >&2; exit 2 ;;
+  ampliar)
+    # Cadena: partición del disco -> contenedor LUKS -> volumen físico LVM -> volumen del sistema -> sistema de archivos.
+    # Se hace con el equipo en marcha. Redimensionar el contenedor NO rompe el enlace con el TPM (la clave no cambia).
+    # Sirve cuando se ha agrandado el disco (disco virtual, clonado a uno mayor) o se ha dejado hueco libre tras la partición.
+    solo_root "$@"
+    SIM=0; [ "${2:-}" = "--comprobar" ] && SIM=1
+    NOMBRE="$(awk '!/^#/ && NF>=2 {print $1; exit}' /etc/crypttab)"
+    RAIZ="$(findmnt -n -o SOURCE /)"
+    case "$RAIZ" in /dev/mapper/*|/dev/*/*) ;; *) echo "La raíz no está en un volumen LVM ($RAIZ): no sé ampliarla desde aquí." >&2; exit 1 ;; esac
+    PADRE="$(lsblk -dno PKNAME "$DEV" | head -1)"
+    NUM="$(cat "/sys/class/block/$(basename "$DEV")/partition" 2>/dev/null)"
+    [ -n "$PADRE" ] && [ -n "$NUM" ] || { echo "No encuentro el disco de $DEV." >&2; exit 1; }
+    echo "Disco: /dev/$PADRE   Partición cifrada: $DEV (número $NUM)   Sistema: $RAIZ"
+    df -h / | tail -1 | awk '{print "Ahora: " $2 " en total, " $4 " libres"}'
+    LIBRE="$(parted -m -s "/dev/$PADRE" unit MiB print free 2>/dev/null | awk -F: -v n="$NUM" '$1==n {f=1; next} f && $5=="free;" {gsub("MiB","",$4); print $4; exit} f {exit}')"
+    echo "Espacio libre tras la partición: ${LIBRE:-0} MiB"
+    if [ "$SIM" -eq 1 ]; then echo "Comprobado: no se ha cambiado nada."; exit 0; fi
+    command -v growpart >/dev/null 2>&1 || { echo "Instalando growpart…"; DEBIAN_FRONTEND=noninteractive apt-get install -y cloud-guest-utils || exit 1; }
+    out="$(growpart "/dev/$PADRE" "$NUM" 2>&1)"; rc=$?
+    echo "$out"
+    # growpart sale con 1 si no hay nada que ampliar: se sigue, por si el contenedor ya estaba ampliado pero el resto no
+    [ "$rc" -le 1 ] || { echo "No se pudo ampliar la partición." >&2; exit 1; }
+    echo "Ampliando el contenedor cifrado (si pide la clave del disco, escríbela):"
+    cryptsetup resize "$NOMBRE" || { echo "No se pudo ampliar el contenedor cifrado." >&2; exit 1; }
+    pvresize "/dev/mapper/$NOMBRE" || { echo "No se pudo ampliar el volumen físico." >&2; exit 1; }
+    lvextend -r -l +100%FREE "$RAIZ" 2>&1 | tail -3
+    df -h / | tail -1 | awk '{print "Ahora: " $2 " en total, " $4 " libres"}'
+    echo "Hecho. Tus archivos no se han tocado."
+    ;;
+  *) echo "Uso: leksso-disco estado | sudo leksso-disco automatico on|off | sudo leksso-disco renovar | sudo leksso-disco ampliar [--comprobar]" >&2; exit 2 ;;
 esac

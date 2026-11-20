@@ -35,6 +35,7 @@ exec systemctl --user start leksso-permisor.service
 exec leksso-zonas
 exec leksso-actualizar comprobar --avisar
 exec mako
+exec lxqt-policykit-agent
 exec wl-paste --type text --watch cliphist store
 exec wl-paste --type image --watch cliphist store
 # Reposo: por defecto bloquear a los 10 min, apagar la pantalla a los 15 y suspender a los 30 (solo con batería).

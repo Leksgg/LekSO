@@ -71,6 +71,7 @@ CATALOGO = [
     ("Multimedia", "pdf", "Wondershare PDFelement", "apt", "okular", "okular", "Leer y anotar. Edición avanzada de PDF: sin equivalente directo."),
     # Utilidades
     ("Utilidades", "compresores", "WinRAR", "apt", "p7zip-full unrar-free", "p7zip-full", "Zip, 7z, rar y tar."),
+    ("Utilidades", "discos", "Administración de discos (Windows: Administración de discos)", "apt", "gparted gnome-disk-utility smartmontools", "gparted", "GParted (particiones), Discos de GNOME (formatear, montar, salud) y smartmontools. Para el disco del propio sistema, ver Ajustes, Discos."),
     ("Utilidades", "monitor", "CPUID HWMonitor / SIV", "apt", "btop lm-sensors", "btop", ""),
     ("Utilidades", "logitech", "Logi Options+", "apt", "solaar", "solaar", ""),
     ("Utilidades", "copias", "Smart Backup", "apt", "timeshift", "timeshift", "Las copias de tus archivos ya vienen con LeksSO (Ajustes, Copias). Esto añade Timeshift, para puntos de restauración del sistema; es avanzado."),

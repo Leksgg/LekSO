@@ -5,6 +5,9 @@ Lo más reciente, arriba.
 
 ## Sin publicar
 
++ **Administrar discos y particiones**:
+  - **Ajustes, Discos**: tabla de discos y particiones (solo lectura) y accesos a **GParted**, **Discos de GNOME**, la salud del disco (SMART) y «Ampliar el sistema». GParted y Discos entran en el catálogo (Utilidades) y en la base, con `smartmontools`, `parted` y un agente de permisos pequeño (`lxqt-policykit`) para que pidan la contraseña de administrador.
+  - **`sudo leksso-disco ampliar [--comprobar]`**: da al sistema todo el espacio libre tras su partición, con el equipo encendido (partición, contenedor cifrado, LVM, sistema de archivos). No cambia la clave, así que el desbloqueo por TPM sigue valiendo. Probado en un disco cifrado con LVM de prueba (1 GB a 2 GB) y en el A04 con `--comprobar`. Reducir o mover las particiones del sistema exige hacerlo con el sistema apagado: pendiente (entrada «Administrar discos» en el pendrive).
 + **Recuperación, como las opciones avanzadas de inicio de Windows**:
   - **Energía, «Reiniciar en otro sistema o dispositivo…»**: reinicia UNA vez en Windows, en una memoria USB de arranque, en la red o en la BIOS, y después el equipo arranca como siempre. Detrás está `leksso-reiniciar-en listar | usar ID | bios` (`efibootmgr`, que ahora va en la base).
   - **`sudo leksso-reparar [--comprobar] [--completa]`**: repara el arranque sin tocar tus archivos (monta las particiones de arranque, termina paquetes a medias, regenera el initramfs, reinstala GRUB y su entrada en la BIOS, regenera el menú). `--comprobar` solo enseña lo que haría. Funciona con el sistema en marcha y desde la consola del modo de rescate del pendrive.
