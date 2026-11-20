@@ -53,3 +53,25 @@ sed -i "s/SWAP_MB/$SWAP_MB/g" /tmp/leksso-receta
 
 debconf-set partman-auto/expert_recipe_file /tmp/leksso-receta
 debconf-set partman-auto/choose_recipe leksso
+
+# GRUB en el disco ELEGIDO. Con dos discos, el instalador apuntaba GRUB al primero (/dev/sda) aunque se instalase en otro, y
+# fallaba («Falló un paso: Instalar el cargador de arranque GRUB»). Un vigilante espera a que el instalador monte la partición
+# EFI del disco elegido y le dice a GRUB que use ESE disco. Deja un registro en /tmp/leksso-bootdev.log.
+(
+  n=0
+  while [ "$n" -lt 14400 ]; do
+    linea="$(grep ' /target/boot/efi ' /proc/mounts 2>/dev/null | head -1)"
+    if [ -n "$linea" ]; then
+      b="$(basename "${linea%% *}")"
+      disco="$(basename "$(readlink -f "/sys/class/block/$b/..")")"
+      if [ -b "/dev/$disco" ]; then
+        debconf-set grub-installer/bootdev "/dev/$disco"
+        echo "bootdev=/dev/$disco (particion $b)" > /tmp/leksso-bootdev.log
+      else
+        echo "no se pudo deducir el disco de $b" > /tmp/leksso-bootdev.log
+      fi
+      break
+    fi
+    sleep 2; n=$((n + 1))
+  done
+) >/dev/null 2>&1 &

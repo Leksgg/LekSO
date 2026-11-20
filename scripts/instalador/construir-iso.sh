@@ -47,7 +47,7 @@ CLAVE_EN_SCRIPT="$(sed -n "s/^CLAVE_PUBLICA='\(.*\)'\$/\1/p" "$PAQ/instalar.sh")
 # 1a. Variantes de instalación, una entrada del menú cada una: el disco se cifra o no, y el usuario tiene contraseña o no.
 #     La base (preseed.cfg) es «disco cifrado, con contraseña». Sin contraseña: el instalador no la pregunta (se deja
 #     bloqueada) y postinstalar.sh quita la contraseña, activa la entrada automática y sudo sin clave.
-sed 's#^d-i partman-auto/method string crypto#d-i partman-auto/method string lvm#' "$PAQ/preseed.cfg" > "$PAQ/preseed-sin-cifrado.cfg"
+sed -e 's#^d-i partman-auto/method string crypto#d-i partman-auto/method string lvm#' -e 's#^d-i partman-auto/init_automatically_partition select some_device_crypto#d-i partman-auto/init_automatically_partition select some_device_lvm#' "$PAQ/preseed.cfg" > "$PAQ/preseed-sin-cifrado.cfg"
 for par in "preseed:preseed-sin-contrasena" "preseed-sin-cifrado:preseed-sin-cifrado-sin-contrasena"; do
   origen="${par%%:*}"; destino="${par##*:}"
   sed 's#^\(  in-target sh /opt/leksso-instalacion/postinstalar.sh\)$#\1 --sin-contrasena#' "$PAQ/$origen.cfg" > "$PAQ/$destino.cfg"
