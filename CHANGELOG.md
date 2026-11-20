@@ -3,7 +3,7 @@
 Formato: `+` nuevo · `-` eliminado o retirado · `~` modificado · `*` otros.
 Lo más reciente, arriba.
 
-## Sin publicar
+## Beta 0.1.31 · 2026-11-20
 
 + **Instalador: convivir con Windows**: `os-prober` va en el USB y el menú de arranque de LeksSO (GRUB) muestra Windows si lo encuentra; así se elige el sistema al encender. Si hay Windows, la hora de la placa se deja en hora local para que no se desfase al alternar. Sin otro sistema, no cambia nada. Cada sistema debe ir en su disco: el instalador sigue borrando el disco entero que se elige (la protección contra borrar un disco con Windows y el modo «junto a Windows» siguen pendientes). `scripts/instalador/crear-vm-convivencia.ps1` crea la máquina virtual de Hyper-V (arranque seguro, TPM y dos discos) para probarlo antes de tocar el equipo real.
 + **Servidor de TeamSpeak 3 en LeksSO**: `sudo leksso-ts3-instalar [--datos CARPETA]` instala la 3.13.8 (versión y suma SHA-256 fijadas; si no coincide, no instala) como un usuario propio sin acceso al resto del equipo y, con `--datos`, trae la base de datos y los archivos de un servidor de Windows sin tocar el origen (cierra el registro WAL y comprueba la integridad). Queda **apagado**: `sudo leksso-ts3 on` lo arranca y abre solo la voz (UDP 9987) y los archivos (TCP 30033) mientras esté encendido; `off` lo para y cierra los puertos. La consulta nunca se abre (solo desde el propio equipo). Para entrar desde fuera de casa hay que reenviar esos puertos en el router.
