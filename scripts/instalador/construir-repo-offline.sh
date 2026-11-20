@@ -24,7 +24,7 @@ apt-get install -y -qq debootstrap dpkg-dev >/dev/null
 LISTA="$(bash -c '
   set -e
   eval "$(sed -n "/^ESCRITORIO=(/,/^COMPATIBILIDAD=(/p" "'"$RAIZ"'/scripts/provision-base.sh")"
-  printf "%s\n" "${ESCRITORIO[@]}" "${AUDIO[@]}" "${AISLAMIENTO[@]}" "${HERRAMIENTAS[@]}" "${GRAFICA[@]}" "${COMPATIBILIDAD[@]}" "${HYPERV[@]}"
+  printf "%s\n" "${ESCRITORIO[@]}" "${AUDIO[@]}" "${AISLAMIENTO[@]}" "${HERRAMIENTAS[@]}" "${RED[@]}" "${GRAFICA[@]}" "${COMPATIBILIDAD[@]}" "${HYPERV[@]}"
 ')"
 # Lo que instalan después el endurecimiento y el bloque de firmware, y lo que necesita el instalador.
 EXTRA="nftables unattended-upgrades isenkram-cli intel-microcode amd64-microcode thermald

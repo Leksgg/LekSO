@@ -44,6 +44,10 @@ ESCRITORIO=(labwc sway swaybg waybar kitty fuzzel grim pcmanfm-qt qt6-wayland qt
 AUDIO=(pipewire pipewire-pulse wireplumber alsa-ucm-conf alsa-utils libspa-0.2-bluetooth)   # ucm: micrófono y altavoz del portátil; bluetooth: auriculares
 AISLAMIENTO=(bubblewrap firejail python3-seccomp passt)
 HERRAMIENTAS=(git curl btop lm-sensors python3 bc pciutils mokutil fwupd plocate restic efibootmgr)   # plocate: búsqueda de archivos; restic: copias de seguridad
+# Red inalámbrica: NetworkManager necesita wpasupplicant para conectarse a cualquier Wi-Fi con contraseña; es un paquete «recomendado»
+# y el instalador instala sin recomendados, así que sin esto un portátil solo con Wi-Fi se quedaba sin red. iw y wireless-regdb: canales y
+# potencias permitidos por país.
+RED=(network-manager wpasupplicant iw wireless-regdb)
 GRAFICA=(mesa-vulkan-drivers)
 HYPERV=(hyperv-daemons)       # solo útil dentro de una máquina virtual de Hyper-V
 COMPATIBILIDAD=(wine winetricks)
@@ -62,7 +66,7 @@ export DEBIAN_FRONTEND=noninteractive
 apt-get update || echo "Sin conexión: se usan los paquetes locales disponibles."
 apt-get install -y --no-install-recommends \
   "${ESCRITORIO[@]}" "${AUDIO[@]}" "${AISLAMIENTO[@]}" \
-  "${HERRAMIENTAS[@]}" "${GRAFICA[@]}" "${COMPATIBILIDAD[@]}"
+  "${HERRAMIENTAS[@]}" "${RED[@]}" "${GRAFICA[@]}" "${COMPATIBILIDAD[@]}"
 
 # Herramientas de invitado solo si estamos en Hyper-V.
 if [ "$(systemd-detect-virt 2>/dev/null || true)" = "microsoft" ]; then
@@ -240,6 +244,13 @@ TimeoutStopSec=3s
 ' > /etc/systemd/user/mpris-proxy.service.d/leksso-apagado.conf
 # Modo juego: perfiles de energía, GameMode y la parte de administrador (un solo ajuste, sin contraseña)
 apt-get install -y --no-install-recommends power-profiles-daemon gamemode || echo "AVISO: sin power-profiles-daemon o gamemode (¿sin conexión?)"
+
+# Firmware de las tarjetas de red inalámbricas (Intel, Realtek, Atheros, MediaTek, Broadcom y el general). Se instala SIEMPRE y desde el
+# repositorio local durante la instalación: después, sin red, ya no habría forma de conseguirlo. Cada paquete por separado, para que un
+# fallo no detenga la instalación.
+for p in firmware-iwlwifi firmware-realtek firmware-atheros firmware-mediatek firmware-misc-nonfree firmware-brcm80211; do
+  apt-get install -y --no-install-recommends "$p" || echo "AVISO: sin $p (¿sin conexión?); se instala después con red."
+done
 
 # Administración de discos (agente de permisos, GParted, Discos de GNOME, SMART, ampliar en caliente): OPCIONAL. Cada paquete por
 # separado y sin que un fallo detenga la instalación: en una instalación sin red no están en el repositorio local y antes eso

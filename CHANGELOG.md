@@ -3,6 +3,14 @@
 Formato: `+` nuevo · `-` eliminado o retirado · `~` modificado · `*` otros.
 Lo más reciente, arriba.
 
+## Sin publicar
+
+~ **Red inalámbrica: un portátil solo con Wi-Fi ya queda con red desde el primer arranque.** Hasta ahora la instalación no dejaba el Wi-Fi utilizable en un equipo sin cable, por dos motivos:
+  - **Faltaba `wpasupplicant`**, que NetworkManager necesita para conectarse a cualquier Wi-Fi con contraseña. Es un paquete «recomendado» y el instalador instala sin recomendados. Ahora forma parte de la base, junto con `iw` y `wireless-regdb` (canales y potencias permitidos por país).
+  - **El firmware de la tarjeta no se instalaba** durante la instalación, solo más tarde y con red, o sea, nunca en un equipo sin cable. Ahora se instala siempre, desde el repositorio local de la imagen: Intel, Realtek, Atheros, MediaTek, Broadcom y el general, cada paquete por separado (un fallo no detiene la instalación).
+  - El repositorio local de la imagen incluye esos paquetes (906 en total).
+  - Si ya tienes LeksSO instalado sin Wi-Fi: con cualquier conexión (cable o el móvil por USB), `leksso-actualizar aplicar` los instala.
+
 ## Beta 0.1.33 · 2026-11-20
 
 ~ **Arreglo de la 0.1.32: la instalación sin red se caía** («Falló la ejecución de la orden de preconfiguración… código de error 100»). La 0.1.32 exigía unos paquetes nuevos de administración de discos (`lxqt-policykit`, `cloud-guest-utils`, `smartmontools`, `gparted`, `gnome-disk-utility`) que no estaban en el repositorio local de la imagen de instalación. Ahora se instalan uno a uno y **sin que un fallo detenga la instalación**; sin red, se instalan después (Aplicaciones, Utilidades). El repositorio local que se construya a partir de ahora los incluye, y también `firmware-brcm80211` (Wi-Fi Broadcom). Hasta ahora no se había visto porque la instalación fallaba antes por la firma de la imagen de pruebas.
