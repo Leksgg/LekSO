@@ -3,7 +3,7 @@
 Formato: `+` nuevo · `-` eliminado o retirado · `~` modificado · `*` otros.
 Lo más reciente, arriba.
 
-## Sin publicar
+## Beta 0.1.33 · 2026-11-20
 
 ~ **Arreglo de la 0.1.32: la instalación sin red se caía** («Falló la ejecución de la orden de preconfiguración… código de error 100»). La 0.1.32 exigía unos paquetes nuevos de administración de discos (`lxqt-policykit`, `cloud-guest-utils`, `smartmontools`, `gparted`, `gnome-disk-utility`) que no estaban en el repositorio local de la imagen de instalación. Ahora se instalan uno a uno y **sin que un fallo detenga la instalación**; sin red, se instalan después (Aplicaciones, Utilidades). El repositorio local que se construya a partir de ahora los incluye, y también `firmware-brcm80211` (Wi-Fi Broadcom). Hasta ahora no se había visto porque la instalación fallaba antes por la firma de la imagen de pruebas.
 + **Instalador: menú de dos niveles y pantalla propia del disco** (probado en la VM hasta el último paso):
