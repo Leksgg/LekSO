@@ -75,6 +75,24 @@ lista_discos() {   # imprime: nombre|descripcion
   done
 }
 
+# Lee «pv vg» (una pareja por línea) y escribe los nombres de grupo que tienen algún volumen físico FUERA del disco elegido ($1).
+nombres_vg_ajenos() {
+  disco="$1"
+  while read -r pv vg; do
+    [ -n "$vg" ] || continue
+    case "$pv" in
+      /dev/"$disco"|/dev/"$disco"[0-9]*|/dev/"$disco"p[0-9]*) ;;   # dentro del disco elegido: se va a borrar
+      *) echo "$vg" ;;
+    esac
+  done | sort -u
+}
+# Dado el listado de nombres ocupados (uno por línea), devuelve el primer nombre libre.
+elegir_nombre_vg() {
+  ocupados="$1"; n=1; nombre=leksso-vg
+  while echo "$ocupados" | grep -qx "$nombre"; do n=$((n + 1)); nombre="leksso-vg-$n"; done
+  echo "$nombre"
+}
+
 TODOS="$(lista_discos)"
 [ -n "$TODOS" ] || exit 0
 
@@ -102,6 +120,14 @@ while :; do
   RESP="$(echo "$RET" | tr 'a-z' 'A-Z' | tr -d ' ')"
   if [ "$RESP" = "BORRAR" ]; then
     debconf-set partman-auto/disk "/dev/$DISCO"
+    # Nombre del grupo LVM: si OTRO disco ya tiene uno que se llama como el nuevo (una instalación anterior), LVM no deja crear dos
+    # con el mismo nombre y la instalación se atascaba. Se elige un nombre libre: leksso-vg, leksso-vg-2, leksso-vg-3...
+    if command -v lvm >/dev/null 2>&1; then
+      OCUPADOS="$(lvm pvs --noheadings -o pv_name,vg_name 2>/dev/null | nombres_vg_ajenos "$DISCO")"
+      NOMBRE_VG="$(elegir_nombre_vg "$OCUPADOS")"
+      debconf-set partman-auto-lvm/new_vg_name "$NOMBRE_VG"
+      echo "grupo LVM: $NOMBRE_VG (ocupados en otros discos: ${OCUPADOS:-ninguno})" >> /tmp/leksso-disco.log
+    fi
     echo "disco elegido: /dev/$DISCO ($ELEGIDO)" > /tmp/leksso-disco.log
     break
   fi
