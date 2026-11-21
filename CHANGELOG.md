@@ -3,7 +3,7 @@
 Formato: `+` nuevo · `-` eliminado o retirado · `~` modificado · `*` otros.
 Lo más reciente, arriba.
 
-## Sin publicar
+## Beta 0.1.35 · 2026-11-21
 
 ~ **Instalador: un grupo LVM viejo en otro disco ya no atasca la instalación.** Si otro disco tenía un volumen llamado `leksso-vg` (de una instalación anterior), LVM no deja crear otro con el mismo nombre y la instalación se paraba en el resumen de particiones, con el cifrado creado y vacío. Ahora, al elegir el disco, el instalador mira los grupos que hay en los demás discos y usa un nombre libre (`leksso-vg-2`, `-3`...). Si el grupo viejo está en el propio disco elegido, se borra como siempre.
 
